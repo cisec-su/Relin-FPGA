@@ -1,0 +1,3 @@
+[submodule "src/ntt"]
+	path = src/ntt
+	url = https://github.com/cisec-su/TP-NTT.git
