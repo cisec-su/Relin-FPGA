@@ -20,30 +20,62 @@
 
 module hadamart_tb;
 
-localparam W = 64;   
-localparam TP = 32;  
+parameter LOGA                   = 64;
+parameter LOGB                   = 64;
+parameter LOGQ                   = 64;
+parameter LOGQH                  = 48;
+parameter CORRECT                = 1 ;
+parameter FF_IN                  = 1 ;
+parameter FF_MUL                 = 1 ;
+parameter FF_SUM                 = 1 ;
+parameter FF_SUB                 = 1 ;
+parameter FF_OUT                 = 1 ;
+parameter USE_CSA                = 1 ;
+parameter FF_CSA                 = 1 ;
+parameter MORE_DSP               = 1 ;
+parameter DSP_B                  = 17; 
+parameter intmul_mode_t MUL_MODE = USE_STD;
+parameter load_q   = 1;
+parameter TP       = 32;
+
+localparam W    = LOGQ - LOGQH;
+localparam LOGT = (CORRECT) ? LOGQ : LOGQ + 1;
+
+reg               clk;
+reg               rst;
+reg  [LOGA  -1:0] A  [TP-1:0];
+reg  [LOGB  -1:0] B  [TP-1:0];
+reg  [LOGQH -1:0] qH ;
+wire [LOGT - 1:0] C  [TP-1:0];
+
 localparam HP = 5;   
 localparam FP = 2 * HP; 
 
-reg clk;
-reg rst;
-
-reg [W-1:0] q;
-reg [W-1:0] A [TP-1:0];
-reg [W-1:0] B [TP-1:0];
-
-wire [W-1:0] C [TP-1:0];
-
 hadamart #(
-    .W(W),
+    .LOGA(LOGA),
+    .LOGB(LOGB),
+    .LOGQ(LOGQ),
+    .LOGQH(LOGQH),
+    .CORRECT(CORRECT),
+    .FF_IN(FF_IN),
+    .FF_MUL(FF_MUL),
+    .FF_SUM(FF_SUM),
+    .FF_SUB(FF_SUB),
+    .FF_OUT(FF_OUT),
+    .USE_CSA(USE_CSA),
+    .FF_CSA(FF_CSA),
+    .MORE_DSP(MORE_DSP),
+    .DSP_B(DSP_B),
+    .MUL_MODE(MUL_MODE),
+    .load_q(load_q),
     .TP(TP)
-) dut (
+) hadamart_inst (
     .clk(clk),
     .rst(rst),
-    .q(q),
     .A(A),
     .B(B),
-    .C(C)
+    .qH(qH),
+    .T(C)
 );
 
 always #HP clk = ~clk;
@@ -53,7 +85,9 @@ integer file_A, file_B, file_q, file_python;
 integer status_A, status_B, status_q, status_python;
 integer rewind_status_A, rewind_status_B;
 
-reg [W-1:0] C_python [0:TP-1];
+reg [LOGQ-1:0] C_python [0:TP-1];
+reg [LOGQ-1:0] q;
+
 
 integer num_lines_A = 0;
 integer num_lines_B = 0;
@@ -63,7 +97,7 @@ integer result_mismatch = 0;
 integer num_sets = 0;
 integer num_elements_C = 0;
 integer done_set = 0;
-integer latency = 10;
+integer latency = hadamart_inst.LAT;
 
 function integer count_lines;
     input integer file;
@@ -82,7 +116,6 @@ function integer count_lines;
     end
 endfunction
 
-
 initial begin
     $display("Starting simulation.");
     
@@ -95,9 +128,9 @@ initial begin
     #HP;
     
     file_A = $fopen("../../../../../test_vectors/A.txt", "r");
-    file_B = $fopen("/home/berenaydogan/Desktop/Project/Simulation/B.txt", "r");
-    file_q = $fopen("/home/berenaydogan/Desktop/Project/Simulation/q.txt", "r");
-    file_python = $fopen("/home/berenaydogan/Desktop/Project/Simulation/python_results.txt", "r");
+    file_B = $fopen("../../../../../test_vectors/B.txt", "r");
+    file_q = $fopen("../../../../../test_vectors/q.txt", "r");
+    file_python = $fopen("../../../../../test_vectors/python_results.txt", "r");
     
     if (file_A == 0 || file_B == 0 || file_q == 0 || file_python == 0) begin
         $display("Error: One of the files could not be opened.");
@@ -135,6 +168,7 @@ initial begin
             
             if (idx == 0 && current_set == 0) begin
                 status_q = $fscanf(file_q, "%h\n", q);
+                qH = q[LOGQ-1:W];
             end
          
             if (status_A != 1 || status_B != 1 || status_q != 1) begin
@@ -182,7 +216,7 @@ initial begin
             
             if (num_sets < latency) begin
                 if (current_set == 0) begin
-                    #(FP * (10 - num_sets));
+                    #(FP * (latency - num_sets));
                 end
                 
                 if (current_set != 0) begin
