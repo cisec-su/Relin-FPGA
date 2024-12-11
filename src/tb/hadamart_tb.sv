@@ -20,21 +20,18 @@
 
 module hadamart_tb;
 
-parameter LOGA                   = 64;
-parameter LOGB                   = 64;
-parameter LOGQ                   = 64;
-parameter LOGQH                  = 48;
-parameter CORRECT                = 1 ;
-parameter FF_IN                  = 1 ;
-parameter FF_MUL                 = 1 ;
-parameter FF_SUM                 = 1 ;
-parameter FF_SUB                 = 1 ;
-parameter FF_OUT                 = 1 ;
-parameter USE_CSA                = 1 ;
-parameter FF_CSA                 = 1 ;
-parameter MORE_DSP               = 1 ;
-parameter DSP_B                  = 17; 
-parameter intmul_mode_t MUL_MODE = USE_STD;
+parameter LOGQ     = 64;
+parameter LOGQH    = 48;
+parameter CORRECT  = 1 ;
+parameter FF_IN    = 1 ;
+parameter FF_MUL   = 1 ;
+parameter FF_SUM   = 1 ;
+parameter FF_SUB   = 1 ;
+parameter FF_OUT   = 1 ;
+parameter USE_CSA  = 1 ;
+parameter FF_CSA   = 1 ;
+parameter MORE_DSP = 1 ;
+parameter NON_STD  = 1;
 parameter load_q   = 1;
 parameter TP       = 32;
 
@@ -42,9 +39,8 @@ localparam W    = LOGQ - LOGQH;
 localparam LOGT = (CORRECT) ? LOGQ : LOGQ + 1;
 
 reg               clk;
-reg               rst;
-reg  [LOGA  -1:0] A  [TP-1:0];
-reg  [LOGB  -1:0] B  [TP-1:0];
+reg  [LOGQ  -1:0] A  [TP-1:0];
+reg  [LOGQ  -1:0] B  [TP-1:0];
 reg  [LOGQH -1:0] qH ;
 wire [LOGT - 1:0] C  [TP-1:0];
 
@@ -52,8 +48,6 @@ localparam HP = 5;
 localparam FP = 2 * HP; 
 
 hadamart #(
-    .LOGA(LOGA),
-    .LOGB(LOGB),
     .LOGQ(LOGQ),
     .LOGQH(LOGQH),
     .CORRECT(CORRECT),
@@ -65,13 +59,11 @@ hadamart #(
     .USE_CSA(USE_CSA),
     .FF_CSA(FF_CSA),
     .MORE_DSP(MORE_DSP),
-    .DSP_B(DSP_B),
-    .MUL_MODE(MUL_MODE),
+    .NON_STD(NON_STD),
     .load_q(load_q),
     .TP(TP)
 ) hadamart_inst (
     .clk(clk),
-    .rst(rst),
     .A(A),
     .B(B),
     .qH(qH),
@@ -120,11 +112,6 @@ initial begin
     $display("Starting simulation.");
     
     clk = 1'b0;
-    rst = 1'b0;
-    #FP;
-    rst = 1'b1;
-    #FP;
-    rst = 1'b0;
     #HP;
     
     file_A = $fopen("../../../../../test_vectors/A.txt", "r");
