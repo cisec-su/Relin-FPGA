@@ -17,16 +17,17 @@ module hadamart
         parameter USE_CSA  = 1 ,
         parameter FF_CSA   = 1 ,
         parameter MORE_DSP = 0 ,
-        parameter NON_STD  = 1,
-        parameter load_q   = 1 ,
+        parameter NON_STD  = 1 ,
         parameter TP       = 32
     )
     (
-        input               clk,
-        input  [LOGQ  -1:0] A  [TP-1:0],
-        input  [LOGQ  -1:0] B  [TP-1:0],
-        input  [LOGQH -1:0] qH ,
-        output [LOGT - 1:0] T [TP-1:0]
+        input               clk     ,
+        input               rst     ,
+        input               load_q  ,
+        input  [LOGQ  -1:0] A   [TP-1:0],
+        input  [LOGQ  -1:0] B   [TP-1:0],
+        input  [LOGQH -1:0] qH      ,
+        output [LOGT - 1:0] T   [TP-1:0]
     );
 
 localparam W    = LOGQ - LOGQH;
@@ -35,11 +36,11 @@ localparam LOGT = (CORRECT) ? LOGQ : LOGQ + 1;
 localparam modmul_params_t modmul_params = {W, LOGQ, LOGQH, CORRECT, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA};
 localparam LAT = modmul_lat(modmul_params);
 
-reg [LOGQH -1:0] qH_reg;
+reg [LOGQH -1:0] qH_int;
 
-if (load_q) begin
-    always @(posedge clk) begin
-        qH_reg <= qH;
+always @(posedge clk) begin
+    if (load_q) begin
+        qH_int <= qH;
     end
 end
     
@@ -61,7 +62,7 @@ for (genvar i = 0; i < TP; i++) begin
         .clk(clk),
         .A(A[i]),
         .B(B[i]),
-        .qH(qH_reg),
+        .qH(qH_int),
         .T(T[i])
     );
 end

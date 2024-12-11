@@ -31,17 +31,18 @@ parameter FF_OUT   = 1 ;
 parameter USE_CSA  = 1 ;
 parameter FF_CSA   = 1 ;
 parameter MORE_DSP = 1 ;
-parameter NON_STD  = 1;
-parameter load_q   = 1;
+parameter NON_STD  = 1 ;
 parameter TP       = 32;
 
 localparam W    = LOGQ - LOGQH;
 localparam LOGT = (CORRECT) ? LOGQ : LOGQ + 1;
 
-reg               clk;
+reg               clk   ;
+reg               rst   ;
+reg               load_q;
 reg  [LOGQ  -1:0] A  [TP-1:0];
 reg  [LOGQ  -1:0] B  [TP-1:0];
-reg  [LOGQH -1:0] qH ;
+reg  [LOGQH -1:0] qH    ;
 wire [LOGT - 1:0] C  [TP-1:0];
 
 localparam HP = 5;   
@@ -60,10 +61,11 @@ hadamart #(
     .FF_CSA(FF_CSA),
     .MORE_DSP(MORE_DSP),
     .NON_STD(NON_STD),
-    .load_q(load_q),
     .TP(TP)
 ) hadamart_inst (
     .clk(clk),
+    .rst(rst),
+    .load_q(load_q),
     .A(A),
     .B(B),
     .qH(qH),
@@ -79,7 +81,6 @@ integer rewind_status_A, rewind_status_B;
 
 reg [LOGQ-1:0] C_python [0:TP-1];
 reg [LOGQ-1:0] q;
-
 
 integer num_lines_A = 0;
 integer num_lines_B = 0;
@@ -117,7 +118,7 @@ initial begin
     file_A = $fopen("../../../../../test_vectors/A.txt", "r");
     file_B = $fopen("../../../../../test_vectors/B.txt", "r");
     file_q = $fopen("../../../../../test_vectors/q.txt", "r");
-    file_python = $fopen("../../../../../test_vectors/python_results.txt", "r");
+    file_python = $fopen("../../../../../test_vectors/expected_outputs.txt", "r");
     
     if (file_A == 0 || file_B == 0 || file_q == 0 || file_python == 0) begin
         $display("Error: One of the files could not be opened.");
