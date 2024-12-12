@@ -8,11 +8,10 @@ module hadamart
     #(
         parameter LOGQ     = 32,
         parameter LOGQH    = 15,
-        parameter CORRECT  = 1 ,
         parameter FF_IN    = 1 ,
         parameter FF_MUL   = 1 ,
-        parameter FF_SUM   = 1 ,
-        parameter FF_SUB   = 1 ,
+        parameter FF_SUM   = 0 ,
+        parameter FF_SUB   = 0 ,
         parameter FF_OUT   = 1 ,
         parameter USE_CSA  = 1 ,
         parameter FF_CSA   = 1 ,
@@ -27,18 +26,20 @@ module hadamart
         input  [LOGQ  -1:0] A   [TP-1:0],
         input  [LOGQ  -1:0] B   [TP-1:0],
         input  [LOGQH -1:0] qH      ,
-        output [LOGT - 1:0] T   [TP-1:0]
+        output [LOGQ - 1:0] T   [TP-1:0]
     );
 
-localparam W    = LOGQ - LOGQH;
-localparam LOGT = (CORRECT) ? LOGQ : LOGQ + 1;
+localparam W = LOGQ - LOGQH;
 
-localparam modmul_params_t modmul_params = {W, LOGQ, LOGQH, CORRECT, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA};
+localparam modmul_params_t modmul_params = {W, LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA};
 localparam LAT = modmul_lat(modmul_params);
 
 reg [LOGQH -1:0] qH_int;
 
 always @(posedge clk) begin
+    if (rst) begin
+        qH_int <= 0;
+    end
     if (load_q) begin
         qH_int <= qH;
     end
@@ -48,7 +49,7 @@ for (genvar i = 0; i < TP; i++) begin
     modmul #(
         .LOGQ(LOGQ),
         .LOGQH(LOGQH),
-        .CORRECT(CORRECT),
+        .CORRECT(1),
         .FF_IN(FF_IN),
         .FF_MUL(FF_MUL),
         .FF_SUM(FF_SUM),

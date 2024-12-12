@@ -22,7 +22,6 @@ module hadamart_tb;
 
 parameter LOGQ     = 64;
 parameter LOGQH    = 48;
-parameter CORRECT  = 1 ;
 parameter FF_IN    = 1 ;
 parameter FF_MUL   = 1 ;
 parameter FF_SUM   = 1 ;
@@ -35,7 +34,6 @@ parameter NON_STD  = 1 ;
 parameter TP       = 32;
 
 localparam W    = LOGQ - LOGQH;
-localparam LOGT = (CORRECT) ? LOGQ : LOGQ + 1;
 
 reg               clk   ;
 reg               rst   ;
@@ -43,7 +41,7 @@ reg               load_q;
 reg  [LOGQ  -1:0] A  [TP-1:0];
 reg  [LOGQ  -1:0] B  [TP-1:0];
 reg  [LOGQH -1:0] qH    ;
-wire [LOGT - 1:0] C  [TP-1:0];
+wire [LOGQ - 1:0] C  [TP-1:0];
 
 localparam HP = 5;   
 localparam FP = 2 * HP; 
@@ -51,7 +49,6 @@ localparam FP = 2 * HP;
 hadamart #(
     .LOGQ(LOGQ),
     .LOGQH(LOGQH),
-    .CORRECT(CORRECT),
     .FF_IN(FF_IN),
     .FF_MUL(FF_MUL),
     .FF_SUM(FF_SUM),
@@ -113,12 +110,13 @@ initial begin
     $display("Starting simulation.");
     
     clk = 1'b0;
+    load_q = 1'b1;
     #HP;
     
-    file_A = $fopen("../../../../../test_vectors/A.txt", "r");
-    file_B = $fopen("../../../../../test_vectors/B.txt", "r");
-    file_q = $fopen("../../../../../test_vectors/q.txt", "r");
-    file_python = $fopen("../../../../../test_vectors/expected_outputs.txt", "r");
+    file_A = $fopen("/home/berenaydogan/Desktop/Project/Tiling/Relin-FPGA/test_vectors/hadamart/A.txt", "r");
+    file_B = $fopen("/home/berenaydogan/Desktop/Project/Tiling/Relin-FPGA/test_vectors/hadamart/B.txt", "r");
+    file_q = $fopen("/home/berenaydogan/Desktop/Project/Tiling/Relin-FPGA/test_vectors/hadamart/q.txt", "r");
+    file_python = $fopen("/home/berenaydogan/Desktop/Project/Tiling/Relin-FPGA/test_vectors/hadamart/expected_outputs.txt", "r");
     
     if (file_A == 0 || file_B == 0 || file_q == 0 || file_python == 0) begin
         $display("Error: One of the files could not be opened.");
