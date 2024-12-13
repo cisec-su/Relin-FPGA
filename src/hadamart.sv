@@ -16,7 +16,7 @@ module hadamart
         parameter USE_CSA  = 1 ,
         parameter FF_CSA   = 1 ,
         parameter MORE_DSP = 0 ,
-        parameter NON_STD  = 1 ,
+        parameter NON_STD  = 0 ,
         parameter TP       = 32
     )
     (
@@ -31,7 +31,7 @@ module hadamart
 
 localparam W = LOGQ - LOGQH;
 
-localparam modmul_params_t modmul_params = {W, LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA};
+localparam modmul_params_t modmul_params = {W, LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
 localparam LAT = modmul_lat(modmul_params);
 
 reg [LOGQH -1:0] qH_int;
@@ -47,24 +47,24 @@ end
     
 for (genvar i = 0; i < TP; i++) begin
     modmul #(
-        .LOGQ(LOGQ),
-        .LOGQH(LOGQH),
-        .CORRECT(1),
-        .FF_IN(FF_IN),
-        .FF_MUL(FF_MUL),
-        .FF_SUM(FF_SUM),
-        .FF_SUB(FF_SUB),
-        .FF_OUT(FF_OUT),
-        .USE_CSA(USE_CSA),
-        .FF_CSA(FF_CSA),
+        .LOGQ    (LOGQ    ),
+        .LOGQH   (LOGQH   ),
+        .CORRECT (1       ),
+        .FF_IN   (FF_IN   ),
+        .FF_MUL  (FF_MUL  ),
+        .FF_SUM  (FF_SUM  ),
+        .FF_SUB  (FF_SUB  ),
+        .FF_OUT  (FF_OUT  ),
+        .USE_CSA (USE_CSA ),
+        .FF_CSA  (FF_CSA  ),
         .MORE_DSP(MORE_DSP),
-        .NON_STD(NON_STD)
+        .NON_STD (NON_STD )
     ) modmul_inst (
-        .clk(clk),
-        .A(A[i]),
-        .B(B[i]),
-        .qH(qH_int),
-        .T(T[i])
+        .clk(clk   ),
+        .A  (A[i]  ),
+        .B  (B[i]  ),
+        .qH (qH_int),
+        .T  (T[i]  )
     );
 end
 

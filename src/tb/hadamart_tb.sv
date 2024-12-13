@@ -30,7 +30,7 @@ parameter FF_OUT   = 1 ;
 parameter USE_CSA  = 1 ;
 parameter FF_CSA   = 1 ;
 parameter MORE_DSP = 1 ;
-parameter NON_STD  = 1 ;
+parameter NON_STD  = 0 ;
 parameter TP       = 32;
 
 localparam W    = LOGQ - LOGQH;
@@ -47,26 +47,26 @@ localparam HP = 5;
 localparam FP = 2 * HP; 
 
 hadamart #(
-    .LOGQ(LOGQ),
-    .LOGQH(LOGQH),
-    .FF_IN(FF_IN),
-    .FF_MUL(FF_MUL),
-    .FF_SUM(FF_SUM),
-    .FF_SUB(FF_SUB),
-    .FF_OUT(FF_OUT),
-    .USE_CSA(USE_CSA),
-    .FF_CSA(FF_CSA),
+    .LOGQ    (LOGQ)   ,
+    .LOGQH   (LOGQH   ),
+    .FF_IN   (FF_IN   ),
+    .FF_MUL  (FF_MUL  ),
+    .FF_SUM  (FF_SUM  ),
+    .FF_SUB  (FF_SUB  ),
+    .FF_OUT  (FF_OUT  ),
+    .USE_CSA (USE_CSA ),
+    .FF_CSA  (FF_CSA  ),
     .MORE_DSP(MORE_DSP),
-    .NON_STD(NON_STD),
-    .TP(TP)
+    .NON_STD (NON_STD ),
+    .TP      (TP      )
 ) hadamart_inst (
-    .clk(clk),
-    .rst(rst),
+    .clk   (clk   ),
+    .rst   (rst   ),
     .load_q(load_q),
-    .A(A),
-    .B(B),
-    .qH(qH),
-    .T(C)
+    .A     (A     ),
+    .B     (B     ),
+    .qH    (qH    ),
+    .T     (C     )
 );
 
 always #HP clk = ~clk;
@@ -113,10 +113,10 @@ initial begin
     load_q = 1'b1;
     #HP;
     
-    file_A = $fopen("/home/berenaydogan/Desktop/Project/Tiling/Relin-FPGA/test_vectors/hadamart/A.txt", "r");
-    file_B = $fopen("/home/berenaydogan/Desktop/Project/Tiling/Relin-FPGA/test_vectors/hadamart/B.txt", "r");
-    file_q = $fopen("/home/berenaydogan/Desktop/Project/Tiling/Relin-FPGA/test_vectors/hadamart/q.txt", "r");
-    file_python = $fopen("/home/berenaydogan/Desktop/Project/Tiling/Relin-FPGA/test_vectors/hadamart/expected_outputs.txt", "r");
+    file_A = $fopen("../../../../../test_vectors/hadamart/A.txt", "r");
+    file_B = $fopen("../../../../../test_vectors/hadamart/B.txt", "r");
+    file_q = $fopen("../../../../../test_vectors/hadamart/q.txt", "r");
+    file_python = $fopen("../../../../../test_vectors/hadamart/expected_outputs.txt", "r");
     
     if (file_A == 0 || file_B == 0 || file_q == 0 || file_python == 0) begin
         $display("Error: One of the files could not be opened.");
@@ -240,7 +240,6 @@ initial begin
         $finish;
     end
 
-
     if (num_sets > latency) begin
         for (current_set = done_set; current_set < num_sets ; current_set = current_set + 1) begin
             for (idx = 0; idx < TP; idx = idx + 1) begin
@@ -253,7 +252,6 @@ initial begin
             
             #FP
       
-            
             for (idx = 0; idx < TP; idx = idx + 1) begin
                 if (C[idx] == C_python[idx]) begin
                     $display("Test Passed -> Set[%0d] C[%0d] = %x", current_set, idx, C[idx]);
