@@ -113,10 +113,10 @@ initial begin
     load_q = 1'b1;
     #HP;
     
-    file_A = $fopen("../../../../../test_vectors/hadamart/A.txt", "r");
-    file_B = $fopen("../../../../../test_vectors/hadamart/B.txt", "r");
-    file_q = $fopen("../../../../../test_vectors/hadamart/q.txt", "r");
-    file_python = $fopen("../../../../../test_vectors/hadamart/expected_outputs.txt", "r");
+    file_A = $fopen("../../../test_vectors/hadamart/A.txt", "r");
+    file_B = $fopen("../../../test_vectors/hadamart/B.txt", "r");
+    file_q = $fopen("../../../test_vectors/hadamart/q.txt", "r");
+    file_python = $fopen("../../../test_vectors/hadamart/expected_outputs.txt", "r");
     
     if (file_A == 0 || file_B == 0 || file_q == 0 || file_python == 0) begin
         $display("Error: One of the files could not be opened.");

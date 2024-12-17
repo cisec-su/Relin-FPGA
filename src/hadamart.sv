@@ -15,7 +15,7 @@ module hadamart
         parameter FF_OUT   = 1 ,
         parameter USE_CSA  = 1 ,
         parameter FF_CSA   = 1 ,
-        parameter MORE_DSP = 0 ,
+        parameter MORE_DSP = 1 ,
         parameter NON_STD  = 0 ,
         parameter TP       = 32
     )
@@ -31,8 +31,8 @@ module hadamart
 
 localparam W = LOGQ - LOGQH;
 
-localparam modmul_params_t modmul_params = {W, LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
-localparam LAT = modmul_lat(modmul_params);
+localparam modmul_params_t params = {W, LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
+localparam LAT = modmul_lat(params);
 
 reg [LOGQH -1:0] qH_int;
 
