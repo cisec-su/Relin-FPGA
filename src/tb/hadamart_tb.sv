@@ -1,23 +1,3 @@
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 
-// Design Name: 
-// Module Name: hadamart_tb
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: Testbench for the hadamart module
-// 
-// Dependencies: hadamart.sv
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
 module hadamart_tb;
 
 parameter LOGQ     = 64;
@@ -113,10 +93,10 @@ initial begin
     load_q = 1'b1;
     #HP;
     
-    file_A = $fopen("../../../test_vectors/hadamart/A.txt", "r");
-    file_B = $fopen("../../../test_vectors/hadamart/B.txt", "r");
-    file_q = $fopen("../../../test_vectors/hadamart/q.txt", "r");
-    file_python = $fopen("../../../test_vectors/hadamart/expected_outputs.txt", "r");
+    file_A = $fopen("../../../../../test_vectors/hadamart/A.txt", "r");
+    file_B = $fopen("../../../../../test_vectors/hadamart/B.txt", "r");
+    file_q = $fopen("../../../../../test_vectors/hadamart/q.txt", "r");
+    file_python = $fopen("../../../../../test_vectors/hadamart/T.txt", "r");
     
     if (file_A == 0 || file_B == 0 || file_q == 0 || file_python == 0) begin
         $display("Error: One of the files could not be opened.");

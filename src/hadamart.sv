@@ -1,8 +1,9 @@
 /*
 
-    Computes C[i] = A[i] * B[i] mod q for i = 0 to TP-1
+    Computes T[i] = A[i] * B[i] mod q for i = 0 to TP-1
 
 */
+`include "modmul_wlm.svh"
 
 module hadamart
     #(
@@ -31,8 +32,8 @@ module hadamart
 
 localparam W = LOGQ - LOGQH;
 
-localparam modmul_params_t params = {W, LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
-localparam LAT = modmul_lat(params);
+localparam modmul_wlm_params_t params = {W, LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
+localparam LAT = modmul_wlm_lat(params);
 
 reg [LOGQH -1:0] qH_int;
 
@@ -46,7 +47,7 @@ always @(posedge clk) begin
 end
     
 for (genvar i = 0; i < TP; i++) begin
-    modmul #(
+    modmul_wlm #(
         .LOGQ    (LOGQ    ),
         .LOGQH   (LOGQH   ),
         .CORRECT (1       ),
