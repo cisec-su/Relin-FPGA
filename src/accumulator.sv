@@ -1,6 +1,6 @@
 module accumulator #(
     parameter WIDTH = 64,  // Word size
-    parameter TP    = 32,  // Coefficient throughput
+    parameter TP    = 32,   // Coefficient throughput
     parameter K     = 4,   // Number of internal accumulators 
     parameter LOGK  = 2    // log2(K)
 ) (
@@ -21,12 +21,19 @@ module accumulator #(
     genvar i; 
     generate // Instantiate the modular adders for each coefficient
         for (i = 0; i < TP; i = i + 1) begin
-            parametric_modadd #(
-                .WIDTH(WIDTH)
+            modadd #(
+                .LOGA(WIDTH),
+                .LOGB(WIDTH),
+                .LOGQ(WIDTH),
+                .LOGQH(WIDTH),
+                .FF_IN(1),
+                .FF_ADD(1),
+                .FF_OUT(1)
             ) mod_adder_inst (
+                .clk(clk),
                 .A(acc[id][i]),         // Current accumulated value
                 .B(A[i*WIDTH+:WIDTH]),  // Coefficient from unpacked array
-                .q(current_q),          // Modulus value
+                .qH(current_q),          // Modulus value
                 .C(mod_add_result[i])   // Modular addition result
             );
         end
