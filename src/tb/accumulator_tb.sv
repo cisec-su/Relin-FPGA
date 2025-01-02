@@ -3,10 +3,9 @@
 module accumulator_tb;
 
     // Parameters
-    parameter WIDTH = 64; // Word size
-    parameter TP = 32;    // Coefficient throughput
-    parameter K = 4;      // Number of internal accumulators 
-    parameter LOGK = 2;   // log2(K)
+    parameter LOGQ  = 64;   // Word size
+    parameter TP    = 32;   // Coefficient throughput
+    parameter LOGK  = 2;    // log2(K)
 
     // Testbench signals
     reg                   clk;
@@ -14,19 +13,25 @@ module accumulator_tb;
     reg                   en;
     reg                   load_q;
     reg  [LOGK-1:0]       id;
-    reg  [TP*WIDTH-1:0]   A;
-    reg  [WIDTH-1:0]      q;
-    wire [TP*WIDTH-1:0]   C;
+    reg  [LOGQ-1:0]   A[TP-1:0];
+    reg  [LOGQ-1:0]      qH;
+    wire [LOGQ-1:0]   C[TP-1:0];
+
+    integer clk_ctr;
 
     // DUT instantiation
-    accumulator #(.WIDTH(WIDTH), .TP(TP)) dut (
+    accumulator #(
+        .LOGQ(LOGQ), 
+        .TP(TP),
+        .LOGK(LOGK))
+    dut (
         .clk(clk),
         .rst(rst),
         .en(en),
         .load_q(load_q),
         .id(id),
         .A(A),
-        .q(q),
+        .qH(qH),
         .C(C)
     );
 
@@ -52,15 +57,14 @@ module accumulator_tb;
             en      = 0;   // Disable accumulation
             load_q  = 0;   // Load_q is initially deasserted
             id      = 0;   // Index of Accumulator
-            q       = 0;   // Modulus value initialized to 0
-            A       = 0;   // Input coefficients initialized to 0
+            qH       = 0;   // Modulus value initialized to 0
         end
     endtask
 
-    task set_coefficients(input [WIDTH-1:0] base_value);
+    task set_coefficients(input [LOGQ-1:0] base_value);
         begin
             for (i = 0; i < TP; i = i + 1) begin
-                A[i*WIDTH +: WIDTH] = base_value; // coefficients
+                A[i] = base_value; // coefficients
             end
         end
     endtask
@@ -68,19 +72,36 @@ module accumulator_tb;
     task print_accumulators;
         begin
             for (i = 0; i < TP; i = i + 1) begin
-                $display("C[%0d] = %h", i, C[i*WIDTH +: WIDTH]);
+                $display("C[%0d] = %h", i, C[i*LOGQ +: LOGQ]);
             end
         end
     endtask
     
+    // Reset and clock counter logic
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            clk_ctr <= 0;  // Reset the clock counter
+        end else begin
+            clk_ctr <= clk_ctr + 1;  // Increment on every clock edge
+        end
+    end
+
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            id = 0;
+        end else if (en) begin
+            id = (id + 1) % (1<<LOGK);
+        end
+    end
 
     // Testbench logic
     initial begin
-        
+        set_coefficients(0);
         initialize_inputs; // Initialize inputs
         wait(rst==0);
         
-        q = 64'h0000_0000_0100; // Example modulus
+        qH = 64'h0000_0000_0100; // Example modulus
         repeat(1) @(posedge clk); 
 
         en = 1;
@@ -89,13 +110,20 @@ module accumulator_tb;
         load_q = 0; // Deassert load_q 
 
         // Set coefficients for accumulation
-        set_coefficients(100);
+        set_coefficients(1);
         repeat(1) @(posedge clk); // Wait one clock cycle
-        en = 0;
-        repeat(5) @(posedge clk); // Wait one clock cycle
-        en = 1;
+        en = 1; repeat(10) @(posedge clk);
+        en = 1; repeat(500) @(posedge clk);
+        en = 0; repeat(5) @(posedge clk);
+        en = 1; repeat(5) @(posedge clk);
+        en = 0; repeat(5) @(posedge clk);
+        en = 1; repeat(5) @(posedge clk);
+        en = 0; repeat(5) @(posedge clk);
+        en = 1; repeat(5) @(posedge clk);
+ 
+ 
         // Enable accumulation and process coefficients
-        repeat(5) @(posedge clk); // Wait one clock cycle
+        repeat(100) @(posedge clk); // Wait one clock cycle
 
         // Print accumulated values
         $display("Accumulated values:");
@@ -109,7 +137,7 @@ module accumulator_tb;
         print_accumulators();
 
         ////////////////////////////////////////////////////////////////
-        id = 1;   // Index of Accumulator
+        //id = 1;   // Index of Accumulator
         en = 0;
         set_coefficients(2);
         repeat(1) @(posedge clk); // Wait one clock cycle
@@ -119,7 +147,7 @@ module accumulator_tb;
         repeat(5) @(posedge clk); // Wait one clock cycle
         en = 0;
         ////////////////////////////////////////////////////////////////
-        id = 2;   // Index of Accumulator
+        //id = 2;   // Index of Accumulator
         en = 0;
         set_coefficients(3);
         repeat(1) @(posedge clk); // Wait one clock cycle
@@ -129,7 +157,7 @@ module accumulator_tb;
         repeat(5) @(posedge clk); // Wait one clock cycle
         en = 0;
         ////////////////////////////////////////////////////////////////
-        id = 1;   // Index of Accumulator
+        //id = 1;   // Index of Accumulator
         en = 0;
         set_coefficients(1);
         repeat(1) @(posedge clk); // Wait one clock cycle
@@ -139,7 +167,7 @@ module accumulator_tb;
         repeat(5) @(posedge clk); // Wait one clock cycle   
         en = 0;
         ////////////////////////////////////////////////////////////////
-        id = 3;   // Index of Accumulator
+        //id = 3;   // Index of Accumulator
         en = 0;
         set_coefficients(50);
         repeat(1) @(posedge clk); // Wait one clock cycle
