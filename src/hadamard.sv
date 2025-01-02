@@ -5,7 +5,7 @@
 */
 `include "modmul_wlm.svh"
 
-module hadamart
+module hadamard
     #(
         parameter LOGQ     = 32,
         parameter LOGQH    = 15,
@@ -21,12 +21,14 @@ module hadamart
         parameter TP       = 32
     )
     (
-        input               clk     ,
-        input               rst     ,
-        input               load_q  ,
+        input               clk         ,
+        input               rst         ,
+        input               load_q      ,
+        input               i_valid     ,
         input  [LOGQ  -1:0] A   [TP-1:0],
         input  [LOGQ  -1:0] B   [TP-1:0],
-        input  [LOGQH -1:0] qH      ,
+        input  [LOGQH -1:0] qH          ,
+        output              o_valid     ,
         output [LOGQ - 1:0] T   [TP-1:0]
     );
 
