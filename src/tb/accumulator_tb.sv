@@ -7,7 +7,7 @@ parameter LOGK      = 4;   // log2(K), determines the size of the accumulator ar
 parameter LOGQ      = 64;  // Word size for coefficients and intermediate values
 parameter LOGQH     = 47;  // Modulus size for modular arithmetic
 parameter FF_ADD    = 1;   // Number of flip-flops in the addition pipeline
-parameter TP        = 4;   // Number of coefficients processed in parallel
+parameter TP        = 10;   // Number of coefficients processed in parallel 
 
 // Testbench signals
 reg             clk;              // Clock signal
@@ -48,15 +48,15 @@ accumulator #(
 
 // Clock generation
 initial begin
-    clk = 1;                      // Initialize clock signal
-    forever #5 clk = ~clk;        // Generate a clock with 10 ns period
+    clk <= 1;                      // Initialize clock signal
+    forever #5 clk <= ~clk;        // Generate a clock with 10 ns period
 end
 
 // Reset logic
 initial begin
-    rst = 1;                      // Assert reset signal
+    rst <= 1;                      // Assert reset signal
     repeat (10) @(posedge clk);   // Hold reset for 10 clock cycles
-    rst = 0;                      // Deassert reset signal
+    rst <= 0;                      // Deassert reset signal
 end
 
 // Clock cycle counter
@@ -71,10 +71,10 @@ end
 // Task to initialize inputs
 task initialize_inputs;
     begin
-        ren = 0;                  // Disable read enable
-        wen = 0;                  // Disable write enable
-        load_q = 0;               // Disable load modulus signal
-        qH = 0;                   // Initialize modulus to 0
+        ren <= 0;                  // Disable read enable
+        wen <= 0;                  // Disable write enable
+        load_q <= 0;               // Disable load modulus signal
+        qH <= 0;                   // Initialize modulus to 0
     end
 endtask
 
@@ -83,7 +83,7 @@ task set_coefficients(input [LOGQ-1:0] base_value);
     int random_in_range;          // Local variable for random values
     begin
         for (integer i = 0; i < TP; i = i + 1) begin
-            A[i] = (base_value + i); // Set coefficients sequentially
+            A[i] <= (base_value + i); // Set coefficients sequentially
         end
     end
 endtask
@@ -92,9 +92,9 @@ endtask
 task assert_ren;
     begin
         @(posedge clk);
-        ren = 1;                  // Assert read enable
+        ren <= 1;                  // Assert read enable
         @(posedge clk);
-        ren = 0;                  // Deassert read enable
+        ren <= 0;                  // Deassert read enable
         wait(done);               // Wait until done signal is asserted
         @(posedge clk);           // Wait for one more clock cycle
     end
@@ -130,10 +130,10 @@ endtask
 // Task to load modulus value
 task t_load_q(input logic [LOGQH-1:0] qH_in);
     begin
-        load_q = 1;               // Assert load modulus signal
+        load_q <= 1;               // Assert load modulus signal
         qH <= qH_in;              // Set modulus value
         @(posedge clk);
-        load_q = 0;               // Deassert load modulus signal
+        load_q <= 0;               // Deassert load modulus signal
     end
 endtask
 
@@ -146,19 +146,20 @@ initial begin
 
     // Load modulus value
     t_load_q(255);
+    t_load_q(255);
 
     // Wait for one clock cycle
     @(posedge clk);
 
     // Perform write operations with coefficients
-    assert_wen(3000);
-    assert_wen(300);
+    assert_wen(10);
+    assert_wen(100);
 
     // Perform read operations
     assert_ren();
     assert_ren();
-    assert_wen(3000);
-    assert_wen(300);
+    assert_wen(1000);
+    assert_wen(100);
     assert_ren();
     assert_ren();
 
@@ -166,4 +167,3 @@ initial begin
 end
 
 endmodule
-
