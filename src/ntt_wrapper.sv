@@ -25,7 +25,7 @@ module ntt_wrapper
         input              load_q             ,
         input              load_psi           ,
         input              intt               ,
-        input  [LOGQH-1:0] q                  ,
+        input  [LOGQH-1:0] qH                 ,
         input              i_valid            ,
         input  [LOGQ -1:0] i_poly     [0:TP-1],
         input  [LOGQ -1:0] psi        [0:TP-1],
@@ -34,16 +34,18 @@ module ntt_wrapper
     );
 
 localparam TP  = 1 << LOGTP;
-localparam LAT = 8000; // todo
+localparam LAT = 6000; // todo
 
 
 shift_reg #(
     .LAT   (LAT),
-    .WIDTH (1)
+    .WIDTH (1),
+    .RST_EN(1)
 )
 o_valid_shift_reg
 (
     .clk    (clk),
+    .rst    (rst),
     .i_data (i_valid),
     .o_data (o_valid)
 );

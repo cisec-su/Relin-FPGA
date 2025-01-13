@@ -34,6 +34,7 @@ shift_reg #(
 o_valid_shift_reg
 (
     .clk    (clk),
+    .rst    (rst),
     .i_data (i_valid),
     .o_data (o_valid)
 );

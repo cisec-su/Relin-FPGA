@@ -1,5 +1,5 @@
 module relin_fifo
-    #(   
+   #(   
         parameter K     = 1 ,
         parameter TP    = 32,
         parameter LOGQ  = 1
@@ -34,7 +34,7 @@ always @(posedge clk) begin
         ctr_o <= 0;
     end
     else begin
-        if (wen) begin
+        if (wen | (ctr_i != 0)) begin
             if (ctr_i == K-1) begin
                 ctr_i <= 0;
             end
@@ -42,7 +42,7 @@ always @(posedge clk) begin
                 ctr_i <= ctr_i + 1;
             end
         end
-        if (ren) begin
+        if (ren | (ctr_o != 0)) begin
             if (ctr_o == K-1) begin
                 ctr_o <= 0;
             end
