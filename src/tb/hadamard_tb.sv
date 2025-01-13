@@ -1,4 +1,4 @@
-module hadamart_tb;
+module hadamard_tb;
 
 parameter LOGQ     = 64;
 parameter LOGQH    = 48;
@@ -26,7 +26,7 @@ wire [LOGQ - 1:0] C  [TP-1:0];
 localparam HP = 5;   
 localparam FP = 2 * HP; 
 
-hadamart #(
+hadamard #(
     .LOGQ    (LOGQ)   ,
     .LOGQH   (LOGQH   ),
     .FF_IN   (FF_IN   ),
@@ -39,7 +39,7 @@ hadamart #(
     .MORE_DSP(MORE_DSP),
     .NON_STD (NON_STD ),
     .TP      (TP      )
-) hadamart_inst (
+) hadamard_inst (
     .clk   (clk   ),
     .rst   (rst   ),
     .load_q(load_q),
@@ -67,7 +67,7 @@ integer result_mismatch = 0;
 integer num_sets = 0;
 integer num_elements_C = 0;
 integer done_set = 0;
-integer latency = hadamart_inst.LAT;
+integer latency = hadamard_inst.LAT;
 
 function integer count_lines;
     input integer file;
@@ -93,10 +93,10 @@ initial begin
     load_q = 1'b1;
     #HP;
     
-    file_A = $fopen("../../../../../test_vectors/hadamart/A.txt", "r");
-    file_B = $fopen("../../../../../test_vectors/hadamart/B.txt", "r");
-    file_q = $fopen("../../../../../test_vectors/hadamart/q.txt", "r");
-    file_python = $fopen("../../../../../test_vectors/hadamart/T.txt", "r");
+    file_A = $fopen("../../../../../test_vectors/hadamard/A.txt", "r");
+    file_B = $fopen("../../../../../test_vectors/hadamard/B.txt", "r");
+    file_q = $fopen("../../../../../test_vectors/hadamard/q.txt", "r");
+    file_python = $fopen("../../../../../test_vectors/hadamard/T.txt", "r");
     
     if (file_A == 0 || file_B == 0 || file_q == 0 || file_python == 0) begin
         $display("Error: One of the files could not be opened.");

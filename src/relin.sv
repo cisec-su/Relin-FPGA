@@ -7,73 +7,46 @@ module relin
         parameter LOGQH    = 64  ,
         parameter LOGN     = 16  ,
         parameter LOGTP    = 5  , // polyicient throughput
-        parameter NT       = 1024 // Number of twiddles that must be loaded
+        parameter NUMPSI   = 1 << LOGN // Number of twiddles that must be loaded
     )
     (
         input              clk   ,
         input              rst   ,
         input              start ,
-        output reg         done  ,
+        output             done  ,
         relin_t.master     relin_t
     );
 
 
 localparam LOGL = $rtoi($ceil($clog2(L)));
 localparam TP = 1 << LOGTP;
+localparam CU1_CU2_LAT = 4;
+localparam CU1_CU4_LAT = 2;
+localparam CU2_CU3_LAT = 2;
+localparam CU1_CU3_LAT = 6;
+localparam NTT_ACC_LAT   = 2;
 
-typedef enum reg[10:0] {
-    ST_IDLE                      = 11'b00000000001,
-    ST_LOAD_Q                    = 11'b00000000010,
-    ST_LOAD_PSI_START_READ       = 11'b00000000100,
-    ST_LOAD_PSI_READ_UNTIL_DONE  = 11'b00000001000,
-    ST_NTT_HP_ACC                = 11'b00000010000,
-    ST_LOAD_IPSI_START_READ      = 11'b00000100000,
-    ST_LOAD_IPSI_READ_UNTIL_DONE = 11'b00001000000,
-    ST_INTT_0_START              = 11'b00010000000,
-    ST_INTT_FN                   = 11'b00100000000,
-    ST_WAIT_WRITE                = 11'b01000000000
-} t_state;
 
-(* fsm_encoding = "none" *) t_state state;
-t_state next_state;
 
-reg [LOGL-1:0] ctr_poly;
-reg ctr_poly_inc;
-reg ctr_poly_rst;
 
-reg [LOGL-1:0] ctr_rlk;
-reg ctr_rlk_inc;
-reg ctr_rlk_rst;
-
-reg [LOGL-1:0] ctr_acc;
-reg ctr_acc_inc;
-reg ctr_acc_rst;
-
-reg [LOGL-1:0] ctr_L; // counter for L
-reg ctr_L_inc;
-reg ctr_L_rst;
-
-wire [LOGQH-1:0] qH;
+wire [LOGQH-1:0] qH, qH_d1, qH_d2, qH_d3;
 // fsm <-> ntt, hadamard, accumulator, final_op
-reg  load_q;
+wire load_q, load_q_d1, load_q_d2, load_q_d3;
 // mem <-> fsm
 reg i_psi_en, i_psi_inv;
 wire i_psi_ready, i_psi_valid, i_psi_done;
-reg [LOGL-1:0] i_psi_id;
+wire [LOGL-1:0] i_psi_id;
 reg i_poly_en;
 wire i_poly_ready, i_poly_valid, i_poly_done;
-reg [LOGL-1:0] i_poly_id;
-reg i_rlk0_en;
-wire i_rlk0_ready, i_rlk0_valid, i_rlk0_done;
-reg [LOGL-1:0] i_rlk0_id;
-reg i_rlk1_en;
-wire i_rlk1_ready, i_rlk1_valid, i_rlk1_done;
-reg [LOGL-1:0] i_rlk1_id;
-reg o_poly_en;
-wire o_poly_ready, o_poly_done;
-reg  [LOGL-1:0] o_poly_id;
+wire [LOGL-1:0] i_poly_id;
+wire i_rlk0_en, i_rlk0_ready, i_rlk0_valid, i_rlk0_done;
+wire [LOGL-1:0] i_rlk0_id;
+wire [LOGL-1:0] i_rlk1_id;
+wire i_rlk1_en, i_rlk1_ready, i_rlk1_valid, i_rlk1_done;
+wire o_poly_en, o_poly_ready, o_poly_done;
+wire [LOGL-1:0] o_poly_id;
 // mem -> ntt
-wire [LOGQ-1:0] i_psi_poly [0:TP-1];
+wire [LOGQ-1:0] i_psi_data [0:TP-1];
 wire [LOGQ-1:0] i_poly_data [0:TP-1];
 // mem -> hadamard
 wire [LOGQ-1:0] i_rlk0_data [0:TP-1];
@@ -81,18 +54,20 @@ wire [LOGQ-1:0] i_rlk1_data [0:TP-1];
 // mem <- final_op
 wire [LOGQ-1:0] o_poly_data [0:TP-1];
 // ntt control path
-reg intt, load_psi, ntt_i_valid;
+wire load_psi;
+reg intt;
+wire ntt_i_valid;
 wire ntt_o_valid;
 // ntt data path
 wire [LOGQ-1:0] ntt_i_poly [TP-1:0];
 wire [LOGQ-1:0] ntt_o_poly [TP-1:0];
 // fifo control path
-reg fifo_ren, fifo_wen;
+wire fifo_ren, fifo_wen;
 // fifo data path
 wire [LOGQ-1:0] fifo_i_data [TP-1:0];
 wire [LOGQ-1:0] fifo_o_data [TP-1:0];
 // hadamard control path
-reg had_0_i_valid, had_1_i_valid;
+wire had_0_i_valid, had_1_i_valid;
 wire had_0_o_valid, had_1_o_valid;
 // hadamard data path
 wire [LOGQ-1:0] had_0_i_poly_A [TP-1:0];
@@ -102,20 +77,27 @@ wire [LOGQ-1:0] had_1_i_poly_B [TP-1:0];
 wire [LOGQ-1:0] had_0_o_poly   [TP-1:0];
 wire [LOGQ-1:0] had_1_o_poly   [TP-1:0];
 // accumulator control path
-reg acc_sel, acc_0_ren, acc_0_wen, acc_0_rst, acc_1_ren, acc_1_wen, acc_1_rst;
-wire acc_0_o_valid, acc_1_o_valid, acc_0_done, acc_1_done;
+wire acc_0_wen, acc_1_wen;
+reg acc_sel, acc_sel_d, acc_0_ren;
+wire acc_1_ren, acc_0_o_valid, acc_1_o_valid, acc_0_done, acc_1_done;
+wire acc_0_o_valid_d, acc_1_o_valid_d;
 // accumulator data path
 wire [LOGQ-1:0] acc_0_i_poly [TP-1:0];
 wire [LOGQ-1:0] acc_1_i_poly [TP-1:0];
 wire [LOGQ-1:0] acc_0_o_poly [TP-1:0];
 wire [LOGQ-1:0] acc_1_o_poly [TP-1:0];
+wire [LOGQ-1:0] acc_0_o_poly_d [TP-1:0];
+wire [LOGQ-1:0] acc_1_o_poly_d [TP-1:0];
 // final op control path
-reg fn_i_valid;
+wire fn_i_valid;
 wire fn_o_valid;
+wire fn_rst;
 // final op data path
 wire [LOGQ-1:0] fn_i_poly [TP-1:0];
 wire [LOGQ-1:0] fn_o_poly [TP-1:0];
-
+// fsm1 inputs
+wire load_intt, load_intt_d1, load_intt_d2;
+wire feed_intt, feed_intt_d1;
 
 
 q_mux #(
@@ -133,6 +115,7 @@ q_mux #(
 relin_mem #(
     .LOGQ(LOGQ),
     .LOGL(LOGL),
+    .LOGN(LOGN),
     .TP(TP)
 ) relin_mem_inst (
     .clk(clk),
@@ -142,7 +125,7 @@ relin_mem #(
     .i_psi_valid(i_psi_valid),
     .i_psi_done(i_psi_done),
     .i_psi_id(i_psi_id),
-    .i_psi_poly(i_psi_poly),
+    .i_psi_data(i_psi_data),
     .i_poly_en(i_poly_en),
     .i_poly_ready(i_poly_ready),
     .i_poly_valid(i_poly_valid),
@@ -170,6 +153,28 @@ relin_mem #(
 );
 
 
+relin_cu_1 #(
+    .L(L)
+) relin_cu_1_inst (
+    .clk(clk),
+    .rst(rst),
+    .start(start),
+    .load_ntt(done_base),
+    .load_intt(load_intt_d1),
+    .i_psi_ready(i_psi_ready),
+    .i_psi_done(i_psi_done),
+    .i_poly_ready(i_poly_ready),
+    .i_poly_done(i_poly_done),
+    .i_psi_en(i_psi_en),
+    .i_psi_inv(i_psi_inv),
+    .i_poly_en(i_poly_en),
+    .intt(intt),
+    .load_q(load_q),
+    .feed_intt(feed_intt),
+    .busy()
+);
+
+
 ntt_wrapper #(
     .LOGQ (LOGQ ),
     .LOGQH(LOGQH),
@@ -179,14 +184,29 @@ ntt_wrapper #(
     .clk     (clk        ),
     .rst     (rst        ),
     .load_q  (load_q     ),
-    .load_psi(load_psi   ),
+    .load_psi(i_psi_valid),
     .qH      (qH         ),
     .intt    (intt       ),
     .i_valid (ntt_i_valid),
-    .i_poly (ntt_i_poly),
-    .psi     (i_psi_poly ),
-    .o_poly (ntt_o_poly),
+    .i_poly  (ntt_i_poly),
+    .psi     (i_psi_data ),
+    .o_poly  (ntt_o_poly),
     .o_valid (ntt_o_valid)
+);
+
+
+relin_cu_3 #(
+    .L(L)
+) relin_cu_3_inst (
+    .clk(clk),
+    .rst(rst),
+    .start(load_q_d1),
+    .i_rlk0_ready(i_rlk0_ready),
+    .i_rlk1_ready(i_rlk1_ready),
+    .ntt_o_valid(ntt_o_valid),
+    .i_rlk0_en(i_rlk0_en),
+    .i_rlk1_en(i_rlk1_en),
+    .i_rlk0_id(i_rlk0_id)
 );
 
 
@@ -210,8 +230,8 @@ hadamard #(
 ) hadamard_inst_0 (
     .clk(clk),
     .rst(rst),
-    .qH(qH),
-    .load_q(load_q),
+    .qH(qH_d1),
+    .load_q(load_q_d1),
     .i_valid(had_0_i_valid),
     .o_valid(had_0_o_valid),
     .A(had_0_i_poly_A),
@@ -227,8 +247,8 @@ hadamard #(
 ) hadamard_inst_1 (
     .clk(clk),
     .rst(rst),
-    .qH(qH),
-    .load_q(load_q),
+    .qH(qH_d1),
+    .load_q(load_q_d1),
     .i_valid(had_1_i_valid),
     .o_valid(had_1_o_valid),
     .A(had_1_i_poly_A),
@@ -244,13 +264,12 @@ accumulator #(
     .TP   (TP        )
 ) accumulator_inst_0 (
     .clk(clk),
-    .rst(rst | acc_0_rst),
+    .rst(rst | acc_rst),
     .ren(acc_0_ren),
-    .wen(acc_0_wen),
+    .wen(had_0_o_valid),
     .done(acc_0_done),
-    .load_q(load_q),
-    // .id(acc_0_id),
-    .qH(qH),
+    .load_q(load_q_d2),
+    .qH(qH_d2),
     .A(acc_0_i_poly),
     .o_valid(acc_0_o_valid),
     .C(acc_0_o_poly)
@@ -264,18 +283,30 @@ accumulator #(
     .TP   (TP        )
 ) accumulator_inst_1 (
     .clk(clk),
-    .rst(rst | acc_1_rst),
+    .rst(rst | acc_rst),
     .ren(acc_1_ren),
-    .wen(acc_1_wen),
+    .wen(had_1_o_valid),
     .done(acc_1_done),
-    .load_q(load_q),
-    // .id(acc_1_id),
-    .qH(qH),
+    .load_q(load_q_d2),
+    .qH(qH_d2),
     .A(acc_1_i_poly),
     .o_valid(acc_1_o_valid),
     .C(acc_1_o_poly)
 );
 
+
+relin_cu_2 #(
+    .L(L)
+) relin_cu_2_inst (
+    .clk        (clk        ),
+    .rst        (rst        ),
+    .acc_0_done (acc_0_done ),
+    .acc_1_done (acc_1_done ),
+    .acc_0_ren  (acc_0_ren  ),
+    .acc_1_ren  (acc_1_ren  ),
+    .feed_intt  (feed_intt_d1),
+    .load_intt  (load_intt  )
+);
 
 final_op #(
     .LOGQ(LOGQ),
@@ -284,9 +315,9 @@ final_op #(
     .TP(TP)
 ) final_op_inst (
     .clk(clk),
-    .rst(rst),
-    .load_q(load_q),
-    .qH(qH),
+    .rst(rst | fn_rst),
+    .load_q(load_q_d3),
+    .qH(qH_d3),
     .i_valid(fn_i_valid),
     .A(fn_i_poly),
     .B(      ),
@@ -295,227 +326,228 @@ final_op #(
 );
 
 
-always @(posedge clk) begin
-    if (rst) begin
-        ctr_L <= 0;
-    end
-    else if (ctr_L_inc) begin
-        ctr_L <= ctr_L + 1;
-    end
-    else if (ctr_L_rst) begin
-        ctr_L <= 0;
-    end
-end
+relin_cu_4 #(
+    .L(L)
+) relin_cu_4_inst (
+    .clk(clk),
+    .rst(rst),
+    .start(load_intt_d2),
+    .o_poly_done(o_poly_done),
+    .fn_o_valid(fn_o_valid),
+    .o_poly_ready(o_poly_ready),
+    .o_poly_id(o_poly_id),
+    .o_poly_en(o_poly_en),
+    .done_base(done_base),
+    .done_all(done)
+);
 
 
-always @(posedge clk) begin
-    if (rst) begin
-        ctr_poly <= 0;
-    end
-    else if (ctr_poly_inc) begin
-        ctr_poly <= ctr_poly + 1;
-    end
-    else if (ctr_poly_rst) begin
-        ctr_poly <= 0;
-    end
-end
+
+for (genvar i = 0; i < TP; i = i + 1) begin
+    shift_reg #(
+        .LAT   (NTT_ACC_LAT),
+        .WIDTH (LOGQ)
+    )
+    acc_d_shift_reg_0
+    (
+        .clk    (clk),
+        .rst    (rst),
+        .i_data (acc_0_o_poly[i]),
+        .o_data (acc_0_o_poly_d[i])
+    );
+
+    shift_reg #(
+        .LAT   (NTT_ACC_LAT),
+        .WIDTH (LOGQ)
+    )
+    acc_d_shift_reg_1
+    (
+        .clk    (clk),
+        .rst    (rst),
+        .i_data (acc_1_o_poly[i]),
+        .o_data (acc_1_o_poly_d[i])
+    );
+end    
+
+shift_reg #(
+    .LAT   (CU1_CU2_LAT),
+    .WIDTH (1)
+)
+acc_c_shift_reg_0
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (acc_0_o_valid),
+    .o_data (acc_0_o_valid_d)
+);
+
+shift_reg #(
+    .LAT   (CU1_CU2_LAT),
+    .WIDTH (1)
+)
+acc_c_shift_reg_1
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (acc_1_o_valid),
+    .o_data (acc_1_o_valid_d)
+);
+
+shift_reg #(
+    .LAT   (CU1_CU2_LAT),
+    .WIDTH (1)
+)
+load_intt_shift_reg_1
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (load_intt),
+    .o_data (load_intt_d1)
+);
+
+shift_reg #(
+    .LAT   (CU2_CU3_LAT),
+    .WIDTH (1)
+)
+load_intt_shift_reg_2
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (load_intt),
+    .o_data (load_intt_d2)
+);
 
 
-always @(posedge clk) begin
-    if (rst) begin
-        ctr_rlk <= 0;
-    end
-    else if (ctr_rlk_inc) begin
-        ctr_rlk <= ctr_rlk + 1;
-    end
-    else if (ctr_rlk_rst) begin
-        ctr_rlk <= 0;
-    end
-end
+shift_reg #(
+    .LAT   (CU1_CU2_LAT),
+    .WIDTH (1)
+)
+feed_intt_shift_reg_1
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (feed_intt),
+    .o_data (feed_intt_d1)
+);
 
 
-always @(posedge clk) begin
-    if (rst) begin
-        ctr_acc <= 0;
-    end
-    else if (ctr_acc_inc) begin
-        ctr_acc <= ctr_acc + 1;
-    end
-    else if (ctr_acc_rst) begin
-        ctr_acc <= 0;
-    end
-end
+shift_reg #(
+    .LAT   (CU1_CU4_LAT),
+    .WIDTH (1)
+)
+load_q_shift_reg_1
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (load_q),
+    .o_data (load_q_d1)
+);
+
+shift_reg #(
+    .LAT   (CU1_CU4_LAT),
+    .WIDTH (LOGQH)
+)
+qH_shift_reg_1
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (qH),
+    .o_data (qH_d1)
+);
+
+shift_reg #(
+    .LAT   (CU1_CU2_LAT),
+    .WIDTH (1)
+)
+load_q_shift_reg_2
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (load_q),
+    .o_data (load_q_d2)
+);
+
+shift_reg #(
+    .LAT   (CU1_CU2_LAT),
+    .WIDTH (LOGQH)
+)
+qH_shift_reg_2
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (qH),
+    .o_data (qH_d2)
+);
+
+shift_reg #(
+    .LAT   (CU1_CU3_LAT),
+    .WIDTH (1)
+)
+load_q_shift_reg_3
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (load_q),
+    .o_data (load_q_d3)
+);
+
+shift_reg #(
+    .LAT   (CU1_CU3_LAT),
+    .WIDTH (LOGQH)
+)
+qH_shift_reg_3
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (qH),
+    .o_data (qH_d3)
+);
+
+shift_reg #(
+    .LAT   (CU2_CU3_LAT),
+    .WIDTH (1)
+)
+i_psi_valid_shift_reg
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (done_base),
+    .o_data (acc_rst)
+);
 
 
-always @(posedge clk) begin
-    if (rst) begin
-        state <= ST_IDLE;
-    end
-    else begin
-        state <= next_state;
-    end
-end
-
-
+// data path connections
 generate
     for (genvar i = 0; i < TP; i = i + 1) begin
-        assign ntt_i_poly    [i] = (intt)? ((acc_sel) ? acc_0_o_poly[TP] : acc_1_o_poly[TP]) : i_poly_data[i];
-        assign fifo_i_data   [i] = ntt_o_poly    [i];
-        assign had_0_i_poly_A[i] = fifo_o_data   [i];
-        assign had_1_i_poly_A[i] = fifo_o_data   [i];
-        assign had_0_i_poly_B[i] = i_rlk0_data   [i];
-        assign had_1_i_poly_B[i] = i_rlk1_data   [i];
-        assign acc_0_i_poly  [i] = had_0_o_poly  [i];
-        assign acc_1_i_poly  [i] = had_1_o_poly  [i];
-        assign fn_i_poly     [i] = ntt_o_poly    [i];
-        assign o_poly_data   [i] = fn_o_poly     [i];
+        assign ntt_i_poly     [i] = (intt)? ((acc_0_o_valid_d) ? acc_0_o_poly_d[TP] : acc_1_o_poly_d[TP]) : i_poly_data[i];
+        assign fifo_i_data    [i] = ntt_o_poly    [i];
+        assign had_0_i_poly_A [i] = fifo_o_data   [i];
+        assign had_1_i_poly_A [i] = fifo_o_data   [i];
+        assign had_0_i_poly_B [i] = i_rlk0_data   [i];
+        assign had_1_i_poly_B [i] = i_rlk1_data   [i];
+        assign acc_0_i_poly   [i] = had_0_o_poly  [i];
+        assign acc_1_i_poly   [i] = had_1_o_poly  [i];
+        assign fn_i_poly      [i] = ntt_o_poly    [i];
+        assign o_poly_data    [i] = fn_o_poly     [i];
     end
 endgenerate
 
 
+// control path connections
+assign ntt_i_valid = i_poly_valid | acc_0_o_valid_d | acc_1_o_valid_d;
 
+assign fifo_wen = ntt_o_valid;
+assign fifo_ren = i_rlk0_valid;
 
-always @(*) begin
+assign had_0_i_valid = i_rlk0_valid;
+assign had_1_i_valid = i_rlk1_valid;
 
-    next_state = state;
+assign acc_0_wen = had_0_o_valid;
+assign acc_1_wen = had_1_o_valid;
 
-    case (state)
-        ST_IDLE: begin
-            if (start)
-                next_state = ST_LOAD_Q;
-            ctr_L_rst = 1;
-            ctr_poly_rst = 1;
-            ctr_rlk_rst = 1;
-        end
-        ST_LOAD_Q: begin
-            load_q = 1;
-            next_state = ST_LOAD_PSI_START_READ;
-        end
-        ST_LOAD_PSI_START_READ: begin
-            if (i_psi_ready) begin
-                i_psi_en = 1;
-                i_psi_id = ctr_L;
-                ctr_L_inc = 1;
-                next_state = ST_LOAD_PSI_READ_UNTIL_DONE;
-            end
-        end
-        ST_LOAD_PSI_READ_UNTIL_DONE: begin
-            if (i_psi_valid) begin
-                load_psi = 1;
-            end
-            if (i_psi_done) begin
-                next_state = ST_NTT_HP_ACC;                
-            end
-        end
-        ST_NTT_HP_ACC: begin
-            if (i_poly_ready) begin
-                if (ctr_poly < L) begin
-                    i_poly_en = 1;
-                    i_poly_id = ctr_poly;
-                    ctr_poly_inc = 1;
-                end
-            end
+assign fn_rst = load_intt_d2;
+assign fn_i_valid = ntt_o_valid;
 
-            if (i_poly_valid) begin
-                ntt_i_valid = 1;
-            end
-
-            if (ntt_o_valid) begin
-                fifo_wen = 1;
-                if (i_rlk0_ready && i_rlk1_ready) begin
-                    if (ctr_rlk < L) begin
-                        i_rlk0_en = 1;
-                        i_rlk1_en = 1;
-                        i_rlk0_id = ctr_rlk;
-                        i_rlk1_id = ctr_rlk;
-                        ctr_rlk_inc = 1;
-                    end
-                end
-            end
-
-            if (i_rlk0_valid && i_rlk1_valid) begin
-                fifo_ren = 1;
-                had_0_i_valid = 1;
-                had_1_i_valid = 1;
-            end
-
-            if (had_0_o_valid) begin // assumption: had_0_o_valid and had_1_o_valid are synchronous
-                acc_0_wen = 1;
-                acc_1_wen = 1;
-            end
-
-            if (acc_0_done) begin
-                ctr_acc_inc = 1;
-                if (ctr_acc >= (L-1)) begin
-                    next_state = ST_LOAD_IPSI_START_READ;
-                end
-            end
-        end
-        ST_LOAD_IPSI_START_READ: begin
-            i_psi_inv = 1;
-            i_psi_en = 1;
-            next_state = ST_LOAD_PSI_READ_UNTIL_DONE;
-        end
-        ST_LOAD_IPSI_READ_UNTIL_DONE: begin
-            intt = 1;
-            if (i_psi_valid) begin
-                load_psi = 1;
-            end
-            if (i_psi_done) begin
-                ctr_acc_rst = 1;
-                ctr_poly_rst = 1;
-                ctr_rlk_rst = 1;
-                next_state = ST_INTT_0_START;                
-            end
-        end
-        ST_INTT_0_START: begin
-            acc_0_ren = 1;
-            next_state = ST_INTT_FN;
-        end
-        ST_INTT_FN: begin
-            if (acc_0_o_valid) begin
-                ntt_i_valid = 1;
-            end
-            if (acc_0_done) begin
-                acc_1_ren = 1;
-            end
-
-            if (acc_1_o_valid) begin
-                ntt_i_valid = 1;
-            end    
-            intt = 1;
-            if (ntt_o_valid) begin
-                fn_i_valid = 1;
-                ctr_poly_inc = 1;
-            end
-            if (fn_o_valid) begin
-                o_poly_en = 1; // todo: did bot use o_poly_ready
-                o_poly_id = (ctr_L << 1) + ctr_rlk; //todo: involve ctr_rlk
-                ctr_rlk_inc = 1;
-                if (ctr_rlk == 1) begin
-                    next_state = ST_WAIT_WRITE;
-                end
-            end
-        end
-        ST_WAIT_WRITE: begin
-            if (o_poly_done) begin
-                if (ctr_L < L) begin
-                    next_state = ST_LOAD_PSI_START_READ;
-                    acc_0_rst = 1;
-                    acc_1_rst = 1;
-                    ctr_poly_rst = 1;
-                    ctr_rlk_rst = 1;        
-                end
-                else begin
-                    next_state = ST_IDLE;
-                    done = 1;
-                end
-            end
-        end
-    endcase
-
-
-end
 
 
 endmodule
