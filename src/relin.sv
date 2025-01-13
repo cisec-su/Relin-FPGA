@@ -296,16 +296,17 @@ accumulator #(
 
 
 relin_cu_2 #(
-    .L(L)
+    .L    (L),
+    .DELAY(3) // todo: automate
 ) relin_cu_2_inst (
-    .clk        (clk        ),
-    .rst        (rst        ),
-    .acc_0_done (acc_0_done ),
-    .acc_1_done (acc_1_done ),
-    .acc_0_ren  (acc_0_ren  ),
-    .acc_1_ren  (acc_1_ren  ),
-    .feed_intt  (feed_intt_d1),
-    .load_intt  (load_intt  )
+    .clk        (clk         ),
+    .rst        (rst         ),
+    .start_read (feed_intt_d1),
+    .write_done (load_intt   )
+    .acc_0_done (acc_0_done  ),
+    .acc_1_done (acc_1_done  ),
+    .acc_0_ren  (acc_0_ren   ),
+    .acc_1_ren  (acc_1_ren   ),
 );
 
 final_op #(
