@@ -1,6 +1,6 @@
 module shift_reg_arr
     #(   
-        parameter SHIFT   = 1,
+        parameter LAT     = 1,
         parameter WIDTH   = 1,
         parameter LENGTH  = 0,
         parameter RST_EN  = 1
@@ -15,7 +15,7 @@ module shift_reg_arr
 generate
     for (genvar i = 0; i < LENGTH; i = i + 1) begin
         shift_reg #(
-            .SHIFT (SHIFT ),
+            .LAT   (LAT   ),
             .WIDTH (WIDTH ),
             .RST_EN(RST_EN)
         ) shift_reg_inst (

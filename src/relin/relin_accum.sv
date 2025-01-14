@@ -1,22 +1,24 @@
-module accumulator #(
-    parameter LOGK      = 10,   // log2(K), determines the size of the accumulator block
-    parameter LOGQ      = 64,   // Word size for coefficients
-    parameter LOGQH     = 47,   // Modulus size for modular arithmetic
-    parameter FF_ADD    = 0 ,   // Number of flip-flops in the addition pipeline
-    parameter TP        = 32    // Number of coefficients processed in parallel
-) (
-    input              clk       , // Clock signal
-    input              rst       , // Reset signal
-    input              ren       , // Read enable signal for accumulation
-    input              wen       , // Write enable signal for accumulation
-    input              load_q    , // Signal to load modulus value
-    input  [LOGQH-1:0] qH        , // Modulus value for modular arithmetic
-    output reg         o_valid   , // Indicates the first valid output cycle
-    output reg         done      , // Signals that the operation (ren or wen) is complete
-    output reg         busy      , // Indicates that the module is currently busy
-    input  [LOGQ -1:0] A [TP-1:0], // Input array of coefficients
-    output [LOGQ -1:0] C [TP-1:0]  // Output array of accumulated coefficients
-);
+module relin_accum 
+   #(
+        parameter LOGK      = 10,   // log2(K), determines the size of the accumulator block
+        parameter LOGQ      = 64,   // Word size for coefficients
+        parameter LOGQH     = 47,   // Modulus size for modular arithmetic
+        parameter FF_ADD    = 0 ,   // Number of flip-flops in the addition pipeline
+        parameter TP        = 32    // Number of coefficients processed in parallel
+    )
+    (
+        input              clk       , // Clock signal
+        input              rst       , // Reset signal
+        input              ren       , // Read enable signal for accumulation
+        input              wen       , // Write enable signal for accumulation
+        input              load_q    , // Signal to load modulus value
+        input  [LOGQH-1:0] qH        , // Modulus value for modular arithmetic
+        output reg         o_valid   , // Indicates the first valid output cycle
+        output reg         done      , // Signals that the operation (ren or wen) is complete
+        output reg         busy      , // Indicates that the module is currently busy
+        input  [LOGQ -1:0] A [TP-1:0], // Input array of coefficients
+        output [LOGQ -1:0] C [TP-1:0]  // Output array of accumulated coefficients
+    );
 
 ///////////////////////////// Parameters ////////////////////////////////
 localparam K        = (1 << LOGK);              // Total accumulation blocks based on LOGK
@@ -46,7 +48,6 @@ reg  [LOGK-1:0] read_addr;                  // Counter for read operations
 reg  [LOGK-1:0] write_addr;                 // Write address for BRAM
 reg start_read, start_write;                // Signals to start read and write operations
 
-reg  done_int;                            // Internal signal for done indication
 reg  bram_wen;                            // Write enable for BRAM
 
 state_t state, next_state;                // State machine signals
@@ -87,10 +88,9 @@ endgenerate
 // BRAM instances for each coefficient
 generate
     for (genvar i = 0; i < TP; i++) begin : BRAM_GEN
-        BRAM #(
-            .DSIZE(LOGQ),          // Data size (word size)
-            .MSIZE(K),             // Memory size
-            .DEPTH(LOGK)           // Address width
+        bram #(
+            .WIDTH (LOGQ),          // Data size (word size)
+            .LENGTH(K   )           // Memory size
         ) bram_inst (
             .clk  (clk          ),   // Clock signal
             .wen  (bram_wen     ),   // Write enable
@@ -120,25 +120,23 @@ always @(posedge clk) begin
 end
 
 
-// State machine and counters
-always @(posedge clk) begin
-    if (rst) begin
-        write_addr <= 0;
-    end
-    else if (start_write || (write_addr != 0)) begin
-        write_addr <= write_addr + 1;
-    end
-end
+counter #(
+    .WIDTH(LOGK)
+) ctr_read_inst (
+    .clk   (clk       ),
+    .rst   (rst       ),
+    .inc   (start_read),
+    .ctr   (read_addr )
+);
 
-
-always @(posedge clk) begin
-    if (rst) begin
-        read_addr <= 0;
-    end
-    else if (start_read || (read_addr != 0)) begin
-        read_addr <= read_addr + 1;
-    end
-end
+counter #(
+    .WIDTH(LOGK)
+) ctr_write_inst (
+    .clk   (clk        ),
+    .rst   (rst        ),
+    .inc   (start_write),
+    .ctr   (write_addr )
+);
 
 
 // State machine and counters
@@ -191,7 +189,7 @@ always @(*) begin
         end
         ST_WRITE_LOOP: begin
             busy = 1;
-            bram_wen    = 1;
+            bram_wen = 1;
             if (read_addr == (K - 1)) begin
                 done       = 1;
                 next_state = ST_WRITE_END;

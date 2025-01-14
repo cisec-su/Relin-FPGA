@@ -3,7 +3,7 @@
 `include "modmul_wlm.svh"
 `include "wlm.svh"
 
-module final_op
+module relin_final_op
    #(   
         parameter LOGK       = 10,
         parameter LOGQ       = 64,

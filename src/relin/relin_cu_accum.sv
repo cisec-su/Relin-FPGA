@@ -1,7 +1,8 @@
-module relin_cu_2
+module relin_cu_accum
    #(   
-        parameter L     = 30,
-        parameter DELAY = 2 // between Accumulator 1 Read Enable and Accumulator 0 Done
+        parameter L           = 30,
+        parameter REN_DELAY   = 2 , // between Accumulator 1 Read Enable and Accumulator 0 Done
+        parameter START_DELAY = 2   // for start_read
     )
     (
         input              clk         ,
@@ -15,8 +16,8 @@ module relin_cu_2
     );
 
 
-localparam LOGL = $rtoi($ceil($clog2(L)));
-localparam LOGD = $rtoi($ceil($clog2(DELAY)));
+localparam LOGL = $rtoi($ceil($clog2(L + 1)));
+localparam LOGD = $rtoi($ceil($clog2(REN_DELAY)));
 
 typedef enum reg[10:0] {
     ST_NTT                      = 11'b00000000001,
@@ -29,40 +30,52 @@ typedef enum reg[10:0] {
 (* fsm_encoding = "none" *) t_state state;
 t_state next_state;
 
+wire start_read_d;
 
-reg [LOGL-1:0] ctr;
-reg ctr_inc;
-reg ctr_rst;
 
-reg [LOGD-1:0] ctr_d;
-reg ctr_d_inc;
-reg ctr_d_rst;
+wire [LOGL-1:0] ctr;
+reg  ctr_inc;
+reg  ctr_rst;
 
-always @(posedge clk) begin
-    if (rst) begin
-        ctr <= 0;
-    end
-    else if (ctr_inc) begin
-        ctr <= ctr + 1;
-    end
-    else if (ctr_rst) begin
-        ctr <= 0;
-    end
-end
+wire [LOGD-1:0] ctr_d;
+reg  ctr_d_inc;
+reg  ctr_d_rst;
+
+
+shift_reg #(
+    .LAT   (START_DELAY),
+    .WIDTH (1)
+)
+load_intt_shift_reg_1
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (start_read  ),
+    .o_data (start_read_d)
+);
+
+
+counter #(
+    .WIDTH   (LOGL),
+    .AUTO_INC(0   )
+) ctr_inst (
+    .clk(clk),
+    .rst(rst | ctr_rst),
+    .inc(ctr_inc),
+    .ctr(ctr)
+);
 
 generate
-if (DELAY) begin
-    always @(posedge clk) begin
-        if (rst) begin
-            ctr_d <= 0;
-        end
-        else if (ctr_d_inc) begin
-            ctr_d <= ctr_d + 1;
-        end
-        else if (ctr_d_rst) begin
-            ctr_d <= 0;
-        end
-    end
+if (REN_DELAY) begin
+    counter #(
+        .WIDTH   (LOGD),
+        .AUTO_INC(0   )
+    ) ctr_inst (
+        .clk(clk),
+        .rst(rst | ctr_d_rst),
+        .inc(ctr_d_inc),
+        .ctr(ctr_d)
+    );
 end   
 endgenerate
 
@@ -83,7 +96,7 @@ always @(*) begin
     write_done = 1'b0;
     ctr_inc = 1'b0;
     ctr_rst = 1'b0;
-    if (DELAY != 0) begin
+    if (REN_DELAY != 0) begin
         ctr_d_inc = 1'b0;
         ctr_d_rst = 1'b0;
     end
@@ -96,7 +109,7 @@ always @(*) begin
                 if (ctr >= L) begin
                     next_state = ST_INTT_0;
                     ctr_rst = 1;
-                    if (DELAY != 0) begin
+                    if (REN_DELAY != 0) begin
                         ctr_d_rst = 1;
                     end
                 end
@@ -110,14 +123,14 @@ always @(*) begin
             next_state = ST_INTT_1;
         end
         ST_INTT_1: begin
-            if (start_read) begin
+            if (start_read_d) begin
                 acc_0_ren = 1;
                 next_state = ST_INTT_2;
             end
         end
         ST_INTT_2: begin
             if (acc_0_done) begin
-                if (DELAY == 0) begin
+                if (REN_DELAY == 0) begin
                     acc_1_ren = 1;
                     next_state = ST_NTT;
                 end
@@ -127,8 +140,8 @@ always @(*) begin
             end
         end
         ST_INTT_D: begin
-            if (DELAY != 0) begin
-                if (ctr_d == (DELAY - 1)) begin
+            if (REN_DELAY != 0) begin
+                if (ctr_d == (REN_DELAY - 1)) begin
                     acc_1_ren = 1;
                     next_state = ST_NTT;
                     ctr_d_rst = 1;
