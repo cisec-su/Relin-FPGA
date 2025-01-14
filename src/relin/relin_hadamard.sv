@@ -3,9 +3,7 @@
     Computes T[i] = A[i] * B[i] mod q for i = 0 to TP-1
 
 */
-`include "modmul_wlm.svh"
-
-module hadamard
+module relin_hadamard
     #(
         parameter LOGQ     = 32,
         parameter LOGQH    = 15,
@@ -31,6 +29,10 @@ module hadamard
         output              o_valid     ,
         output [LOGQ - 1:0] C   [TP-1:0]
     );
+
+`include "modmul_wlm.svh"
+
+
 
 localparam W = LOGQ - LOGQH;
 

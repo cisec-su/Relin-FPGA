@@ -5,7 +5,7 @@
 */
 
 
-module q_mux
+module relin_q_mux
    #(   
         parameter LOGL     = 30, // number of primes
         parameter LOGQ     = 64,

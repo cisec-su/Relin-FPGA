@@ -4,7 +4,7 @@
 
 */
 
-module final_op
+module relin_final_op
    #(   
         parameter LOGQ     = 64,
         parameter LOGQH    = 17,

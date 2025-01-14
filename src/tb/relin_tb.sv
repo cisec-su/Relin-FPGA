@@ -1,10 +1,10 @@
 module relin_tb
 #(   
-    parameter L        = 5  , // Number of primes
+    parameter L        = 30  , // Number of primes
     parameter LOGQ     = 64  ,
-    parameter LOGQH    = 64  ,
-    parameter LOGN     = 12  ,
-    parameter LOGTP    = 3   ,
+    parameter LOGQH    = 17  ,
+    parameter LOGN     = 16  ,
+    parameter LOGTP    = 5   ,
     parameter NUMPSI   = 1 << LOGN
 )();
 
@@ -13,7 +13,7 @@ module relin_tb
 localparam LOGL = $rtoi($ceil($clog2(L)));
 
 
-localparam HP = 5; // 100 MHz clock
+localparam HP = 2.5; // 200 MHz clock
 
 reg clk, rst, start;
 wire done;
