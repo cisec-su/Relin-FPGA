@@ -75,9 +75,9 @@ end
 
 
 shift_reg #(
-    .LAT   (LAT),
-    .WIDTH (1),
-    .RST_EN(1)
+    .SHIFT (LAT),
+    .WIDTH (1  ),
+    .RST_EN(1  )
 )
 o_valid_shift_reg
 (

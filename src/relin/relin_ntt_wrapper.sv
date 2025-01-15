@@ -34,11 +34,18 @@ module ntt_wrapper
     );
 
 localparam TP  = 1 << LOGTP;
-localparam LAT = 6000; // todo
+localparam BTF_LAT = 12;
+localparam LAT = (BTF_LAT * LOGN) + (1 << (LOGN - LOGTP)); // todo
+
+
+wire ntt_op;
+wire [(TP*LOGQ)-1:0] psi_flat;
+wire [(TP*LOGQ)-1:0] i_poly_flat;
+wire [(TP*LOGQ)-1:0] o_poly_flat;
 
 
 shift_reg #(
-    .LAT   (LAT),
+    .SHIFT (LAT),
     .WIDTH (1),
     .RST_EN(1)
 )
@@ -49,6 +56,38 @@ o_valid_shift_reg
     .i_data (i_valid),
     .o_data (o_valid)
 );
+
+
+assign ntt_op = load_q ? 2'd1 : (load_psi ? 2'd3 : 2'd0);
+
+
+generate
+    for (genvar i = 0; i < TP; i++) begin : GEN_FLATTEN
+        assign psi_flat[(i+1)*LOGQ-1:i*LOGQ] = psi[i];
+        assign i_poly_flat[(i+1)*LOGQ-1:i*LOGQ] = i_poly[i];
+        assign o_poly[i] = o_poly_flat[(i+1)*LOGQ-1:i*LOGQ];
+    end
+endgenerate
+
+
+// tp_ntt_top #(
+//     .LOGN   (LOGN        ),
+//     .LOGN1  (LOGTP       ),
+//     .LOGN2  (LOGN-2*LOGTP),
+//     .LOGN3  (LOGTP       ),
+//     .LOGTP  (LOGTP       ),
+//     .LOGQ   (LOGQ        ),
+//     .LOGQH  (LOGQH       )
+// ) tp_ntt_top_inst (
+//     .clk            (clk        ),
+//     .rst            (rst        ),
+//     .START_NTT_ALL  (i_valid    ),
+//     .OP_TYPE_INPUT  (ntt_op     ),
+//     .Q_in           (qH         ),
+//     .NTT_INPUT      (i_poly_flat),
+//     .TWIDDLE_INPUT  (psi_flat   ),
+//     .NTT_OUTPUT     (o_poly_flat)
+// );
 
 
 

@@ -40,7 +40,7 @@ wire i_valid;
 
 
 shift_reg_arr #(
-    .LAT    (INTT_A_DELAY),
+    .SHIFT  (INTT_A_DELAY),
     .WIDTH  (LOGQ        ),
     .LENGTH (TP          )
 ) i_poly_intt_A_shift_reg (
@@ -51,7 +51,7 @@ shift_reg_arr #(
 );
 
 shift_reg_arr #(
-    .LAT    (INTT_B_DELAY),
+    .SHIFT  (INTT_B_DELAY),
     .WIDTH  (LOGQ        ),
     .LENGTH (TP          )
 ) i_poly_intt_B_shift_reg (
@@ -62,7 +62,7 @@ shift_reg_arr #(
 );
 
 shift_reg #(
-    .LAT   (INTT_A_DELAY),
+    .SHIFT (INTT_A_DELAY),
     .WIDTH (1           )
 ) i_valid_intt_A_shift_reg (
     .clk    (clk            ),
@@ -72,7 +72,7 @@ shift_reg #(
 );
 
 shift_reg #(
-    .LAT   (INTT_B_DELAY),
+    .SHIFT (INTT_B_DELAY),
     .WIDTH (1           )
 ) i_valid_intt_B_shift_reg (
     .clk    (clk            ),

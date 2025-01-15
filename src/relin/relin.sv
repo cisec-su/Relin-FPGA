@@ -18,7 +18,7 @@ module relin
         parameter Q_MUX__FN__DELAY          = 2 ,
         parameter CU_OUT__CU_P0_NTT__DELAY  = 2 ,
         parameter CU_ACC__CU_P0_NTT__DELAY  = 2 ,
-        parameter ACC0_REN__ACC1_REN__DELAY = 10  // must be configured based on HBM read latency
+        parameter ACC0_REN__ACC1_REN__DELAY = 2  // must be configured based on HBM read latency
     )
     (
         input              clk   ,
@@ -329,12 +329,14 @@ relin_accum #(
 
 
 relin_cu_accum #(
-    .L          (L),
-    .REN_DELAY  (ACC0_REN__ACC1_REN__DELAY),
-    .START_DELAY(CU_ACC__CU_P0_NTT__DELAY )
+    .L            (L),
+    .REN_DELAY    (ACC0_REN__ACC1_REN__DELAY),
+    .START_DELAY  (CU_ACC__CU_P0_NTT__DELAY ),
+    .RESTART_DELAY(CU_OUT__CU_ACC__DELAY    )
 ) relin_cu_accum_inst (
     .clk        (clk           ),
     .rst        (rst           ),
+    .restart    (done_single   ),
     .start_read (acc_start_read),
     .write_done (acc_write_done),
     .acc_0_done (acc_0_done    ),
@@ -382,7 +384,7 @@ relin_cu_out #(
 
 
 shift_reg #(
-    .LAT   (CU_ACC__FN__DELAY),
+    .SHIFT (CU_ACC__FN__DELAY),
     .WIDTH (1)
 ) fn_rst_shift_reg (
     .clk    (clk           ),
@@ -393,7 +395,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (CU_OUT__ACC__DELAY),
+    .SHIFT (CU_OUT__ACC__DELAY),
     .WIDTH (1)
 ) acc_rst_shift_reg (
     .clk    (clk        ),
@@ -405,7 +407,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (1),
+    .SHIFT (1),
     .WIDTH (1)
 ) i_p1_valid_shift_reg (
     .clk    (clk         ),
@@ -416,7 +418,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (1),
+    .SHIFT (1),
     .WIDTH (1)
 ) i_p2_valid_shift_reg (
     .clk    (clk      ),
@@ -427,7 +429,7 @@ shift_reg #(
 
 
 shift_reg_arr #(
-    .LAT   (1   ),
+    .SHIFT (1   ),
     .WIDTH (LOGQ),
     .LENGTH(TP  ),
     .RST_EN(0   )
@@ -440,7 +442,7 @@ shift_reg_arr #(
 
 
 shift_reg_arr #(
-    .LAT   (1   ),
+    .SHIFT (1   ),
     .WIDTH (LOGQ),
     .LENGTH(TP  ),
     .RST_EN(0   )

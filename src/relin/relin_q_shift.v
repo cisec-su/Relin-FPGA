@@ -40,7 +40,7 @@ relin_q_mux #(
 
 
 shift_reg #(
-    .LAT   (DELAY_A),
+    .SHIFT (DELAY_A),
     .WIDTH (1)
 ) load_q_shift_reg_0 (
     .clk    (clk),
@@ -51,7 +51,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (DELAY_A),
+    .SHIFT (DELAY_A),
     .WIDTH (LOGQH)
 ) qH_shift_reg_0 (
     .clk    (clk),
@@ -62,7 +62,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (DELAY_B),
+    .SHIFT (DELAY_B),
     .WIDTH (1)
 ) load_q_shift_reg_1 (
     .clk    (clk),
@@ -73,7 +73,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (DELAY_B),
+    .SHIFT (DELAY_B),
     .WIDTH (LOGQH)
 ) qH_shift_reg_1 (
     .clk    (clk),
@@ -84,7 +84,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (DELAY_C),
+    .SHIFT (DELAY_C),
     .WIDTH (1)
 ) load_q_shift_reg_2 (
     .clk    (clk),
@@ -95,7 +95,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (DELAY_C),
+    .SHIFT (DELAY_C),
     .WIDTH (LOGQH)
 ) qH_shift_reg_2 (
     .clk    (clk),
@@ -106,7 +106,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (DELAY_D),
+    .SHIFT (DELAY_D),
     .WIDTH (1)
 ) load_q_shift_reg_3 (
     .clk    (clk),
@@ -117,7 +117,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (DELAY_D),
+    .SHIFT (DELAY_D),
     .WIDTH (LOGQH)
 ) qH_shift_reg_3 (
     .clk    (clk),

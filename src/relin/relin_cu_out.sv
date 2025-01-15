@@ -44,7 +44,7 @@ reg  ctr_rst;
 
 
 shift_reg #(
-    .LAT   (START_DELAY),
+    .SHIFT (START_DELAY),
     .WIDTH (1)
 )
 load_intt_shift_reg_1

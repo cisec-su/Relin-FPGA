@@ -28,8 +28,8 @@ module relin_final_op
 localparam LAT = 10;
 
 shift_reg #(
-    .LAT   (LAT),
-    .WIDTH (1)
+    .SHIFT (LAT),
+    .WIDTH (1  )
 )
 o_valid_shift_reg
 (

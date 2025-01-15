@@ -99,7 +99,7 @@ end
 
 
 shift_reg #(
-    .LAT   (LAT),
+    .SHIFT (LAT),
     .WIDTH (1  ),
     .RST_EN(1  )
 ) i_p0_valid_shift_reg (
@@ -111,7 +111,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (LAT + K),
+    .SHIFT (LAT + K),
     .WIDTH (1      ),
     .RST_EN(1      )
 ) i_p0_done_shift_reg (
@@ -123,7 +123,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (LAT),
+    .SHIFT (LAT),
     .WIDTH (1  ),
     .RST_EN(1  )
 ) i_p1_valid_shift_reg (
@@ -135,7 +135,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (LAT + K),
+    .SHIFT (LAT + K),
     .WIDTH (1      ),
     .RST_EN(1      )
 ) i_p1_done_shift_reg (
@@ -147,7 +147,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (LAT),
+    .SHIFT (LAT),
     .WIDTH (1  ),
     .RST_EN(1  )
 ) i_p2_valid_shift_reg (
@@ -159,7 +159,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (LAT + K),
+    .SHIFT (LAT + K),
     .WIDTH (1      ),
     .RST_EN(1      )
 ) i_p2_done_shift_reg (
@@ -172,7 +172,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (LAT + K),
+    .SHIFT (LAT + K),
     .WIDTH (1      ),
     .RST_EN(1      )
 ) o_p3_done_shift_reg (

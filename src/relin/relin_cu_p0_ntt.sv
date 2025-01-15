@@ -81,7 +81,7 @@ counter #(
 
 
 shift_reg #(
-    .LAT   (LOAD_INTT_DELAY),
+    .SHIFT (LOAD_INTT_DELAY),
     .WIDTH (1)
 ) load_intt_shift_reg (
     .clk    (clk        ),
@@ -92,7 +92,7 @@ shift_reg #(
 
 
 shift_reg #(
-    .LAT   (LOAD_NTT_DELAY),
+    .SHIFT (LOAD_NTT_DELAY),
     .WIDTH (1)
 ) load_ntt_shift_reg (
     .clk    (clk       ),
