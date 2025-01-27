@@ -3,7 +3,7 @@
     Computes T[i] = A[i] * B[i] mod q for i = 0 to TP-1
 
 */
-module relin_hadamard
+module hadamard
     #(
         parameter LOGQ     = 32,
         parameter LOGQH    = 15,
@@ -33,7 +33,6 @@ module relin_hadamard
 `include "modmul_wlm.svh"
 
 
-
 localparam W = LOGQ - LOGQH;
 
 localparam modmul_wlm_params_t params = {W, LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
@@ -42,9 +41,6 @@ localparam LAT = modmul_wlm_lat(params);
 reg [LOGQH -1:0] qH_int;
 
 always @(posedge clk) begin
-    if (rst) begin
-        qH_int <= 0;
-    end
     if (load_q) begin
         qH_int <= qH;
     end
