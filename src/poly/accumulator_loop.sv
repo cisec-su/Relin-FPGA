@@ -3,6 +3,7 @@ module accumulator_loop
         parameter LOGK         = 10,   // log2(K), determines the size of the accumulator block
         parameter LOGQ         = 64,   // Word size for coefficients
         parameter LOGQH        = 47,   // Modulus size for modular arithmetic
+        parameter FF_IN        = 1 ,   // Place flip-flops in the input pipeline
         parameter FF_ADD       = 0 ,   // Number of flip-flops in the addition pipeline
         parameter VALID_SINGLE = 1 ,   // Single cycle valid signal
         parameter TP           = 32    // Number of coefficients processed in parallel
@@ -65,6 +66,48 @@ state_t state, next_state;
 
 
 
+///////////////////// Pipeline Steps ////////////////////////////////////
+
+shift_reg_arr #(
+    .SHIFT (FF_IN),
+    .WIDTH (LOGQ ),
+    .RST_EN(0    )
+) shift_reg_A (
+    .clk    (clk),
+    .i_data (A  ),
+    .o_data (A_d)
+);
+
+
+shift_reg #(
+    .SHIFT (FF_IN),
+    .WIDTH (1    ),
+    .RST_EN(1    )
+) shift_reg_wen (
+    .clk    (clk   ),
+    .rst    (rst   ),
+    .i_data (wen   ),
+    .o_data (wen_d )
+);
+
+
+shift_reg #(
+    .SHIFT (FF_IN),
+    .WIDTH (1    ),
+    .RST_EN(1    )
+) shift_reg_ren (
+    .clk    (clk    ),
+    .rst    (rst    ),
+    .i_data (ren    ),
+    .o_data (ren_d)
+);
+
+
+/////////////////////////////////////////////////////////////////////////
+
+
+
+
 /////////////////////////////////////////////////////////////////////////
 
 
@@ -85,7 +128,7 @@ accumulator #(
     .load_q  (load_q),
     .qH      (qH),
     .o_valid (o_valid_int),
-    .A       (A),
+    .A       (A_d),
     .C       (C)
 );
 
@@ -158,11 +201,13 @@ always @(*) begin
 
     case (state)
         ST_IDLE: begin
-            if (ren) begin
+            if (ren_d) begin
+                busy = 1;
                 ctr_inc = 1;
                 ren_int = 1;
                 next_state = ST_READ;
-            end else if (wen) begin
+            end else if (wen_d) begin
+                busy = 1;
                 ctr_inc = 1;
                 wen_int = 1;
                 next_state = ST_WRITE;

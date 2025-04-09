@@ -18,7 +18,7 @@ module relin
         parameter Q_MUX__FN__DELAY          = 2 ,
         parameter CU_OUT__CU_P0_NTT__DELAY  = 2 ,
         parameter CU_ACC__CU_P0_NTT__DELAY  = 2 ,
-        parameter ACC0_REN__ACC1_REN__DELAY = 2  // must be configured based on HBM read latency
+        parameter ACC0_REN__ACC1_REN__DELAY = 0
     )
     (
         input              clk   ,
@@ -256,11 +256,11 @@ relin_fifo #(
 );
 
 
-relin_hadamard #(
+hadamard #(
     .LOGQ (LOGQ ),
     .LOGQH(LOGQH),
     .TP   (TP   )
-) relin_hadamard_inst_0 (
+) hadamard_inst_0 (
     .clk    (clk           ),
     .rst    (rst           ),
     .qH     (qH_had        ),
@@ -273,11 +273,11 @@ relin_hadamard #(
 );
 
 
-relin_hadamard #(
+hadamard #(
     .LOGQ (LOGQ ),
     .LOGQH(LOGQH),
     .TP   (TP   )
-) relin_hadamard_inst_1  (
+) hadamard_inst_1  (
     .clk    (clk           ),
     .rst    (rst           ),
     .qH     (qH_had        ),
@@ -290,12 +290,12 @@ relin_hadamard #(
 );
 
 
-relin_accum #(
+accumulator_loop #(
     .LOGK  (LOGN-LOGTP),
     .LOGQ  (LOGQ      ),
     .LOGQH (LOGQH     ),
     .TP    (TP        )
-) relin_accum_inst_0 (
+) accum_inst_0 (
     .clk     (clk          ),
     .rst     (rst | acc_rst),
     .ren     (acc_0_ren    ),
@@ -309,12 +309,12 @@ relin_accum #(
 );
 
 
-relin_accum #(
+accumulator_loop #(
     .LOGK  (LOGN-LOGTP),
     .LOGQ  (LOGQ      ),
     .LOGQH (LOGQH     ),
     .TP    (TP        )
-) relin_accum_inst_1 (
+) accum_inst_1 (
     .clk     (clk          ),
     .rst     (rst | acc_rst),
     .ren     (acc_1_ren    ),

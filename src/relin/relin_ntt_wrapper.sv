@@ -48,9 +48,7 @@ shift_reg #(
     .SHIFT (LAT),
     .WIDTH (1),
     .RST_EN(1)
-)
-o_valid_shift_reg
-(
+) shift_reg_o_valid (
     .clk    (clk),
     .rst    (rst),
     .i_data (i_valid),

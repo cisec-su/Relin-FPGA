@@ -46,9 +46,7 @@ reg  ctr_rst;
 shift_reg #(
     .SHIFT (START_DELAY),
     .WIDTH (1)
-)
-load_intt_shift_reg_1
-(
+) shift_reg_start (
     .clk    (clk    ),
     .rst    (rst    ),
     .i_data (start  ),

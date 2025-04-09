@@ -40,6 +40,26 @@ wire [LOGL-1:0] ctr_L;
 reg ctr_L_inc;
 reg ctr_L_rst;
 
+reg en_q;
+wire en_clr, en_int;
+
+
+always @(posedge clk) begin
+    if (rst) begin
+        en_q <= 1'b0;
+    end
+    else if (en_clr) begin
+        en_q <= 1'b0;
+    end
+    else if (en) begin
+        en_q <= 1'b1;
+    end
+end
+
+
+assign en_int = en | en_q;
+assign en_clr = i_p1_en;
+
 
 counter #(
     .WIDTH   (LOGL),
@@ -89,27 +109,27 @@ always @(*) begin
 
     case (state)
         ST_LOAD_RLK: begin
-            if (en) begin
-                if (i_p1_ready) begin
+            if (en_int) begin
+                if (i_p1_ready & i_p2_ready) begin
                     i_p1_idx = `RLK_0;
                     i_p1_en = 1;
                     i_p1_idy = ctr;
-                end
-                if (i_p2_ready) begin
+
                     i_p2_idx = `RLK_1;
                     i_p2_en = 1;
                     i_p2_idy = ctr;
+
+                    if (ctr >= L) begin
+                        next_state = ST_LOAD_POLY_0;
+                        ctr_rst = 1;
+                    end
+                    else
+                        ctr_inc = 1;
                 end
-                if (ctr >= L) begin
-                    next_state = ST_LOAD_POLY_0;
-                    ctr_rst = 1;
-                end
-                else
-                    ctr_inc = 1;
             end
         end
         ST_LOAD_POLY_0: begin
-            if (en) begin
+            if (en_int) begin
                 if (i_p1_ready) begin
                     i_p1_idx = `POLY_0;
                     i_p1_en = 1;
@@ -119,19 +139,19 @@ always @(*) begin
             end
         end
         ST_LOAD_POLY_1: begin
-            if (en) begin
+            if (en_int) begin
                 if (i_p1_ready) begin
                     i_p1_idx = `POLY_1;
                     i_p1_en = 1;
                     i_p1_idy = ctr_L;
+                    if (ctr_L >= (L - 1)) begin
+                        ctr_L_rst = 1;
+                    end
+                    else begin
+                        ctr_L_inc = 1;
+                    end
+                    next_state = ST_LOAD_RLK;    
                 end
-                if (ctr_L >= (L - 1)) begin
-                    ctr_L_rst = 1;
-                end
-                else begin
-                    ctr_L_inc = 1;
-                end
-                next_state = ST_LOAD_RLK;
             end
         end
         default: begin

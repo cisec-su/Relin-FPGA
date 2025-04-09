@@ -14,7 +14,7 @@ module bram
 localparam DEPTH = $rtoi($ceil($clog2(LENGTH)));
 
 // bram
-(* ram_style="block" *) reg [WIDTH-1:0] blockram [LENGTH-1:0] = '{default: {WIDTH{1'b0}}};;
+(* ram_style="block" *) reg [WIDTH-1:0] blockram [LENGTH-1:0] = '{default: {WIDTH{1'b0}}};
 
 // write operation
 always @(posedge clk) begin

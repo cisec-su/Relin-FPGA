@@ -49,9 +49,7 @@ reg  ctr_d_rst;
 shift_reg #(
     .SHIFT (START_DELAY),
     .WIDTH (1)
-)
-start_read_shift_reg_1
-(
+) start_read_shift_reg_1 (
     .clk    (clk),
     .rst    (rst),
     .i_data (start_read  ),
@@ -62,9 +60,7 @@ start_read_shift_reg_1
 shift_reg #(
     .SHIFT (RESTART_DELAY),
     .WIDTH (1)
-)
-restart_shift_reg_2
-(
+) restart_shift_reg_2 (
     .clk    (clk),
     .rst    (rst),
     .i_data (restart  ),

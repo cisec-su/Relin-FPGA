@@ -1,3 +1,5 @@
+`include "modmul_wlm.svh"
+
 /*
 
     Computes T[i] = A[i] * B[i] mod q for i = 0 to TP-1
@@ -30,11 +32,7 @@ module hadamard
         output [LOGQ - 1:0] C   [TP-1:0]
     );
 
-`include "modmul_wlm.svh"
-
-
 localparam W = LOGQ - LOGQH;
-
 localparam modmul_wlm_params_t params = {W, LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
 localparam LAT = modmul_wlm_lat(params);
 

@@ -1,3 +1,5 @@
+`include "modadd.svh"
+
 module accumulator 
    #(
         parameter LOGK      = 10,   // log2(K), determines the size of the accumulator block
@@ -22,13 +24,11 @@ module accumulator
 
 ///////////////////////////// Parameters ////////////////////////////////
 
-`include "modadd.svh"
-
 localparam K         = (1 << LOGK); // Total accumulation blocks based on LOGK
 localparam FF_OUT    = 1;           // Flip-flop for output pipeline stage
 localparam LAT_READ  = 1 + FF_IN;   // Read Latency
 localparam modadd_params_t params = {LOGQ, LOGQ, LOGQ, LOGQH, 0, FF_ADD, FF_OUT};
-localparam LAT_WRITE = FF_IN + 1 + modadd_lat(params) + 1; // Write Latency. + 1 for read, + 1 for write
+localparam LAT_WRITE = FF_IN + 1 + modadd_lat(params) + 1; // Write Latency. + 1 for bram read, + 1 for bram write
 
 /////////////////////////////////////////////////////////////////////////
 
