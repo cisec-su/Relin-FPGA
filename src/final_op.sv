@@ -24,7 +24,6 @@ module final_op
         input                   clk       ,
         input                   rst       ,
         input                   i_valid   ,
-        input                   o_valid   ,
         input                   last      ,
         input                   load_q    ,
         input      [LOGQH -1:0] qH        ,
@@ -32,6 +31,7 @@ module final_op
         input      [LOGQ  -1:0] halfmod   ,
         input      [LOGQ  -1:0] A [0:TP-1],
         input      [LOGQ  -1:0] B [0:TP-1],
+        output reg              o_valid   ,
         output reg [LOGQ  -1:0] C [0:TP-1]
     );
 
@@ -51,8 +51,8 @@ localparam LAT_MUL = modmul_wlm_lat(modmul_params);
 
 localparam LAT_BRAM_READ = 2;
 
-localparam LAT_LAST = LAT_ADD + 1; 
-localparam LAT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_ADD + LAT_BRAM_READ; 
+localparam LAT_LAST = LAT_ADD + 2; 
+localparam LAT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_ADD + LAT_BRAM_READ + 1; 
 
 localparam K  = 1 << LOGK;
 localparam TP = 1 << LOGTP;
@@ -75,7 +75,13 @@ localparam QH_ADD_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_BRAM_READ;
 
 ///////////////////////// Signal Declarations ///////////////////////////
 
-wire last_q;
+wire last_in;
+
+reg i_valid_last;
+reg i_valid_not_last;
+
+wire i_valid_last_shifted;
+wire i_valid_not_last_shifted;
 
 wire [LOGQH -1:0] qH_last;
 wire [LOGQH -1:0] qH_sub0;
@@ -83,11 +89,10 @@ wire [LOGQH -1:0] qH_sub1;
 wire [LOGQH -1:0] qH_mul;
 wire [LOGQH -1:0] qH_add;
 
-wire [LOGQ  -1:0] q_inv_q;
+wire [LOGQ  -1:0] q_inv_in;
 
 wire [LOGQ  -1:0] halfmod_last;
 wire [LOGQ  -1:0] halfmod_sub0;
-wire [LOGQ  -1:0] halfmod_q;
 
 wire [LOGQ -1:0] A_q [0:TP-1];
 wire [LOGQ -1:0] B_q [0:TP-1];
@@ -145,11 +150,31 @@ reg             ren;
 shift_reg #(
     .SHIFT (Q_INV_SHIFT),
     .WIDTH (LOGQ       )
-) shift_reg_q_inv_q (
-    .clk    (clk    ),
-    .rst    (rst    ),
-    .i_data (q_inv  ),
-    .o_data (q_inv_q)
+) shift_reg_q_inv_in (
+    .clk    (clk     ),
+    .rst    (rst     ),
+    .i_data (q_inv   ),
+    .o_data (q_inv_in)
+);
+
+shift_reg #(
+    .SHIFT (LAT_LAST - 2),
+    .WIDTH (1           )
+) shift_reg_i_valid_last (
+    .clk    (clk                 ),
+    .rst    (rst                 ),
+    .i_data (i_valid_last        ),
+    .o_data (i_valid_last_shifted)
+);
+
+shift_reg #(
+    .SHIFT (LAT - 2),
+    .WIDTH (1      )
+) shift_reg_i_valid_q (
+    .clk    (clk                     ),
+    .rst    (rst                     ),
+    .i_data (i_valid_not_last        ),
+    .o_data (i_valid_not_last_shifted)
 );
 
 shift_reg #(
@@ -225,11 +250,11 @@ shift_reg #(
 shift_reg #(
     .SHIFT (1),
     .WIDTH (1)
-) shift_reg_last_q (
+) shift_reg_last_in (
     .clk    (clk   ),
     .rst    (rst   ),
     .i_data (last  ),
-    .o_data (last_q)
+    .o_data (last_in)
 );
 
 shift_reg_arr #(
@@ -271,16 +296,14 @@ shift_reg_arr #(
 
 ////////////////////// Combinational Assignments ////////////////////////
 
-assign halfmod_q = (last_q) ? halfmod_last : halfmod_sub0;
-
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign A_q[i] = (last_q) ? A_last[i] : A_sub1[i];
+    assign A_q[i] = (last_in) ? A_last[i] : A_sub1[i];
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign modadd_in_A[i]  = (last_q) ? A_q[i] : modmul_out[i];
-    assign modadd_in_B[i]  = (last_q) ? halfmod_q : B_q[i];
-    assign modadd_in_qH[i] = (last_q) ? qH_last : qH_add;
+    assign modadd_in_A[i]  = (last_in) ? A_q[i] : modmul_out[i];
+    assign modadd_in_B[i]  = (last_in) ? halfmod_last : B_q[i];
+    assign modadd_in_qH[i] = (last_in) ? qH_last : qH_add;
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
@@ -289,7 +312,7 @@ end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     assign modsub0_in_A[i]  = bram_out[i];
-    assign modsub0_in_B[i]  = halfmod_q;
+    assign modsub0_in_B[i]  = halfmod_sub0;
     assign modsub0_in_qH[i] = qH_sub0;
 end
 
@@ -301,7 +324,7 @@ end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     assign modmul_in_A[i]  = modsub1_out[i];
-    assign modmul_in_B[i]  = q_inv_q;
+    assign modmul_in_B[i]  = q_inv_in;
     assign modmul_in_qH[i] = qH_mul;
 end
 
@@ -437,15 +460,35 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
-        for (int i = 0; i < TP; i = i + 1) begin
-            C[i] <= 0;
-        end
-    end 
-    else if (o_valid) begin
-        for (int i = 0; i < TP; i = i + 1) begin
-            C[i] <= C_q[i];
-        end
+    if (i_valid && last) begin
+        i_valid_last <= 1;
+    end
+    else begin
+        i_valid_last <= 0;
+    end
+end
+
+always @(posedge clk) begin
+    if (i_valid && !last) begin
+        i_valid_not_last <= 1;
+    end
+    else begin
+        i_valid_not_last <= 0;
+    end
+end
+
+always @(posedge clk) begin
+    if (i_valid_last_shifted || i_valid_not_last_shifted) begin
+        o_valid <= 1;
+    end
+    else begin
+        o_valid <= 0;
+    end
+end
+
+always @(posedge clk) begin
+    for (int i = 0; i < TP; i = i + 1) begin
+        C[i] <= C_q[i];
     end
 end
 
@@ -518,7 +561,7 @@ always @(*) begin
         end
         ST_WRITE_INIT: begin
             busy = 1;
-            if (read_addr == LAT_LAST - 1) begin
+            if (read_addr == LAT_LAST - 2) begin
                 bram_wen = 1;
                 start_write = 1;
                 next_state  = ST_WRITE_LOOP;
