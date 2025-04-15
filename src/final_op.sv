@@ -75,7 +75,7 @@ localparam QH_ADD_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_BRAM_READ;
 
 ///////////////////////// Signal Declarations ///////////////////////////
 
-wire last_in;
+wire last_d;
 
 reg i_valid_last;
 reg i_valid_not_last;
@@ -89,13 +89,13 @@ wire [LOGQH -1:0] qH_sub1;
 wire [LOGQH -1:0] qH_mul;
 wire [LOGQH -1:0] qH_add;
 
-wire [LOGQ  -1:0] q_inv_in;
+wire [LOGQ  -1:0] q_inv_d;
 
 wire [LOGQ  -1:0] halfmod_last;
 wire [LOGQ  -1:0] halfmod_sub0;
 
-wire [LOGQ -1:0] A_q [0:TP-1];
-wire [LOGQ -1:0] B_q [0:TP-1];
+wire [LOGQ -1:0] A_d [0:TP-1];
+wire [LOGQ -1:0] B_d [0:TP-1];
 
 wire [LOGQ -1:0] A_last [0:TP-1];
 wire [LOGQ -1:0] A_sub1 [0:TP-1];
@@ -126,7 +126,7 @@ wire [LOGQ  -1:0] modmul_out   [0:TP-1];
 wire [LOGQ -1:0] bram_in  [0:TP-1];
 wire [LOGQ -1:0] bram_out [0:TP-1]; 
 
-wire [LOGQ-1:0] C_q [0:TP-1];
+wire [LOGQ-1:0] C_d [0:TP-1];
 
 reg [LOGK -1:0] read_addr;
 reg [LOGK -1:0] write_addr;
@@ -150,11 +150,11 @@ reg             ren;
 shift_reg #(
     .SHIFT (Q_INV_SHIFT),
     .WIDTH (LOGQ       )
-) shift_reg_q_inv_in (
+) shift_reg_q_inv_d (
     .clk    (clk     ),
     .rst    (rst     ),
     .i_data (q_inv   ),
-    .o_data (q_inv_in)
+    .o_data (q_inv_d)
 );
 
 shift_reg #(
@@ -170,7 +170,7 @@ shift_reg #(
 shift_reg #(
     .SHIFT (LAT - 2),
     .WIDTH (1      )
-) shift_reg_i_valid_q (
+) shift_reg_i_valid_not_last (
     .clk    (clk                     ),
     .rst    (rst                     ),
     .i_data (i_valid_not_last        ),
@@ -250,11 +250,11 @@ shift_reg #(
 shift_reg #(
     .SHIFT (1),
     .WIDTH (1)
-) shift_reg_last_in (
+) shift_reg_last_d (
     .clk    (clk   ),
     .rst    (rst   ),
     .i_data (last  ),
-    .o_data (last_in)
+    .o_data (last_d)
 );
 
 shift_reg_arr #(
@@ -283,11 +283,11 @@ shift_reg_arr #(
     .SHIFT (B_SHIFT),
     .WIDTH (LOGQ   ),
     .LENGTH(TP     )
-) shift_reg_B_q (
+) shift_reg_B_d (
     .clk    (clk  ),
     .rst    (rst  ),
     .i_data (B    ),
-    .o_data (B_q  )
+    .o_data (B_d  )
 );
 
 /////////////////////////////////////////////////////////////////////////
@@ -297,13 +297,13 @@ shift_reg_arr #(
 ////////////////////// Combinational Assignments ////////////////////////
 
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign A_q[i] = (last_in) ? A_last[i] : A_sub1[i];
+    assign A_d[i] = (last_d) ? A_last[i] : A_sub1[i];
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign modadd_in_A[i]  = (last_in) ? A_q[i] : modmul_out[i];
-    assign modadd_in_B[i]  = (last_in) ? halfmod_last : B_q[i];
-    assign modadd_in_qH[i] = (last_in) ? qH_last : qH_add;
+    assign modadd_in_A[i]  = (last_d) ? A_d[i] : modmul_out[i];
+    assign modadd_in_B[i]  = (last_d) ? halfmod_last : B_d[i];
+    assign modadd_in_qH[i] = (last_d) ? qH_last : qH_add;
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
@@ -317,19 +317,19 @@ for (genvar i = 0; i < TP; i = i + 1) begin
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign modsub1_in_A[i]  = A_q[i];
+    assign modsub1_in_A[i]  = A_d[i];
     assign modsub1_in_B[i]  = modsub0_out[i];
     assign modsub1_in_qH[i] = qH_sub1;
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     assign modmul_in_A[i]  = modsub1_out[i];
-    assign modmul_in_B[i]  = q_inv_in;
+    assign modmul_in_B[i]  = q_inv_d;
     assign modmul_in_qH[i] = qH_mul;
 end
 
 for (genvar i = 0; i < TP; i++) begin
-    assign C_q[i] = modadd_out[i];
+    assign C_d[i] = modadd_out[i];
 end
 
 /////////////////////////////////////////////////////////////////////////
@@ -488,7 +488,7 @@ end
 
 always @(posedge clk) begin
     for (int i = 0; i < TP; i = i + 1) begin
-        C[i] <= C_q[i];
+        C[i] <= C_d[i];
     end
 end
 
