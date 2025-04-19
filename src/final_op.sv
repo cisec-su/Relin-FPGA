@@ -69,11 +69,20 @@ localparam QH_SUB1_SHIFT = LAT_SUB0 + LAT_BRAM_READ;
 localparam QH_MUL_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_BRAM_READ;
 localparam QH_ADD_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_BRAM_READ; 
 
+
 /////////////////////////////////////////////////////////////////////////
 
 
 
 ///////////////////////// Signal Declarations ///////////////////////////
+
+reg [LOGQH -1:0] qH_q;
+reg [LOGQ  -1:0] q_inv_q;
+reg [LOGQ  -1:0] halfmod_q;
+
+reg [LOGQH -1:0] qH_q_q;
+reg [LOGQ  -1:0] q_inv_q_q;
+reg [LOGQ  -1:0] halfmod_q_q;
 
 wire last_d;
 
@@ -148,12 +157,12 @@ reg             ren;
 //////////////////////// Input Registering //////////////////////////////
 
 shift_reg #(
-    .SHIFT (Q_INV_SHIFT),
+    .SHIFT (Q_INV_SHIFT - 1),
     .WIDTH (LOGQ       )
 ) shift_reg_q_inv_d (
-    .clk    (clk     ),
-    .rst    (rst     ),
-    .i_data (q_inv   ),
+    .clk    (clk    ),
+    .rst    (rst    ),
+    .i_data (q_inv_q_q),
     .o_data (q_inv_d)
 );
 
@@ -177,15 +186,15 @@ shift_reg #(
     .o_data (i_valid_not_last_shifted)
 );
 
-shift_reg #(
+/*shift_reg #(
     .SHIFT (1   ),
     .WIDTH (LOGQ)
 ) shift_reg_halfmod_last (
     .clk    (clk      ),
     .rst    (rst      ),
-    .i_data (halfmod  ),
+    .i_data (halfmod_q_q  ),
     .o_data (halfmod_last)
-);
+);*/
 
 shift_reg #(
     .SHIFT (HALFMOD_SUB0_SHIFT - 1),
@@ -197,15 +206,15 @@ shift_reg #(
     .o_data (halfmod_sub0)
 );
 
-shift_reg #(
+/*shift_reg #(
     .SHIFT (1   ),
     .WIDTH (LOGQH)
 ) shift_reg_qH_last (
     .clk    (clk    ),
     .rst    (rst    ),
-    .i_data (qH     ),
+    .i_data (qH_q_q     ),
     .o_data (qH_last)
-);
+);*/
 
 shift_reg #(
     .SHIFT (QH_SUB0_SHIFT - 1),
@@ -299,6 +308,9 @@ shift_reg_arr #(
 for (genvar i = 0; i < TP; i = i + 1) begin
     assign A_d[i] = (last_d) ? A_last[i] : A_sub1[i];
 end
+
+assign halfmod_last = halfmod_q_q;
+assign qH_last = qH_q_q;
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     assign modadd_in_A[i]  = (last_d) ? A_d[i] : modmul_out[i];
@@ -440,6 +452,32 @@ end
 
 
 ///////////////////////////// Sequential Logic //////////////////////////
+
+always @(posedge clk) begin
+    if (rst) begin
+        qH_q <= 0;
+        q_inv_q <= 0;
+        halfmod_q <= 0;
+    end
+    else if (load_q) begin
+        qH_q <= qH;
+        q_inv_q <= q_inv;
+        halfmod_q <= halfmod;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        qH_q_q <= 0;
+        q_inv_q_q <= 0;
+        halfmod_q_q <= 0;
+    end
+    else if (i_valid) begin
+        qH_q_q <= qH_q;
+        q_inv_q_q <= q_inv_q;
+        halfmod_q_q <= halfmod_q;
+    end
+end
 
 always @(posedge clk) begin
     if (i_valid && last) begin

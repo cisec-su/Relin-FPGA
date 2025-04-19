@@ -81,19 +81,26 @@ initial begin
     last = 0;
     load_q = 0;
 
-    #FP;
+    #(1*FP);
 
     rst = 0;
 
-    #FP;
-    #HP;
+    #(1*FP);
+    #(1*HP);
     #0.1;
+
+    // Read from files
+    $readmemh("/home/berenaydogan/Documents/Relin-FPGA/src/relin/test_files/A_hex.txt", memA);
+    $readmemh("/home/berenaydogan/Documents/Relin-FPGA/src/relin/test_files/B_hex.txt", memB);
 
     qH = 48'h800011800000;
     halfmod = 64'h400008C000000000;
 
-    $readmemh("../../../../../test_vectors/final_op/A.txt", memA);
-    $readmemh("../../../../../test_vectors/final_op/B.txt", memB);
+    i_valid = 0;
+    last = 0;
+    load_q = 1;
+
+    #(1*FP);
 
     for (i = 0; i < TP; i = i + 1) begin
         A[i] = memA[i];
@@ -102,7 +109,7 @@ initial begin
 
     i_valid = 1;
     last = 1;
-    load_q = 1;
+    load_q = 0;
 
     #(1*FP);
 
@@ -113,7 +120,7 @@ initial begin
 
     i_valid = 1;
     last = 1;
-    load_q = 1;
+    load_q = 0;
 
     #(1*FP);
 
@@ -125,7 +132,7 @@ initial begin
 
     i_valid = 1;
     last = 1;
-    load_q = 1;
+    load_q = 0;
 
     #(1*FP);
 
@@ -136,7 +143,7 @@ initial begin
 
     i_valid = 1;
     last = 1;
-    load_q = 1;
+    load_q = 0;
 
     #(1*FP);
 
@@ -146,22 +153,11 @@ initial begin
 
     #(3*FP);
 
-    i_valid = 0;
-    last = 0;
-    load_q = 0;
-
-    #(1*FP);
-
     qH = 48'h800000000008;
     halfmod = 64'h4000000000040000;
     q_inv = 64'h6d7e851bb730f6bc;
 
-    for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[4*TP+i];
-        B[i] = memB[4*TP+i];
-    end
-
-    i_valid = 1;
+    i_valid = 0;
     last = 0;
     load_q = 1;
 
@@ -172,8 +168,8 @@ initial begin
     q_inv = 64'h120c1aa6b5e7e586;
 
     for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[5*TP + i];
-        B[i] = memB[5*TP + i];
+        A[i] = memA[4*TP+i];
+        B[i] = memB[4*TP+i];
     end
 
     i_valid = 1;
@@ -187,8 +183,8 @@ initial begin
     q_inv = 64'h276231a3ae9b8c78;
 
     for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[6*TP + i];
-        B[i] = memB[6*TP + i];
+        A[i] = memA[5*TP + i];
+        B[i] = memB[5*TP + i];
     end
 
     i_valid = 1;
@@ -202,8 +198,8 @@ initial begin
     q_inv = 64'h3cb7e4ed1da84928;
 
     for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[7*TP + i];
-        B[i] = memB[7*TP + i];
+        A[i] = memA[6*TP + i];
+        B[i] = memB[6*TP + i];
     end
 
     i_valid = 1;
@@ -212,11 +208,23 @@ initial begin
 
     #(1*FP);
 
+    for (i = 0; i < TP; i = i + 1) begin
+        A[i] = memA[7*TP + i];
+        B[i] = memB[7*TP + i];
+    end
+
+    i_valid = 1;
+    last = 0;
+    load_q = 0;
+
+    #(1*FP);
+
     i_valid = 0;
     last = 0;
     load_q = 0;
 
     #(25*FP);
+
 
     $finish;
 end
