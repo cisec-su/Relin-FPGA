@@ -35,6 +35,8 @@ reg [LOGQ  -1:0] C [0:TP-1];
 localparam HP = 5;   
 localparam FP = 2 * HP; 
 
+localparam K = 1 << LOGK;
+
 final_op #(
     .LOGK(LOGK),
     .LOGQ(LOGQ),
@@ -65,12 +67,16 @@ final_op #(
     .C(C)
 );
 
+localparam LAT_LAST = final_op_inst.LAT_LAST;
+localparam LAT = final_op_inst.LAT;
+
 always #HP clk = ~clk;
 
 integer i;
+integer j;
 
-reg [LOGQ-1:0] memA [0:(8*TP)-1];
-reg [LOGQ-1:0] memB [0:(8*TP)-1];
+reg [LOGQ-1:0] memA [0:(32*TP)-1];
+reg [LOGQ-1:0] memB [0:(36*TP)-1];
 
 initial begin
     // Initialize regs
@@ -90,8 +96,8 @@ initial begin
     #0.1;
 
     // Read from files
-    $readmemh("/home/berenaydogan/Documents/Relin-FPGA/src/relin/test_files/A_hex.txt", memA);
-    $readmemh("/home/berenaydogan/Documents/Relin-FPGA/src/relin/test_files/B_hex.txt", memB);
+    $readmemh("/home/berenaydogan/SU_Project/Relin-FPGA/src/test_files/A_hex_new.txt", memA);
+    $readmemh("/home/berenaydogan/SU_Project/Relin-FPGA/src/test_files/B_hex_new.txt", memB);
 
     qH = 48'h800011800000;
     halfmod = 64'h400008C000000000;
@@ -102,56 +108,21 @@ initial begin
 
     #(1*FP);
 
-    for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[i];
-        B[i] = memB[i];
-    end
-
     i_valid = 1;
     last = 1;
     load_q = 0;
 
-    #(1*FP);
-
-    for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[1*TP + i];
-        B[i] = memB[1*TP + i];
+    for (j = 0; j < K; j = j + 1) begin
+        for (i = 0; i < TP; i = i + 1) begin
+            A[i] = memA[(j*TP)+i];
+        end
+        #(1*FP);
+        i_valid = 0;
+        last = 0;
+        load_q = 0;
     end
 
-    i_valid = 1;
-    last = 1;
-    load_q = 0;
-
-    #(1*FP);
-
-
-    for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[2*TP + i];
-        B[i] = memB[2*TP + i];
-    end
-
-    i_valid = 1;
-    last = 1;
-    load_q = 0;
-
-    #(1*FP);
-
-    for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[3*TP + i];
-        B[i] = memB[3*TP + i];
-    end
-
-    i_valid = 1;
-    last = 1;
-    load_q = 0;
-
-    #(1*FP);
-
-    i_valid = 0;
-    last = 0;
-    load_q = 0;
-
-    #(3*FP);
+    #((LAT_LAST-1)*FP);
 
     qH = 48'h800000000008;
     halfmod = 64'h4000000000040000;
@@ -163,67 +134,80 @@ initial begin
 
     #(1*FP);
 
+    i_valid = 1;
+    last = 0;
+    load_q = 0;
+
+    for (j = K; j < 2*K; j = j + 1) begin
+        for (i = 0; i < TP; i = i + 1) begin
+            A[i] = memA[(j*TP)+i];
+            B[i] = memB[((j-K)*TP)+i];
+        end
+        #(1*FP);
+        i_valid = 0;
+        last = 0;
+        load_q = 0;
+    end
+
+    i_valid = 1;
+    last = 0;
+    load_q = 0;
+
+    for (j = 2*K; j < 3*K; j = j + 1) begin
+        for (i = 0; i < TP; i = i + 1) begin
+            A[i] = memA[(j*TP)+i];
+            B[i] = memB[((j-K)*TP)+i];
+        end
+        #(1*FP);
+        i_valid = 0;
+        last = 0;
+        load_q = 0;
+    end
+
+    #((LAT-1)*FP);
+
+    i_valid = 0;
+    last = 0;
+    load_q = 1;
+
     qH = 48'h80000000004A;
     halfmod = 64'h4000000000250000;
     q_inv = 64'h120c1aa6b5e7e586;
 
-    for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[4*TP+i];
-        B[i] = memB[4*TP+i];
-    end
+    #(1*FP);
 
     i_valid = 1;
     last = 0;
-    load_q = 1;
+    load_q = 0;
 
-    #(1*FP);
-
-    qH = 48'h80000000005E;
-    halfmod = 64'h40000000002f0000;
-    q_inv = 64'h276231a3ae9b8c78;
-
-    for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[5*TP + i];
-        B[i] = memB[5*TP + i];
-    end
-
-    i_valid = 1;
-    last = 0;
-    load_q = 1;
-
-    #(1*FP);
-
-    qH = 48'h80000000007a;
-    halfmod = 64'h40000000003d0000;
-    q_inv = 64'h3cb7e4ed1da84928;
-
-    for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[6*TP + i];
-        B[i] = memB[6*TP + i];
-    end
-
-    i_valid = 1;
-    last = 0;
-    load_q = 1;
-
-    #(1*FP);
-
-    for (i = 0; i < TP; i = i + 1) begin
-        A[i] = memA[7*TP + i];
-        B[i] = memB[7*TP + i];
+    for (j = 3*K; j < 4*K; j = j + 1) begin
+        for (i = 0; i < TP; i = i + 1) begin
+            A[i] = memA[(j*TP)+i];
+            B[i] = memB[((j-K)*TP)+i];
+        end
+        #(1*FP);
+        i_valid = 0;
+        last = 0;
+        load_q = 0;
     end
 
     i_valid = 1;
     last = 0;
     load_q = 0;
 
-    #(1*FP);
+    for (j = 4*K; j < 5*K; j = j + 1) begin
+        for (i = 0; i < TP; i = i + 1) begin
+            A[i] = memA[(j*TP)+i];
+            B[i] = memB[((j-K)*TP)+i];
+        end
+        #(1*FP);
+        i_valid = 0;
+        last = 0;
+        load_q = 0;
+    end
 
-    i_valid = 0;
-    last = 0;
-    load_q = 0;
-
-    #(25*FP);
+    #(LAT*FP);
+    #(5*FP);
 
 
     $finish;

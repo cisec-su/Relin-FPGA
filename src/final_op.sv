@@ -60,48 +60,24 @@ localparam TP = 1 << LOGTP;
 localparam A_SHIFT = LAT_SUB0 + LAT_BRAM_READ; 
 localparam B_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_BRAM_READ; 
 
-localparam Q_INV_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_BRAM_READ;
-
-localparam HALFMOD_SUB0_SHIFT = LAT_BRAM_READ;
-
-localparam QH_SUB0_SHIFT = LAT_BRAM_READ;
-localparam QH_SUB1_SHIFT = LAT_SUB0 + LAT_BRAM_READ;
-localparam QH_MUL_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_BRAM_READ;
-localparam QH_ADD_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_BRAM_READ; 
-
-
 /////////////////////////////////////////////////////////////////////////
 
 
 
 ///////////////////////// Signal Declarations ///////////////////////////
 
+reg run_q;
+reg last_q;
+
+reg [LOGK-1:0] run_counter;
+reg [LOGK-1:0] last_counter;
+
 reg [LOGQH -1:0] qH_q;
 reg [LOGQ  -1:0] q_inv_q;
 reg [LOGQ  -1:0] halfmod_q;
 
-reg [LOGQH -1:0] qH_q_q;
-reg [LOGQ  -1:0] q_inv_q_q;
-reg [LOGQ  -1:0] halfmod_q_q;
-
+wire run_d;
 wire last_d;
-
-reg i_valid_last;
-reg i_valid_not_last;
-
-wire i_valid_last_shifted;
-wire i_valid_not_last_shifted;
-
-wire [LOGQH -1:0] qH_last;
-wire [LOGQH -1:0] qH_sub0;
-wire [LOGQH -1:0] qH_sub1;
-wire [LOGQH -1:0] qH_mul;
-wire [LOGQH -1:0] qH_add;
-
-wire [LOGQ  -1:0] q_inv_d;
-
-wire [LOGQ  -1:0] halfmod_last;
-wire [LOGQ  -1:0] halfmod_sub0;
 
 wire [LOGQ -1:0] A_d [0:TP-1];
 wire [LOGQ -1:0] B_d [0:TP-1];
@@ -109,27 +85,20 @@ wire [LOGQ -1:0] B_d [0:TP-1];
 wire [LOGQ -1:0] A_last [0:TP-1];
 wire [LOGQ -1:0] A_sub1 [0:TP-1];
 
-wire A_shift;
-wire B_shift;
-
 wire [LOGQ  -1:0] modadd_in_A  [0:TP-1];
 wire [LOGQ  -1:0] modadd_in_B  [0:TP-1];
-wire [LOGQH -1:0] modadd_in_qH [0:TP-1];
 wire [LOGQ  -1:0] modadd_out   [0:TP-1];
 
 wire [LOGQ  -1:0] modsub0_in_A  [0:TP-1];
 wire [LOGQ  -1:0] modsub0_in_B  [0:TP-1];
-wire [LOGQH -1:0] modsub0_in_qH [0:TP-1];
 wire [LOGQ  -1:0] modsub0_out   [0:TP-1];
 
 wire [LOGQ  -1:0] modsub1_in_A  [0:TP-1];
 wire [LOGQ  -1:0] modsub1_in_B  [0:TP-1];
-wire [LOGQH -1:0] modsub1_in_qH [0:TP-1];
 wire [LOGQ  -1:0] modsub1_out   [0:TP-1];
 
 wire [LOGQ  -1:0] modmul_in_A  [0:TP-1];
 wire [LOGQ  -1:0] modmul_in_B  [0:TP-1];
-wire [LOGQH -1:0] modmul_in_qH [0:TP-1];
 wire [LOGQ  -1:0] modmul_out   [0:TP-1];
 
 wire [LOGQ -1:0] bram_in  [0:TP-1];
@@ -157,113 +126,23 @@ reg             ren;
 //////////////////////// Input Registering //////////////////////////////
 
 shift_reg #(
-    .SHIFT (Q_INV_SHIFT - 1),
-    .WIDTH (LOGQ       )
-) shift_reg_q_inv_d (
-    .clk    (clk    ),
-    .rst    (rst    ),
-    .i_data (q_inv_q_q),
-    .o_data (q_inv_d)
-);
-
-shift_reg #(
     .SHIFT (LAT_LAST - 2),
     .WIDTH (1           )
-) shift_reg_i_valid_last (
-    .clk    (clk                 ),
-    .rst    (rst                 ),
-    .i_data (i_valid_last        ),
-    .o_data (i_valid_last_shifted)
+) shift_reg_last_d (
+    .clk    (clk   ),
+    .rst    (rst   ),
+    .i_data (last_q),
+    .o_data (last_d)
 );
 
 shift_reg #(
     .SHIFT (LAT - 2),
     .WIDTH (1      )
-) shift_reg_i_valid_not_last (
-    .clk    (clk                     ),
-    .rst    (rst                     ),
-    .i_data (i_valid_not_last        ),
-    .o_data (i_valid_not_last_shifted)
-);
-
-/*shift_reg #(
-    .SHIFT (1   ),
-    .WIDTH (LOGQ)
-) shift_reg_halfmod_last (
-    .clk    (clk      ),
-    .rst    (rst      ),
-    .i_data (halfmod_q_q  ),
-    .o_data (halfmod_last)
-);*/
-
-shift_reg #(
-    .SHIFT (HALFMOD_SUB0_SHIFT - 1),
-    .WIDTH (LOGQ                  )
-) shift_reg_halfmod_sub0 (
-    .clk    (clk         ),
-    .rst    (rst         ),
-    .i_data (halfmod_last),
-    .o_data (halfmod_sub0)
-);
-
-/*shift_reg #(
-    .SHIFT (1   ),
-    .WIDTH (LOGQH)
-) shift_reg_qH_last (
-    .clk    (clk    ),
-    .rst    (rst    ),
-    .i_data (qH_q_q     ),
-    .o_data (qH_last)
-);*/
-
-shift_reg #(
-    .SHIFT (QH_SUB0_SHIFT - 1),
-    .WIDTH (LOGQH            )
-) shift_reg_qH_sub0 (
-    .clk    (clk     ),
-    .rst    (rst     ),
-    .i_data (qH_last ),
-    .o_data (qH_sub0 )
-);
-
-shift_reg #(
-    .SHIFT (QH_SUB1_SHIFT - QH_SUB0_SHIFT),
-    .WIDTH (LOGQH                        )
-) shift_reg_qH_sub1 (
-    .clk    (clk    ),
-    .rst    (rst    ),
-    .i_data (qH_sub0),
-    .o_data (qH_sub1)
-);
-
-shift_reg #(
-    .SHIFT (QH_MUL_SHIFT - QH_SUB1_SHIFT),
-    .WIDTH (LOGQH                       )
-) shift_reg_qH_mul (
-    .clk    (clk       ),
-    .rst    (rst       ),
-    .i_data (qH_sub1   ),
-    .o_data (qH_mul    )
-);
-
-shift_reg #(
-    .SHIFT (QH_ADD_SHIFT - QH_MUL_SHIFT),
-    .WIDTH (LOGQH                      )
-) shift_reg_qH_add (
-    .clk    (clk   ),
-    .rst    (rst   ),
-    .i_data (qH_mul),
-    .o_data (qH_add)
-);
-
-shift_reg #(
-    .SHIFT (1),
-    .WIDTH (1)
-) shift_reg_last_d (
-    .clk    (clk   ),
-    .rst    (rst   ),
-    .i_data (last  ),
-    .o_data (last_d)
+) shift_reg_run_d (
+    .clk    (clk  ),
+    .rst    (rst  ),
+    .i_data (run_q),
+    .o_data (run_d)
 );
 
 shift_reg_arr #(
@@ -293,10 +172,10 @@ shift_reg_arr #(
     .WIDTH (LOGQ   ),
     .LENGTH(TP     )
 ) shift_reg_B_d (
-    .clk    (clk  ),
-    .rst    (rst  ),
-    .i_data (B    ),
-    .o_data (B_d  )
+    .clk    (clk ),
+    .rst    (rst ),
+    .i_data (B   ),
+    .o_data (B_d )
 );
 
 /////////////////////////////////////////////////////////////////////////
@@ -306,16 +185,12 @@ shift_reg_arr #(
 ////////////////////// Combinational Assignments ////////////////////////
 
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign A_d[i] = (last_d) ? A_last[i] : A_sub1[i];
+    assign A_d[i] = (last_q) ? A_last[i] : A_sub1[i];
 end
 
-assign halfmod_last = halfmod_q_q;
-assign qH_last = qH_q_q;
-
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign modadd_in_A[i]  = (last_d) ? A_d[i] : modmul_out[i];
-    assign modadd_in_B[i]  = (last_d) ? halfmod_last : B_d[i];
-    assign modadd_in_qH[i] = (last_d) ? qH_last : qH_add;
+    assign modadd_in_A[i]  = (last_q) ? A_d[i] : modmul_out[i];
+    assign modadd_in_B[i]  = (last_q) ? halfmod_q : B_d[i];
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
@@ -324,20 +199,17 @@ end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     assign modsub0_in_A[i]  = bram_out[i];
-    assign modsub0_in_B[i]  = halfmod_sub0;
-    assign modsub0_in_qH[i] = qH_sub0;
+    assign modsub0_in_B[i]  = halfmod_q;
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     assign modsub1_in_A[i]  = A_d[i];
     assign modsub1_in_B[i]  = modsub0_out[i];
-    assign modsub1_in_qH[i] = qH_sub1;
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     assign modmul_in_A[i]  = modsub1_out[i];
-    assign modmul_in_B[i]  = q_inv_d;
-    assign modmul_in_qH[i] = qH_mul;
+    assign modmul_in_B[i]  = q_inv_q;
 end
 
 for (genvar i = 0; i < TP; i++) begin
@@ -352,8 +224,6 @@ end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     modadd #(
-        .LOGA  (LOGQ     ),
-        .LOGB  (LOGQ     ),
         .LOGQ  (LOGQ     ),
         .LOGQH (LOGQH    ),
         .FF_IN (1        ),
@@ -363,44 +233,40 @@ for (genvar i = 0; i < TP; i = i + 1) begin
         .clk(clk            ),
         .A  (modadd_in_A[i] ),
         .B  (modadd_in_B[i] ),
-        .qH (modadd_in_qH[i]),
+        .qH (qH_q),
         .C  (modadd_out[i]  )
     );
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     modsub #(
-        .LOGA  (LOGQ     ),
-        .LOGB  (LOGQ     ),
         .LOGQ  (LOGQ     ),
         .LOGQH (LOGQH    ),
         .FF_IN (1        ),
         .FF_SUB(FF_ADDSUB),
         .FF_OUT(1        )
     ) modsub_inst0 (
-        .clk(clk             ),
-        .A  (modsub0_in_A[i] ),
-        .B  (modsub0_in_B[i] ),
-        .qH (modsub0_in_qH[i]),
-        .C  (modsub0_out[i]  )
+        .clk(clk            ),
+        .A  (modsub0_in_A[i]),
+        .B  (modsub0_in_B[i]),
+        .qH (qH_q           ),
+        .C  (modsub0_out[i] )
     );
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     modsub #(
-        .LOGA  (LOGQ     ),
-        .LOGB  (LOGQ     ),
         .LOGQ  (LOGQ     ),
         .LOGQH (LOGQH    ),
         .FF_IN (1        ),
         .FF_SUB(FF_ADDSUB),
         .FF_OUT(0        )
     ) modsub_inst1 (
-        .clk(clk             ),
-        .A  (modsub1_in_A[i] ),
-        .B  (modsub1_in_B[i] ),
-        .qH (modsub1_in_qH[i]),
-        .C  (modsub1_out[i]  )
+        .clk(clk            ),
+        .A  (modsub1_in_A[i]),
+        .B  (modsub1_in_B[i]),
+        .qH (qH_q           ),
+        .C  (modsub1_out[i] )
     );
 end
 
@@ -419,11 +285,11 @@ for (genvar i = 0; i < TP; i = i + 1) begin
         .MORE_DSP(MORE_DSP),
         .NON_STD (NON_STD )
     ) modmul_wlm_inst (
-        .clk(clk            ),
-        .A  (modmul_in_A[i] ),
-        .B  (modmul_in_B[i] ),
-        .qH (modmul_in_qH[i]),
-        .T  (modmul_out[i]  )
+        .clk(clk           ),
+        .A  (modmul_in_A[i]),
+        .B  (modmul_in_B[i]),
+        .qH (qH_q          ),
+        .T  (modmul_out[i] )
     );
 end
 
@@ -455,6 +321,38 @@ end
 
 always @(posedge clk) begin
     if (rst) begin
+        run_q <= 0;
+        run_counter <= 0;
+    end
+    else if (i_valid && !last) begin
+        run_q <= 1;
+        run_counter <= 0;
+    end
+    else if (run_q) begin
+        run_counter <= run_counter + 1;
+        if (run_counter == K - 1)
+            run_q <= 0;
+    end 
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        last_q <= 0;
+        last_counter <= 0;
+    end
+    else if (i_valid && last) begin
+        last_q <= 1;
+        last_counter <= 0;
+    end
+    else if (last_q) begin
+        last_counter <= last_counter + 1;
+        if (last_counter == K - 1)
+            last_q <= 0;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
         qH_q <= 0;
         q_inv_q <= 0;
         halfmod_q <= 0;
@@ -463,19 +361,6 @@ always @(posedge clk) begin
         qH_q <= qH;
         q_inv_q <= q_inv;
         halfmod_q <= halfmod;
-    end
-end
-
-always @(posedge clk) begin
-    if (rst) begin
-        qH_q_q <= 0;
-        q_inv_q_q <= 0;
-        halfmod_q_q <= 0;
-    end
-    else if (i_valid) begin
-        qH_q_q <= qH_q;
-        q_inv_q_q <= q_inv_q;
-        halfmod_q_q <= halfmod_q;
     end
 end
 
@@ -498,25 +383,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (i_valid && last) begin
-        i_valid_last <= 1;
-    end
-    else begin
-        i_valid_last <= 0;
-    end
-end
-
-always @(posedge clk) begin
-    if (i_valid && !last) begin
-        i_valid_not_last <= 1;
-    end
-    else begin
-        i_valid_not_last <= 0;
-    end
-end
-
-always @(posedge clk) begin
-    if (i_valid_last_shifted || i_valid_not_last_shifted) begin
+    if (last_d || run_d) begin
         o_valid <= 1;
     end
     else begin
