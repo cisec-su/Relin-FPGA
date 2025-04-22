@@ -69,14 +69,15 @@ localparam B_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_BRAM_READ;
 reg run_q;
 reg last_q;
 
-reg [LOGK-1:0] run_counter;
-reg [LOGK-1:0] last_counter;
+reg [LOGK-1:0] run_ctr;
+reg [LOGK-1:0] last_ctr;
 
 reg [LOGQH -1:0] qH_q;
 reg [LOGQ  -1:0] q_inv_q;
 reg [LOGQ  -1:0] halfmod_q;
 
-wire run_d;
+wire o_valid_last;
+wire o_valid_not_last;
 wire last_d;
 
 wire [LOGQ -1:0] A_d [0:TP-1];
@@ -126,23 +127,33 @@ reg             ren;
 //////////////////////// Input Registering //////////////////////////////
 
 shift_reg #(
-    .SHIFT (LAT_LAST - 2),
+    .SHIFT (LAT_LAST - 1),
+    .WIDTH (1           )
+) shift_reg_o_valid_last (
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (i_valid     ),
+    .o_data (o_valid_last)
+);
+
+shift_reg #(
+    .SHIFT (LAT - LAT_LAST),
+    .WIDTH (1             )
+) shift_reg_o_valid_not_last (
+    .clk    (clk             ),
+    .rst    (rst             ),
+    .i_data (o_valid_last    ),
+    .o_data (o_valid_not_last)
+);
+
+shift_reg #(
+    .SHIFT (LAT_LAST - 1),
     .WIDTH (1           )
 ) shift_reg_last_d (
     .clk    (clk   ),
     .rst    (rst   ),
-    .i_data (last_q),
+    .i_data (last  ),
     .o_data (last_d)
-);
-
-shift_reg #(
-    .SHIFT (LAT - 2),
-    .WIDTH (1      )
-) shift_reg_run_d (
-    .clk    (clk  ),
-    .rst    (rst  ),
-    .i_data (run_q),
-    .o_data (run_d)
 );
 
 shift_reg_arr #(
@@ -172,10 +183,10 @@ shift_reg_arr #(
     .WIDTH (LOGQ   ),
     .LENGTH(TP     )
 ) shift_reg_B_d (
-    .clk    (clk ),
-    .rst    (rst ),
-    .i_data (B   ),
-    .o_data (B_d )
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (B  ),
+    .o_data (B_d)
 );
 
 /////////////////////////////////////////////////////////////////////////
@@ -322,15 +333,15 @@ end
 always @(posedge clk) begin
     if (rst) begin
         run_q <= 0;
-        run_counter <= 0;
+        run_ctr <= 0;
     end
     else if (i_valid && !last) begin
         run_q <= 1;
-        run_counter <= 0;
+        run_ctr <= 0;
     end
     else if (run_q) begin
-        run_counter <= run_counter + 1;
-        if (run_counter == K - 1)
+        run_ctr <= run_ctr + 1;
+        if (run_ctr == K - 1)
             run_q <= 0;
     end 
 end
@@ -338,15 +349,15 @@ end
 always @(posedge clk) begin
     if (rst) begin
         last_q <= 0;
-        last_counter <= 0;
+        last_ctr <= 0;
     end
     else if (i_valid && last) begin
         last_q <= 1;
-        last_counter <= 0;
+        last_ctr <= 0;
     end
     else if (last_q) begin
-        last_counter <= last_counter + 1;
-        if (last_counter == K - 1)
+        last_ctr <= last_ctr + 1;
+        if (last_ctr == K - 1)
             last_q <= 0;
     end
 end
@@ -383,7 +394,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (last_d || run_d) begin
+    if ((last_d && o_valid_last) || (!last_d && o_valid_not_last)) begin
         o_valid <= 1;
     end
     else begin
