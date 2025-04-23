@@ -66,19 +66,19 @@ localparam B_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_BRAM_READ;
 
 ///////////////////////// Signal Declarations ///////////////////////////
 
-reg run_q;
 reg last_q;
-
-reg [LOGK-1:0] run_ctr;
 reg [LOGK-1:0] last_ctr;
 
 reg [LOGQH -1:0] qH_q;
 reg [LOGQ  -1:0] q_inv_q;
 reg [LOGQ  -1:0] halfmod_q;
 
-wire o_valid_last;
-wire o_valid_not_last;
+reg o_valid_last;
+reg o_valid_not_last;
 wire last_d;
+
+wire o_valid_last_shifted;
+wire o_valid_not_last_shifted;
 
 wire [LOGQ -1:0] A_d [0:TP-1];
 wire [LOGQ -1:0] B_d [0:TP-1];
@@ -132,18 +132,18 @@ shift_reg #(
 ) shift_reg_o_valid_last (
     .clk    (clk         ),
     .rst    (rst         ),
-    .i_data (i_valid     ),
-    .o_data (o_valid_last)
+    .i_data (o_valid_last),
+    .o_data (o_valid_last_shifted     )
 );
 
 shift_reg #(
-    .SHIFT (LAT - LAT_LAST),
-    .WIDTH (1             )
+    .SHIFT (LAT - 1),
+    .WIDTH (1      )
 ) shift_reg_o_valid_not_last (
-    .clk    (clk             ),
-    .rst    (rst             ),
-    .i_data (o_valid_last    ),
-    .o_data (o_valid_not_last)
+    .clk    (clk                     ),
+    .rst    (rst                     ),
+    .i_data (o_valid_not_last        ),
+    .o_data (o_valid_not_last_shifted)
 );
 
 shift_reg #(
@@ -179,7 +179,7 @@ shift_reg_arr #(
 );
 
 shift_reg_arr #(
-    .SHIFT (B_SHIFT),
+    .SHIFT (1      ),
     .WIDTH (LOGQ   ),
     .LENGTH(TP     )
 ) shift_reg_B_d (
@@ -330,21 +330,7 @@ end
 
 ///////////////////////////// Sequential Logic //////////////////////////
 
-always @(posedge clk) begin
-    if (rst) begin
-        run_q <= 0;
-        run_ctr <= 0;
-    end
-    else if (i_valid && !last) begin
-        run_q <= 1;
-        run_ctr <= 0;
-    end
-    else if (run_q) begin
-        run_ctr <= run_ctr + 1;
-        if (run_ctr == K - 1)
-            run_q <= 0;
-    end 
-end
+assign o_valid = o_valid_last_shifted || o_valid_not_last_shifted;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -394,11 +380,15 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if ((last_d && o_valid_last) || (!last_d && o_valid_not_last)) begin
-        o_valid <= 1;
+    if (i_valid && last) begin
+        o_valid_last <= 1;
+    end
+    else if (i_valid && !last) begin
+        o_valid_not_last <= 1;
     end
     else begin
-        o_valid <= 0;
+        o_valid_last <= 0;
+        o_valid_not_last <= 0;
     end
 end
 
