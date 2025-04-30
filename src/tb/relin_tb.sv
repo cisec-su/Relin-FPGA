@@ -1,9 +1,9 @@
 module relin_tb
 #(   
-    parameter L        = 30  , // Number of primes
+    parameter L        = 5  , // Number of primes
     parameter LOGQ     = 64  ,
     parameter LOGQH    = 17  ,
-    parameter LOGN     = 16  ,
+    parameter LOGN     = 12  ,
     parameter LOGTP    = 5   ,
     parameter NUMPSI   = 1 << LOGN
 )();
