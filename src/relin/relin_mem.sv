@@ -51,136 +51,41 @@ module relin_mem
         relin_t.master     relin_t
     );
 
-localparam LOGK = LOGN -  $rtoi($ceil($clog2(TP)));
-localparam K    = 1 << LOGK;
-localparam LAT  = 5;
+// ========== Interface P0 ==========
+assign relin_t.i_p0_en  = i_p0_en;
+assign relin_t.i_p0_idx = i_p0_idx;
+assign relin_t.i_p0_idy = i_p0_idy;
+assign i_p0_data        = relin_t.i_p0_data;
+assign i_p0_ready       = relin_t.i_p0_ready;
+assign i_p0_valid       = relin_t.i_p0_valid;
+assign i_p0_done        = relin_t.i_p0_done;
 
+// ========== Interface P1 ==========
+assign relin_t.i_p1_en  = i_p1_en;
+assign relin_t.i_p1_idx = i_p1_idx;
+assign relin_t.i_p1_idy = i_p1_idy;
+assign i_p1_data        = relin_t.i_p1_data;
+assign i_p1_ready       = relin_t.i_p1_ready;
+assign i_p1_valid       = relin_t.i_p1_valid;
+assign i_p1_done        = relin_t.i_p1_done;
 
+// ========== Interface P2 ==========
+assign relin_t.i_p2_en  = i_p2_en;
+assign relin_t.i_p2_idx = i_p2_idx;
+assign relin_t.i_p2_idy = i_p2_idy;
+assign i_p2_data        = relin_t.i_p2_data;
+assign i_p2_ready       = relin_t.i_p2_ready;
+assign i_p2_valid       = relin_t.i_p2_valid;
+assign i_p2_done        = relin_t.i_p2_done;
 
-always @(posedge clk) begin
-    if (rst)
-        i_p0_ready <= 1;
-    else if (i_p0_en)
-        i_p0_ready <= 0;
-    else if (i_p0_done)
-        i_p0_ready <= 1;
-end
+// ========== Interface P3 ==========
+assign relin_t.o_p3_en   = o_p3_en;
+assign relin_t.o_p3_idx  = o_p3_idx;
+assign relin_t.o_p3_idy  = o_p3_idy;
+assign relin_t.o_p3_data = o_p3_data;
+assign o_p3_done         = relin_t.o_p3_done;
+assign o_p3_ready        = relin_t.o_p3_ready;
 
-
-always @(posedge clk) begin
-    if (rst)
-        i_p1_ready <= 1;
-    else if (i_p1_en)
-        i_p1_ready <= 0;
-    else if (i_p1_done)
-        i_p1_ready <= 1;
-end
-
-
-always @(posedge clk) begin
-    if (rst)
-        i_p2_ready <= 1;
-    else if (i_p2_en)
-        i_p2_ready <= 0;
-    else if (i_p2_done)
-        i_p2_ready <= 1;
-end
-
-
-always @(posedge clk) begin
-    if (rst)
-        o_p3_ready <= 1;
-    else if (o_p3_en)
-        o_p3_ready <= 0;
-    else if (o_p3_done)
-        o_p3_ready <= 1;
-end
-
-
-
-shift_reg #(
-    .LAT   (LAT),
-    .WIDTH (1  ),
-    .RST_EN(1  )
-) i_p0_valid_shift_reg (
-    .clk    (clk       ),
-    .rst    (rst       ),
-    .i_data (i_p0_en   ),
-    .o_data (i_p0_valid)
-);
-
-
-shift_reg #(
-    .LAT   (LAT + K),
-    .WIDTH (1      ),
-    .RST_EN(1      )
-) i_p0_done_shift_reg (
-    .clk    (clk      ),
-    .rst    (rst      ),
-    .i_data (i_p0_en  ),
-    .o_data (i_p0_done)
-);
-
-
-shift_reg #(
-    .LAT   (LAT),
-    .WIDTH (1  ),
-    .RST_EN(1  )
-) i_p1_valid_shift_reg (
-    .clk    (clk       ),
-    .rst    (rst       ),
-    .i_data (i_p1_en   ),
-    .o_data (i_p1_valid)
-);
-
-
-shift_reg #(
-    .LAT   (LAT + K),
-    .WIDTH (1      ),
-    .RST_EN(1      )
-) i_p1_done_shift_reg (
-    .clk    (clk      ),
-    .rst    (rst      ),
-    .i_data (i_p1_en  ),
-    .o_data (i_p1_done)
-);
-
-
-shift_reg #(
-    .LAT   (LAT),
-    .WIDTH (1  ),
-    .RST_EN(1  )
-) i_p2_valid_shift_reg (
-    .clk    (clk       ),
-    .rst    (rst       ),
-    .i_data (i_p2_en   ),
-    .o_data (i_p2_valid)
-);
-
-
-shift_reg #(
-    .LAT   (LAT + K),
-    .WIDTH (1      ),
-    .RST_EN(1      )
-) i_p2_done_shift_reg (
-    .clk    (clk      ),
-    .rst    (rst      ),
-    .i_data (i_p2_en  ),
-    .o_data (i_p2_done)
-);
-
-
-
-shift_reg #(
-    .LAT   (LAT + K),
-    .WIDTH (1      ),
-    .RST_EN(1      )
-) o_p3_done_shift_reg (
-    .clk    (clk      ),
-    .rst    (rst      ),
-    .i_data (o_p3_en  ),
-    .o_data (o_p3_done)
-);
 
 
 endmodule

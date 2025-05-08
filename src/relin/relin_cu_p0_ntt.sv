@@ -22,6 +22,7 @@ module relin_cu_p0_ntt
         output reg [LOGL    -1:0] q_id         ,
         output reg                intt_ready   ,
         output reg                i_valid_ntt  ,
+        output reg                i_valid_psi  ,
         output reg                busy
     );
 
@@ -144,6 +145,7 @@ always @(*) begin
     i_p0_idy = 0;
     q_id = ctr_L;
     i_valid_ntt = 1'b0;
+    i_valid_psi = 1'b0;
 
 
     case (state)
@@ -182,6 +184,9 @@ always @(*) begin
         end
         ST_LOAD_PSI_WAIT_DONE: begin
             busy = 1;
+            if (i_p0_valid) begin
+                i_valid_psi = 1;
+            end
             if (i_p0_done) begin
                 next_state = ST_LOAD_POLY_START;
             end

@@ -19,15 +19,15 @@ module relin_q_mux
     );
 
 
-reg [LOGQH-1:0] qH_int;
+reg [ LOGQ-1:0] qH_int;
 
 always @(*) begin
     case (i)
         // will be extended
-        default: qH_int = 64'h000000000000;
+        default: qH_int = 60'h800580000000001; // NTT Q 
     endcase
 end
 
-assign qH = qH_int;
+assign qH = qH_int[LOGQ-1 : LOGQ - LOGQH];  // take MSB LOGQH bits
 
 endmodule

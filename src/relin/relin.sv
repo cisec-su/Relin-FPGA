@@ -7,7 +7,7 @@ module relin
         parameter LOGQH    = 17       ,
         parameter LOGN     = 16       ,
         parameter LOGTP    = 5        , // coefficient throughput
-        parameter NUM_PSI  = 1 << LOGN, // number of twiddles that must be loaded
+        parameter NUM_PSI  = 1 << LOGN, // number of twiddles that must be loaded **?
         // delay configuration between modules
         parameter CU_OUT__ACC__DELAY        = 2 ,
         parameter CU_OUT__CU_ACC__DELAY     = 2 ,
@@ -196,9 +196,9 @@ relin_cu_p0_ntt #(
     .q_id       (q_id          ),
     .intt_ready (acc_start_read),
     .i_valid_ntt(i_valid_ntt   ),
+    .i_valid_psi(i_valid_psi   ),
     .busy       (              )
 );
-
 
 relin_ntt_mux #(
     .LOGQ (LOGQ ),
@@ -210,8 +210,8 @@ relin_ntt_mux #(
     .clk           (clk           ),
     .rst           (rst           ),
     .load_q        (load_q_ntt    ),
-    .load_psi      (i_psi_valid   ),
-    .qH            (qH            ),
+    .load_psi      (i_valid_psi   ),
+    .qH            (qH_ntt        ),
     .intt          (intt          ),
     .i_valid_ntt   (i_valid_ntt   ),
     .i_valid_intt_A(i_valid_intt_A),
@@ -457,7 +457,7 @@ shift_reg_arr #(
 generate
     for (genvar i = 0; i < TP; i = i + 1) begin
         assign i_psi_data     [i] = i_p0_data     [i];
-        assign i_poly_ntt     [i] = i_p0_data     [i];
+        assign i_poly_ntt     [i] = i_p0_data     [i]; 
         assign i_poly_intt_A  [i] = acc_0_o_poly  [i];
         assign i_poly_intt_B  [i] = acc_1_o_poly  [i];
         assign fifo_i_data    [i] = ntt_o_poly    [i];
