@@ -79,6 +79,7 @@ wire [LOGQ-1:0] fifo_o_data [TP-1:0];
 // hadamard control path
 wire had_0_i_valid, had_1_i_valid;
 wire had_0_o_valid, had_1_o_valid;
+wire had_en;
 // hadamard data path
 wire [LOGQ-1:0] had_0_i_poly_A [TP-1:0];
 wire [LOGQ-1:0] had_1_i_poly_A [TP-1:0];
@@ -238,7 +239,10 @@ relin_cu_p1_p2 #(
     .i_p2_ready(i_p2_ready ),
     .i_p2_en   (i_p2_en    ),
     .i_p2_idx  (i_p2_idx   ),
-    .i_p2_idy  (i_p2_idy   )
+    .i_p2_idy  (i_p2_idy   ),
+    .had_en    (had_en     ),
+    .i_p1_valid(i_p1_valid_d1),
+    .i_p2_valid(i_p2_valid_d1)
 );
 
 
@@ -414,6 +418,16 @@ shift_reg #(
     .o_data (i_p1_valid_d)
 );
 
+shift_reg #(
+    .LAT   (1),
+    .WIDTH (1)
+) i_p1_valid_d1_shift_reg (
+    .clk    (clk          ),
+    .rst    (rst          ),
+    .i_data (i_p1_valid_d ),
+    .o_data (i_p1_valid_d1)
+);
+
 
 shift_reg #(
     .LAT   (1),
@@ -426,8 +440,19 @@ shift_reg #(
 );
 
 
+shift_reg #(
+    .LAT   (1),
+    .WIDTH (1)
+) i_p2_valid_d1_shift_reg (
+    .clk    (clk          ),
+    .rst    (rst          ),
+    .i_data (i_p2_valid_d ),
+    .o_data (i_p2_valid_d1)
+);
+
+
 shift_reg_arr #(
-    .LAT   (1   ),
+    .LAT   (2   ),
     .WIDTH (LOGQ),
     .LENGTH(TP  ),
     .RST_EN(0   )
@@ -440,7 +465,7 @@ shift_reg_arr #(
 
 
 shift_reg_arr #(
-    .LAT   (1   ),
+    .LAT   (2   ),
     .WIDTH (LOGQ),
     .LENGTH(TP  ),
     .RST_EN(0   )
@@ -481,8 +506,8 @@ assign i_valid_intt_B = acc_1_o_valid;
 assign fifo_wen = ntt_o_valid;
 assign fifo_ren = i_p1_valid_d;
 
-assign had_0_i_valid = i_p1_valid_d;
-assign had_1_i_valid = i_p2_valid_d;
+assign had_0_i_valid = had_en & i_p1_valid_d1;
+assign had_1_i_valid = had_en & i_p2_valid_d1;
 
 assign acc_0_wen = had_0_o_valid;
 assign acc_1_wen = had_1_o_valid;

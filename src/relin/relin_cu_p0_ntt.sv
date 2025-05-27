@@ -206,7 +206,7 @@ always @(*) begin
                 i_valid_ntt = 1;
             end
             if (i_p0_done) begin
-                if (ctr_poly < L) begin
+                if (ctr_poly < (L - 1)) begin
                     next_state = ST_LOAD_POLY_START;
                     ctr_poly_inc = 1;
                 end
@@ -227,9 +227,12 @@ always @(*) begin
         end
         ST_LOAD_IPSI_WAIT_DONE: begin
             busy = 1;
+            if (i_p0_valid) begin
+                i_valid_psi = 1;
+            end
             if (i_p0_done) begin
                 intt_ready = 1;
-                if (ctr_L < (L - 1)) begin
+                if (ctr_L < L) begin
                     next_state = ST_READY;
                     ctr_L_inc = 1;
                 end

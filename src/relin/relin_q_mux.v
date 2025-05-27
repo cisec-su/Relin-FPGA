@@ -23,8 +23,12 @@ reg [ LOGQ-1:0] qH_int;
 
 always @(*) begin
     case (i)
-        // will be extended
-        default: qH_int = 60'h800580000000001; // NTT Q 
+        0      : qH_int = 60'h800580000000001;
+        1      : qH_int = 60'h800800000000001;
+        2      : qH_int = 60'h801a80000000001;
+        3      : qH_int = 60'h802500000000001;
+        4      : qH_int = 60'h803200000000001;
+        default: qH_int = 60'h800580000000001; // default to first prime
     endcase
 end
 

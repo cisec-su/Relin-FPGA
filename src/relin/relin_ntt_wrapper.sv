@@ -21,14 +21,38 @@ module ntt_wrapper
     output [LOGQ -1:0] o_poly       [0:TP-1]    //[0:(1<<LOGTP)-1]
 );
 
-localparam TP            = 1 << LOGTP;
-localparam LAT           = 6000;
 
-// ----------------------------------------------
-// 1. Control logic for start/op
-// ----------------------------------------------
-logic start;
+
+localparam TP  = 1 << LOGTP;
+localparam tp_ntt_params_t tp_ntt_params = {LOGN, 5, 2, 5, LOGTP, LOGQ, LOGQH, 1, 0};
+localparam LAT = tp_ntt_lat(tp_ntt_params) + (1 << (LOGN - LOGTP)) + 2;
+
+
+
+reg start;
 tp_ntt_op_t op;
+wire [LOGQ-1:0]  i_poly_d [0:TP-1];
+wire [LOGQ-1:0]  psi_d    [0:TP-1];
+wire [LOGQH-1:0] qH_d;
+wire [TP*LOGQ-1:0] flat_i_poly;
+wire [(TP-1)*LOGQ-1:0] flat_psi;
+wire [TP*LOGQ-1:0] flat_o_poly;
+
+
+
+for (genvar i = 0; i < TP; i = i + 1) begin
+    assign flat_i_poly[i*LOGQ +: LOGQ] = i_poly_d[i];
+end
+
+for (genvar i = 0; i < TP - 1; i = i + 1) begin
+    assign flat_psi[i*LOGQ +: LOGQ] = psi_d[i];
+end
+
+for (genvar i = 0; i < TP; i = i + 1) begin
+    assign o_poly[TP - i - 1] = flat_o_poly[i*LOGQ +: LOGQ];
+end
+
+
 
 always @(posedge clk) begin
     if (rst) begin
@@ -51,9 +75,8 @@ always @(posedge clk) begin
     end
 end
 
-// ----------------------------------------------
-// 2. Delay i_valid to generate o_valid
-// ----------------------------------------------
+
+
 shift_reg #(
     .LAT    (LAT),
     .WIDTH  (1),
@@ -65,15 +88,9 @@ shift_reg #(
     .o_data (o_valid)
 );
 
-// ----------------------------------------------
-// 3. Delay i_poly, psi, and qH by 1 cycle
-// ----------------------------------------------
-logic [LOGQ-1:0]  i_poly_d [0:TP-1];
-logic [LOGQ-1:0]  psi_d    [0:TP-1];
-logic [LOGQH-1:0] qH_d;
 
 shift_reg_arr #(
-    .LAT    (1),
+    .LAT    (2),
     .WIDTH  (LOGQ),
     .LENGTH (TP)
 ) i_poly_delay (
@@ -83,8 +100,9 @@ shift_reg_arr #(
     .o_data (i_poly_d)
 );
 
+
 shift_reg_arr #(
-    .LAT    (1),
+    .LAT    (2),
     .WIDTH  (LOGQ),
     .LENGTH (TP)
 ) psi_delay (
@@ -93,6 +111,7 @@ shift_reg_arr #(
     .i_data (psi),
     .o_data (psi_d)
 );
+
 
 shift_reg #(
     .LAT    (1),
@@ -105,59 +124,17 @@ shift_reg #(
     .o_data (qH_d)
 );
 
-// ----------------------------------------------
-// 4. Flatten i_poly_d and psi_d
-// ----------------------------------------------
-logic [TP*LOGQ-1:0] flat_i_poly;
-logic [(TP-1)*LOGQ-1:0] flat_psi;
-
-genvar i;
-generate
-    for (i = 0; i < TP; i = i + 1) begin
-        assign flat_i_poly[(TP - 1 - i)*LOGQ +: LOGQ] = i_poly_d[i];
-    end
-    for (i = 0; i < (8-1)*4; i = i + 1) begin
-        assign flat_psi[(TP - 2 - i)*LOGQ +: LOGQ] = 1;//psi_d[i];
-    end
-    assign flat_psi[3*LOGQ-1 : 0] = 1;//0;
-endgenerate
-
-/*
-TP=32   0 1 2 3 4 27 x x x x
-
-TP-1=31 [01234..27xxx] 
-
-*/
-
-
-// ----------------------------------------------
-// 5. Output: connect o_poly by unpacking
-// ----------------------------------------------
-wire [TP*LOGQ-1:0] flat_o_poly;
-
-generate
-    for (i = 0; i < TP; i = i + 1) begin
-        assign o_poly[i] = flat_o_poly[(TP - 1 - i)*LOGQ +: LOGQ];
-    end
-endgenerate
-
-// ----------------------------------------------
-// 6. Instantiate tp_ntt_top
-// ----------------------------------------------
-localparam LOGN1 = 3;
-localparam LOGN2 = 3;
-localparam LOGN3 = 3;
 
 tp_ntt_top #(
-    .LOGN     (LOGN),
-    .LOGN1    (LOGN1),
-    .LOGN2    (LOGN2),
-    .LOGN3    (LOGN3),
-    .LOGTP    (LOGTP),
-    .LOGQ     (LOGQ),
-    .LOGQH    (LOGQH),
-    .NON_STD  (1),
-    .MORE_DSP (0)
+    .LOGN     (tp_ntt_params.LOGN    ),
+    .LOGN1    (tp_ntt_params.LOGN1   ),
+    .LOGN2    (tp_ntt_params.LOGN2   ),
+    .LOGN3    (tp_ntt_params.LOGN3   ),
+    .LOGTP    (tp_ntt_params.LOGTP   ),
+    .LOGQ     (tp_ntt_params.LOGQ    ),
+    .LOGQH    (tp_ntt_params.LOGQH   ),
+    .NON_STD  (tp_ntt_params.NON_STD ), 
+    .MORE_DSP (tp_ntt_params.MORE_DSP)    
 ) tp_ntt_top_inst (
     .clk     (clk),
     .rst     (rst),
@@ -169,5 +146,6 @@ tp_ntt_top #(
     .psi     (flat_psi),
     .o_poly  (flat_o_poly)
 );
+
 
 endmodule

@@ -14,7 +14,10 @@ module relin_cu_p1_p2
         input                     i_p2_ready  ,
         output reg                i_p2_en     ,
         output reg [ID_WIDTH-1:0] i_p2_idx    ,
-        output reg [LOGL-1:0]     i_p2_idy
+        output reg [LOGL-1:0]     i_p2_idy    ,
+        input                     i_p1_valid  ,
+        input                     i_p2_valid  ,
+        output reg                had_en
     );
 
 `include "relin_mem.svh"
@@ -25,8 +28,15 @@ localparam LOGL  = $rtoi($ceil($clog2(L + 1)));
 
 typedef enum reg[10:0] {
     ST_LOAD_RLK                  = 11'b00000000010,
+    ST_WAIT_VALID                = 11'b00010000000,
+    ST_WAIT_VALID_0              = 11'b00100000000,
+    ST_WAIT_VALID_1              = 11'b01000000000,
+    ST_WAIT_VALID_2              = 11'b10000000000,
     ST_LOAD_POLY_0               = 11'b00000000100,
-    ST_LOAD_POLY_1               = 11'b00000001000
+    ST_LOAD_POLY_1               = 11'b00000001000,
+    ST_WAIT_READY_0              = 11'b00000010000,
+    ST_WAIT_READY_1              = 11'b00000100000,
+    ST_WAIT_READY_2              = 11'b00001000000        
 } t_state;
 
 (* fsm_encoding = "none" *) t_state state;
@@ -86,51 +96,130 @@ always @(*) begin
     ctr_rst = 1'b0;
     ctr_L_inc = 1'b0;
     ctr_L_rst = 1'b0;
+    had_en = 1'b0;
 
     case (state)
         ST_LOAD_RLK: begin
+            had_en = 1;
             if (en) begin
-                if (i_p1_ready) begin
-                    i_p1_idx = `RLK_0;
+                if (i_p1_ready == 0 || i_p2_ready == 0) begin
+                    next_state = ST_WAIT_READY_0;
+                end
+                else begin
+                    i_p1_idx = ctr_L;
                     i_p1_en = 1;
                     i_p1_idy = ctr;
-                end
-                if (i_p2_ready) begin
-                    i_p2_idx = `RLK_1;
+                    i_p2_idx = ctr_L;
                     i_p2_en = 1;
                     i_p2_idy = ctr;
+                    if (ctr >= (L - 1)) begin
+                        next_state = ST_WAIT_VALID;
+                        ctr_rst = 1;
+                    end
+                    else
+                        ctr_inc = 1;    
                 end
-                if (ctr >= L) begin
-                    next_state = ST_LOAD_POLY_0;
+            end
+        end
+        ST_WAIT_READY_0: begin
+            had_en = 1;
+            if (i_p1_ready && i_p2_ready) begin
+                i_p1_idx = ctr_L;
+                i_p1_en = 1;
+                i_p1_idy = ctr;
+                i_p2_idx = ctr_L;
+                i_p2_en = 1;
+                i_p2_idy = ctr;
+                if (ctr >= (L - 1)) begin
+                    next_state = ST_WAIT_VALID;
                     ctr_rst = 1;
                 end
-                else
+                else begin
+                    next_state = ST_LOAD_RLK;
                     ctr_inc = 1;
+                end
+            end
+        end
+        ST_WAIT_VALID: begin
+            had_en = 1;
+            if (i_p1_valid && i_p2_valid) begin
+                next_state = ST_LOAD_POLY_0;
+            end
+            else if (i_p1_valid) begin
+                next_state = ST_WAIT_VALID_0;
+            end
+            else if (i_p2_valid) begin
+                next_state = ST_WAIT_VALID_1;
+            end
+        end
+        ST_WAIT_VALID_0: begin
+            had_en = 1;
+            if (i_p2_valid) begin
+                next_state = ST_LOAD_POLY_0;
+            end
+        end
+        ST_WAIT_VALID_1: begin
+            had_en = 1;
+            if (i_p1_valid) begin
+                next_state = ST_LOAD_POLY_0;
             end
         end
         ST_LOAD_POLY_0: begin
             if (en) begin
                 if (i_p1_ready) begin
-                    i_p1_idx = `POLY_0;
+                    i_p1_idx = ctr_L;
                     i_p1_en = 1;
-                    i_p1_idy = ctr_L;
+                    i_p1_idy = ctr;
+                    next_state = ST_LOAD_POLY_1;
                 end
+                else begin
+                    next_state = ST_WAIT_READY_1;
+                end
+            end
+        end
+        ST_WAIT_READY_1: begin
+            if (i_p1_ready) begin
+                i_p1_idx = ctr_L;
+                i_p1_en = 1;
+                i_p1_idy = ctr;
                 next_state = ST_LOAD_POLY_1;
             end
         end
         ST_LOAD_POLY_1: begin
             if (en) begin
                 if (i_p1_ready) begin
-                    i_p1_idx = `POLY_1;
+                    i_p1_idx = ctr_L;
                     i_p1_en = 1;
-                    i_p1_idy = ctr_L;
+                    i_p1_idy = ctr;
+                    if (ctr_L >= L) begin
+                        ctr_L_rst = 1;
+                    end
+                    else begin
+                        ctr_L_inc = 1;
+                    end
+                    next_state = ST_WAIT_VALID_2;    
                 end
-                if (ctr_L >= (L - 1)) begin
+                else begin
+                    next_state = ST_WAIT_READY_2;
+                end
+            end
+        end
+        ST_WAIT_READY_2: begin
+            if (i_p1_ready) begin
+                i_p1_idx = ctr_L;
+                i_p1_en = 1;
+                i_p1_idy = ctr;
+                if (ctr_L >= L) begin
                     ctr_L_rst = 1;
                 end
                 else begin
                     ctr_L_inc = 1;
                 end
+                next_state = ST_WAIT_VALID_2;    
+            end
+        end
+        ST_WAIT_VALID_2: begin
+            if (i_p1_valid) begin
                 next_state = ST_LOAD_RLK;
             end
         end

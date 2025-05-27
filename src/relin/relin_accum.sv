@@ -24,7 +24,7 @@ module relin_accum
 localparam K        = (1 << LOGK);              // Total accumulation blocks based on LOGK
 localparam FF_IN    = 1;                        // Flip-flop for input pipeline stage
 localparam FF_OUT   = 1;                        // Flip-flop for output pipeline stage
-localparam LAT      = FF_ADD + FF_IN + FF_OUT;  // Total pipeline latency
+localparam LAT      = FF_ADD + FF_OUT;          // Total pipeline latency
 /////////////////////////////////////////////////////////////////////////
 
 ///////////////////////// Type Declarations ///////////////////////////
@@ -42,65 +42,64 @@ reg  [LOGQH-1:0] qH_int;                  // Stored modulus value
 wire [LOGQ-1 :0] modadd_out   [TP-1:0];   // Output of modular addition pipeline
 reg  [LOGQ-1 :0] A_q          [TP-1:0];   // Register A
 
-wire [LOGQ-1 :0] bram_out [TP-1:0];       // Output data from BRAM
-
+wire [LOGQ-1 :0] modadd_in_A  [TP-1:0];
+wire [LOGQ-1 :0] bram_out [TP-1:0];
 reg  [LOGK-1:0] read_addr;                  // Counter for read operations
 reg  [LOGK-1:0] write_addr;                 // Write address for BRAM
 reg start_read, start_write;                // Signals to start read and write operations
+reg  bram_wen;
 
-reg  bram_wen;                            // Write enable for BRAM
+reg  first_q;
+
 
 state_t state, next_state;                // State machine signals
 /////////////////////////////////////////////////////////////////////////
 
-// Output signal assignments
-generate
-    for (genvar i = 0; i < TP; i++) begin : OUT_GEN
-        assign C[i] = bram_out[i];
-    end
-endgenerate
+for (genvar i = 0; i < TP; i++) begin : OUT_GEN
+    assign C[i] = bram_out[i];
+end
+
+for (genvar i = 0; i < TP; i++) begin : IN_GEN
+    assign modadd_in_A[i] = (first_q) ? bram_out[i] : {LOGQ{1'b0}};
+end
 
 /////////////////////////////////////////////////////////////////////////
 
 // Modular addition instances
-generate
-    for (genvar i = 0; i < TP; i++) begin : MODADD_GEN
-        modadd #(
-            .LOGA  (LOGQ  ), // Input A width
-            .LOGB  (LOGQ  ), // Input B width
-            .LOGQ  (LOGQ  ), // Output width
-            .LOGQH (LOGQH ), // Modulus width
-            .FF_IN (0     ), // Input pipeline stage. Done manually, see A_q
-            .FF_ADD(FF_ADD), // Addition pipeline stage
-            .FF_OUT(FF_OUT)  // Output pipeline stage
-        ) mod_adder_inst (
-            .clk(clk          ), // Clock signal
-            .A  (bram_out[i]  ), // Input from BRAM
-            .B  (A_q[i]       ), // Input coefficient array
-            .qH (qH_int       ), // Modulus value
-            .C  (modadd_out[i])  // Result of modular addition
-        );
-    end
-endgenerate
+for (genvar i = 0; i < TP; i++) begin : MODADD_GEN
+    modadd #(
+        .LOGA  (LOGQ  ), // Input A width
+        .LOGB  (LOGQ  ), // Input B width
+        .LOGQ  (LOGQ  ), // Output width
+        .LOGQH (LOGQH ), // Modulus width
+        .FF_IN (0     ), // Input pipeline stage. Done manually, see A_q
+        .FF_ADD(FF_ADD), // Addition pipeline stage
+        .FF_OUT(FF_OUT)  // Output pipeline stage
+    ) mod_adder_inst (
+        .clk(clk          ), // Clock signal
+        .A  (modadd_in_A[i]), // Input from BRAM
+        .B  (A_q[i]       ), // Input coefficient array
+        .qH (qH_int       ), // Modulus value
+        .C  (modadd_out[i])  // Result of modular addition
+    );
+end
 
 /////////////////////////////////////////////////////////////////////////
 
 // BRAM instances for each coefficient
-generate
-    for (genvar i = 0; i < TP; i++) begin : BRAM_GEN
-        bram #(
-            .WIDTH (LOGQ),          // Data size (word size)
-            .LENGTH(K   )           // Memory size
-        ) bram_inst (
-            .clk  (clk          ),   // Clock signal
-            .wen  (bram_wen     ),   // Write enable
-            .waddr(write_addr   ),   // Write address
-            .din  (modadd_out[i]),   // Data input
-            .raddr(read_addr    ),   // Read address
-            .dout (bram_out[i]  )    // Data output
-        );
-    end
-endgenerate
+for (genvar i = 0; i < TP; i++) begin : BRAM_GEN
+    bram #(
+        .WIDTH (LOGQ),          // Data size (word size)
+        .LENGTH(K   )           // Memory size
+    ) bram_inst (
+        .clk  (clk          ),   // Clock signal
+        .wen  (bram_wen     ),   // Write enable
+        .waddr(write_addr   ),   // Write address
+        .din  (modadd_out[i]),   // Data input
+        .raddr(read_addr    ),   // Read address
+        .dout (bram_out[i]  )    // Data output
+    );
+end
 /////////////////////////////////////////////////////////////////////////
 
 
@@ -117,6 +116,16 @@ end
 // Register A 
 always @(posedge clk) begin
     A_q <= A;
+end
+
+
+always @(posedge clk) begin
+    if (rst) begin
+        first_q <= 0;
+    end
+    else if (write_addr == (K - 1)) begin
+        first_q <= 1;
+    end
 end
 
 
@@ -183,13 +192,18 @@ always @(*) begin
         ST_WRITE_INIT: begin
             busy = 1;
             if (read_addr == LAT) begin
-                start_write = 1;
                 next_state  = ST_WRITE_LOOP;
+            end
+            if (write_addr != 0) begin
+                bram_wen = 1;
             end
         end
         ST_WRITE_LOOP: begin
             busy = 1;
             bram_wen = 1;
+            if (write_addr == 0) begin
+                start_write = 1;
+            end
             if (read_addr == (K - 1)) begin
                 done       = 1;
                 next_state = ST_WRITE_END;

@@ -18,6 +18,10 @@ localparam LOGK = $rtoi($ceil($clog2(K)));
 
 wire [LOGK-1:0] ctr_i;
 wire [LOGK-1:0] ctr_o;
+wire bram_wen;
+
+
+assign bram_wen = wen | (|ctr_i);
 
 counter #(
     .WIDTH(LOGK)

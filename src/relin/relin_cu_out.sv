@@ -116,7 +116,7 @@ always @(*) begin
         end
         ST_POLY_1_WRITE_WAIT_DONE: begin
             if (o_p3_done) begin
-                if (ctr == (L - 1)) begin
+                if (ctr == L) begin
                     done_all = 1;
                     ctr_rst = 1;
                 end

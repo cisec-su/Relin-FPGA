@@ -24,7 +24,8 @@ typedef enum reg[10:0] {
     ST_INTT_0                   = 11'b00000000010,
     ST_INTT_1                   = 11'b00000000100,
     ST_INTT_2                   = 11'b00000001000,
-    ST_INTT_D                   = 11'b00000010000
+    ST_INTT_D                   = 11'b00000010000,
+    ST_INTT_3                   = 11'b00000100000
 } t_state;
 
 (* fsm_encoding = "none" *) t_state state;
@@ -106,7 +107,7 @@ always @(*) begin
     case (state)
         ST_NTT: begin
             if (acc_0_done) begin
-                if (ctr >= L) begin
+                if (ctr >= (L - 1)) begin
                     next_state = ST_INTT_0;
                     ctr_rst = 1;
                     if (REN_DELAY != 0) begin
@@ -132,7 +133,7 @@ always @(*) begin
             if (acc_0_done) begin
                 if (REN_DELAY == 0) begin
                     acc_1_ren = 1;
-                    next_state = ST_NTT;
+                    next_state = ST_INTT_3;
                 end
                 else begin
                     next_state = ST_INTT_D;
@@ -143,12 +144,17 @@ always @(*) begin
             if (REN_DELAY != 0) begin
                 if (ctr_d == (REN_DELAY - 1)) begin
                     acc_1_ren = 1;
-                    next_state = ST_NTT;
+                    next_state = ST_INTT_3;
                     ctr_d_rst = 1;
                 end
                 else begin
                     ctr_d_inc = 1;
                 end
+            end
+        end
+        ST_INTT_3: begin
+            if (acc_1_done) begin
+                next_state = ST_NTT;
             end
         end
     endcase
