@@ -62,7 +62,7 @@ parameter ID_WIDTH = 4;
 
 localparam LOGK = LOGN -  $rtoi($ceil($clog2(TP)));
 localparam K    = 128;//1 << LOGK;
-localparam LAT  = 5;
+localparam LAT  = 1;
 
 localparam N    = 1 << LOGN;
 localparam N1   = 1 << 5;
