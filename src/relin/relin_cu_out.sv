@@ -2,12 +2,13 @@ module relin_cu_out
    #(   
         parameter L           = 30,
         parameter ID_WIDTH    = 4 ,
-        parameter START_DELAY = 2
+        parameter FN_I_DONE_DELAY = 2
     )
     (
         input                     clk         ,
         input                     rst         ,
         input                     start       ,
+        input                     fn_i_done   ,
         input                     fn_o_valid  ,
         input                     o_p3_done   ,
         input                     o_p3_ready  ,
@@ -29,30 +30,30 @@ typedef enum reg[10:0] {
     ST_POLY_0_WRITE_START         = 11'b00000000010,
     ST_POLY_0_WRITE_WAIT_DONE     = 11'b00000000100,
     ST_POLY_1_WRITE_START         = 11'b00000001000,
-    ST_POLY_1_WRITE_WAIT_DONE     = 11'b00000010000
+    ST_POLY_1_WRITE_WAIT_DONE     = 11'b00000010000,
+    ST_END                        = 11'b00000100000
 } t_state;
 
 (* fsm_encoding = "none" *) t_state state;
 t_state next_state;
 
 
-wire start_d;
-
 wire [LOGL-1:0] ctr;
 reg  ctr_inc;
 reg  ctr_rst;
+wire fn_i_done_d;
 
 
 shift_reg #(
-    .LAT   (START_DELAY),
+    .LAT   (FN_I_DONE_DELAY),
     .WIDTH (1)
 )
-load_intt_shift_reg_1
+intt_done_shift_reg
 (
-    .clk    (clk    ),
-    .rst    (rst    ),
-    .i_data (start  ),
-    .o_data (start_d)
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (fn_i_done   ),
+    .o_data (fn_i_done_d )
 );
 
 
@@ -92,8 +93,10 @@ always @(*) begin
 
     case (state)
         ST_IDLE: begin
-            if (start_d)
+            if (fn_i_done_d) begin
                 next_state = ST_POLY_0_WRITE_START;
+                done_single = 1;
+            end
         end
         ST_POLY_0_WRITE_START: begin
             if (fn_o_valid & o_p3_ready) begin
@@ -116,15 +119,19 @@ always @(*) begin
         end
         ST_POLY_1_WRITE_WAIT_DONE: begin
             if (o_p3_done) begin
-                if (ctr == L) begin
-                    done_all = 1;
-                    ctr_rst = 1;
-                end
-                else begin
-                    done_single = 1;
-                    ctr_inc = 1;
-                end
+                next_state = ST_END;
+            end
+        end
+        ST_END: begin
+            if (ctr == (L - 1)) begin
+                done_all = 1;
+                ctr_rst = 1;
                 next_state = ST_IDLE;
+            end
+            else begin
+                done_single = 1;
+                ctr_inc = 1;
+                next_state = ST_POLY_0_WRITE_START;
             end
         end
     endcase

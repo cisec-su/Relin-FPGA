@@ -12,7 +12,9 @@ module shift_reg
     );
 
 
-generate    
+reg [WIDTH-1:0] data [0:LAT-1];
+
+
 if (LAT == 0) begin
 
     assign o_data = i_data;
@@ -20,7 +22,6 @@ if (LAT == 0) begin
 end
 else begin
 
-    reg [WIDTH-1:0] data [0:LAT-1];
 
     always @(posedge clk) begin
         data[0] <= (RST_EN && rst) ? {WIDTH{1'b0}} : i_data;
@@ -35,7 +36,6 @@ else begin
     assign o_data = data[LAT - 1];
 
 end
-endgenerate
 
 
 endmodule

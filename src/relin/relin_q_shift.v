@@ -17,6 +17,8 @@ module relin_q_shift
         output [LOGQH-1:0]     qH_B    ,
         output [LOGQH-1:0]     qH_C    ,
         output [LOGQH-1:0]     qH_D    ,
+        output [LOGQ -1:0]     half_D  ,
+        output [LOGQ -1:0]     q_inv_D ,
         output                 load_q_A,
         output                 load_q_B,
         output                 load_q_C,
@@ -25,17 +27,40 @@ module relin_q_shift
 
 
 wire [LOGQH-1:0] qH;
-
+wire [LOGQ -1:0] half;
+wire [LOGQ -1:0] q_inv;
 
 relin_q_mux #(
     .LOGL(LOGL),
     .LOGQ(LOGQ),
     .LOGQH(LOGQH)
-) relin_q_mux_A (
+) relin_q_mux_inst (
     .clk(clk),
     .rst(rst),
     .i(i),
     .qH(qH)
+);
+
+
+relin_half_mux #(
+    .LOGL(LOGL),
+    .LOGQ(LOGQ)
+) relin_half_mux_inst (
+    .clk(clk),
+    .rst(rst),
+    .i(i),
+    .half(half)
+);
+
+
+relin_q_inv_mux #(
+    .LOGL(LOGL),
+    .LOGQ(LOGQ)
+) relin_q_inv_mux_inst (
+    .clk(clk),
+    .rst(rst),
+    .i(i),
+    .q_inv(q_inv)
 );
 
 
@@ -52,10 +77,10 @@ shift_reg #(
 
 shift_reg #(
     .LAT   (DELAY_A),
-    .WIDTH (LOGQH)
+    .WIDTH (LOGQH),
+    .RST_EN(0)
 ) qH_shift_reg_0 (
     .clk    (clk),
-    .rst    (rst),
     .i_data (qH),
     .o_data (qH_A)
 );
@@ -74,10 +99,10 @@ shift_reg #(
 
 shift_reg #(
     .LAT   (DELAY_B),
-    .WIDTH (LOGQH)
+    .WIDTH (LOGQH),
+    .RST_EN(0)
 ) qH_shift_reg_1 (
     .clk    (clk),
-    .rst    (rst),
     .i_data (qH),
     .o_data (qH_B)
 );
@@ -96,10 +121,10 @@ shift_reg #(
 
 shift_reg #(
     .LAT   (DELAY_C),
-    .WIDTH (LOGQH)
+    .WIDTH (LOGQH),
+    .RST_EN(0)
 ) qH_shift_reg_2 (
     .clk    (clk),
-    .rst    (rst),
     .i_data (qH),
     .o_data (qH_C)
 );
@@ -118,13 +143,36 @@ shift_reg #(
 
 shift_reg #(
     .LAT   (DELAY_D),
-    .WIDTH (LOGQH)
+    .WIDTH (LOGQH),
+    .RST_EN(0)
 ) qH_shift_reg_3 (
     .clk    (clk),
-    .rst    (rst),
     .i_data (qH),
     .o_data (qH_D)
 );
+
+
+shift_reg #(
+    .LAT   (DELAY_D),
+    .WIDTH (LOGQ),
+    .RST_EN(0)
+) half_shift_reg (
+    .clk    (clk),
+    .i_data (half),
+    .o_data (half_D)
+);
+
+
+shift_reg #(
+    .LAT   (DELAY_D),
+    .WIDTH (LOGQ),
+    .RST_EN(0)
+) q_inv_shift_reg (
+    .clk    (clk),
+    .i_data (q_inv),
+    .o_data (q_inv_D)
+);
+
 
 
 

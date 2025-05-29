@@ -85,6 +85,9 @@ logic [LOGQ-1:0] rlk [0:L][0:L-1][0:1][0:N-1];
 logic [LOGQ-1:0] rlk_data0 [0:N-1];
 logic [LOGQ-1:0] rlk_data1 [0:N-1];
 
+logic [LOGQ-1:0] ct0 [0:L-1][0:N-1];
+logic [LOGQ-1:0] ct1 [0:L-1][0:N-1];
+
 int ntt_len; 
 int psi_len;
 int data_len;
@@ -149,6 +152,36 @@ initial begin : respond_to_i_p0_en
         end
     end
 
+    // --- Load ct0.txt ---
+    for (j = 0; j < L; j = j + 1) begin
+        ntt_len = 0;
+        file = $fopen($sformatf("../../../../../model/BFV/test_vectors/ct0_%0d.txt", j), "r");
+        if (!file) $fatal("Failed to open ct0.txt");
+        while (!$feof(file)) begin
+            status = $fgets(line, file);
+            if (status > 0) begin
+                status = $sscanf(line, "%h", ct0[j][ntt_len]);
+                if (status == 1) ntt_len++;
+            end
+        end
+        $fclose(file);
+    end
+
+    // --- Load ct1.txt ---
+    for (j = 0; j < L; j = j + 1) begin
+        ntt_len = 0;
+        file = $fopen($sformatf("../../../../../model/BFV/test_vectors/ct1_%0d.txt", j), "r");
+        if (!file) $fatal("Failed to open ct1.txt");
+        while (!$feof(file)) begin
+            status = $fgets(line, file);
+            if (status > 0) begin
+                status = $sscanf(line, "%h", ct1[j][ntt_len]);
+                if (status == 1) ntt_len++;
+            end
+        end
+        $fclose(file);
+    end
+
 
     // --- Load psi.txt ---
     // file = $fopen("../../../../../test_vectors/ntt/psi.txt", "r");
@@ -169,29 +202,29 @@ initial begin : respond_to_i_p0_en
         if (relin_t_inst.i_p0_en && relin_t_inst.i_p0_ready) begin
             relin_t_inst.i_p0_ready <= 0;
 
-            opmode = relin_t_inst.i_p0_idx;
+            opmode = relin_t_inst.i_p0_id;
 
-            if (relin_t_inst.i_p0_idx == `PSI) begin
+            if (relin_t_inst.i_p0_id == `PSI || relin_t_inst.i_p0_id == `PSI_INV) begin
                 num_cycles = 3*N_over_TP;//psi_len / ntt_input_TP + ((psi_len % ntt_input_TP) ? 1 : 0);
                 data_len = num_cycles*TP;
                 for (int i = 0; i < data_len; i++) begin
-                    if (relin_t_inst.i_p0_idy == 0)
+                    if (relin_t_inst.i_p0_idx == 0)
                         data_array[i] = 60'h7ffa7ffffffffff;//psi_data[i];
-                    else if (relin_t_inst.i_p0_idy == 1)
+                    else if (relin_t_inst.i_p0_idx == 1)
                         data_array[i] = 60'h7ff7fffffffffff;//psi_data[i];
-                    else if (relin_t_inst.i_p0_idy == 2)
+                    else if (relin_t_inst.i_p0_idx == 2)
                         data_array[i] = 60'h7fe57ffffffffff;//psi_data[i];
-                    else if (relin_t_inst.i_p0_idy == 3)
+                    else if (relin_t_inst.i_p0_idx == 3)
                         data_array[i] = 60'h7fdafffffffffff;//psi_data[i];
-                    else if (relin_t_inst.i_p0_idy == 4)
+                    else if (relin_t_inst.i_p0_idx == 4)
                         data_array[i] = 60'h7fcdfffffffffff;//psi_data[i];    
                     end
             end
-            else if (relin_t_inst.i_p0_idx == `POLY_2) begin
+            else if (relin_t_inst.i_p0_id == `POLY_2) begin
                 data_len = N;
                 num_cycles = 1 << (LOGN - LOGTP);
                 for (int i = 0; i < N; i++) 
-                    data_array[i] = ntt_data[i + relin_t_inst.i_p0_idy * N];
+                    data_array[i] = ntt_data[i + relin_t_inst.i_p0_idx * N];
             end
 
             //num_cycles = LAT + K;
@@ -235,8 +268,18 @@ initial begin : respond_to_i_p1_en
 
         if (relin_t_inst.i_p1_en && relin_t_inst.i_p1_ready) begin
             relin_t_inst.i_p1_ready <= 0;
-            for (int i = 0; i < N; i++) 
-                rlk_data0[i] = rlk[relin_t_inst.i_p1_idx][relin_t_inst.i_p1_idy][0][i];
+            if (relin_t_inst.i_p1_id == `POLY_0) begin
+                for (int i = 0; i < N; i++) 
+                    rlk_data0[i] = ct0[relin_t_inst.i_p1_idx][i];
+            end
+            else if (relin_t_inst.i_p1_id == `POLY_1) begin
+                for (int i = 0; i < N; i++) 
+                    rlk_data0[i] = ct1[relin_t_inst.i_p1_idx][i];
+            end
+            else if (relin_t_inst.i_p1_id == `RLK_0) begin
+                for (int i = 0; i < N; i++) 
+                    rlk_data0[i] = rlk[relin_t_inst.i_p1_idx][relin_t_inst.i_p1_idy][0][i];
+            end
 
             repeat (LAT) @(posedge clk);
             relin_t_inst.i_p1_valid <= 1;

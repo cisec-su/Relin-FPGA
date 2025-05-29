@@ -1,7 +1,8 @@
 module relin_cu_p1_p2
    #(   
         parameter L        = 30,
-        parameter ID_WIDTH = 4
+        parameter ID_WIDTH = 4 ,
+        parameter HAD_EN_DELAY = 2
     )
     (
         input                     clk         ,
@@ -9,15 +10,16 @@ module relin_cu_p1_p2
         input                     en          ,
         input                     i_p1_ready  ,
         output reg                i_p1_en     ,
-        output reg [ID_WIDTH-1:0] i_p1_idx    ,
+        output reg [ID_WIDTH-1:0] i_p1_id     ,
+        output reg [LOGL-1:0]     i_p1_idx    ,
         output reg [LOGL-1:0]     i_p1_idy    ,
+        input                     i_p1_valid  ,
         input                     i_p2_ready  ,
         output reg                i_p2_en     ,
         output reg [ID_WIDTH-1:0] i_p2_idx    ,
         output reg [LOGL-1:0]     i_p2_idy    ,
-        input                     i_p1_valid  ,
         input                     i_p2_valid  ,
-        output reg                had_en
+        output                    had_en
     );
 
 `include "relin_mem.svh"
@@ -47,9 +49,11 @@ reg  ctr_inc;
 reg  ctr_rst;
 
 wire [LOGL-1:0] ctr_L;
+wire [LOGL-1:0] ctr_L_;
 reg ctr_L_inc;
 reg ctr_L_rst;
 
+reg had_en_int;
 
 counter #(
     .WIDTH   (LOGL),
@@ -73,6 +77,19 @@ counter #(
 );
 
 
+shift_reg #(
+    .LAT   (HAD_EN_DELAY),
+    .WIDTH (1)
+)
+ren_shift_reg
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (had_en_int),
+    .o_data (had_en    )
+);
+
+
 always @(posedge clk) begin
     if (rst) begin
         state <= ST_LOAD_RLK;
@@ -81,6 +98,10 @@ always @(posedge clk) begin
         state <= next_state;
     end
 end
+
+
+assign ctr_L_ = (ctr_L == 0) ? L : ctr_L - 1;
+
 
 
 always @(*) begin
@@ -96,20 +117,21 @@ always @(*) begin
     ctr_rst = 1'b0;
     ctr_L_inc = 1'b0;
     ctr_L_rst = 1'b0;
-    had_en = 1'b0;
+    had_en_int = 1'b0;
 
     case (state)
         ST_LOAD_RLK: begin
-            had_en = 1;
+            had_en_int = 1;
             if (en) begin
                 if (i_p1_ready == 0 || i_p2_ready == 0) begin
                     next_state = ST_WAIT_READY_0;
                 end
                 else begin
-                    i_p1_idx = ctr_L;
+                    i_p1_id = `RLK_0;
+                    i_p1_idx = ctr_L_;
                     i_p1_en = 1;
                     i_p1_idy = ctr;
-                    i_p2_idx = ctr_L;
+                    i_p2_idx = ctr_L_;
                     i_p2_en = 1;
                     i_p2_idy = ctr;
                     if (ctr >= (L - 1)) begin
@@ -122,12 +144,12 @@ always @(*) begin
             end
         end
         ST_WAIT_READY_0: begin
-            had_en = 1;
+            had_en_int = 1;
             if (i_p1_ready && i_p2_ready) begin
-                i_p1_idx = ctr_L;
+                i_p1_idx = ctr_L_;
                 i_p1_en = 1;
                 i_p1_idy = ctr;
-                i_p2_idx = ctr_L;
+                i_p2_idx = ctr_L_;
                 i_p2_en = 1;
                 i_p2_idy = ctr;
                 if (ctr >= (L - 1)) begin
@@ -141,7 +163,7 @@ always @(*) begin
             end
         end
         ST_WAIT_VALID: begin
-            had_en = 1;
+            had_en_int = 1;
             if (i_p1_valid && i_p2_valid) begin
                 next_state = ST_LOAD_POLY_0;
             end
@@ -153,13 +175,13 @@ always @(*) begin
             end
         end
         ST_WAIT_VALID_0: begin
-            had_en = 1;
+            had_en_int = 1;
             if (i_p2_valid) begin
                 next_state = ST_LOAD_POLY_0;
             end
         end
         ST_WAIT_VALID_1: begin
-            had_en = 1;
+            had_en_int = 1;
             if (i_p1_valid) begin
                 next_state = ST_LOAD_POLY_0;
             end
@@ -167,9 +189,9 @@ always @(*) begin
         ST_LOAD_POLY_0: begin
             if (en) begin
                 if (i_p1_ready) begin
-                    i_p1_idx = ctr_L;
+                    i_p1_id = `POLY_0;
+                    i_p1_idx = ctr_L_;
                     i_p1_en = 1;
-                    i_p1_idy = ctr;
                     next_state = ST_LOAD_POLY_1;
                 end
                 else begin
@@ -179,7 +201,7 @@ always @(*) begin
         end
         ST_WAIT_READY_1: begin
             if (i_p1_ready) begin
-                i_p1_idx = ctr_L;
+                i_p1_idx = ctr_L_;
                 i_p1_en = 1;
                 i_p1_idy = ctr;
                 next_state = ST_LOAD_POLY_1;
@@ -188,9 +210,9 @@ always @(*) begin
         ST_LOAD_POLY_1: begin
             if (en) begin
                 if (i_p1_ready) begin
-                    i_p1_idx = ctr_L;
+                    i_p1_id = `POLY_1;
+                    i_p1_idx = ctr_L_;
                     i_p1_en = 1;
-                    i_p1_idy = ctr;
                     if (ctr_L >= L) begin
                         ctr_L_rst = 1;
                     end
@@ -206,7 +228,7 @@ always @(*) begin
         end
         ST_WAIT_READY_2: begin
             if (i_p1_ready) begin
-                i_p1_idx = ctr_L;
+                i_p1_idx = ctr_L_;
                 i_p1_en = 1;
                 i_p1_idy = ctr;
                 if (ctr_L >= L) begin

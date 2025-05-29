@@ -4,16 +4,17 @@ module relin_accum
         parameter LOGQ      = 64,   // Word size for coefficients
         parameter LOGQH     = 47,   // Modulus size for modular arithmetic
         parameter FF_ADD    = 0 ,   // Number of flip-flops in the addition pipeline
-        parameter TP        = 32    // Number of coefficients processed in parallel
+        parameter LOGTP     = 32    // Number of coefficients processed in parallel
     )
     (
         input              clk       , // Clock signal
         input              rst       , // Reset signal
+        input              first     ,
         input              ren       , // Read enable signal for accumulation
         input              wen       , // Write enable signal for accumulation
         input              load_q    , // Signal to load modulus value
         input  [LOGQH-1:0] qH        , // Modulus value for modular arithmetic
-        output reg         o_valid   , // Indicates the first valid output cycle
+        output             o_valid   , // Indicates the first valid output cycle
         output reg         done      , // Signals that the operation (ren or wen) is complete
         output reg         busy      , // Indicates that the module is currently busy
         input  [LOGQ -1:0] A [TP-1:0], // Input array of coefficients
@@ -21,6 +22,7 @@ module relin_accum
     );
 
 ///////////////////////////// Parameters ////////////////////////////////
+localparam TP       = (1 << LOGTP);             // Number of coefficients processed in parallel
 localparam K        = (1 << LOGK);              // Total accumulation blocks based on LOGK
 localparam FF_IN    = 1;                        // Flip-flop for input pipeline stage
 localparam FF_OUT   = 1;                        // Flip-flop for output pipeline stage
@@ -103,30 +105,18 @@ end
 /////////////////////////////////////////////////////////////////////////
 
 
-// Load modulus value on reset or load_q
-always @(posedge clk) begin
-    if (rst) begin
-        qH_int <= 0;
-    end else if (load_q) begin
-        qH_int <= qH;
-    end
-end
-
-
-// Register A 
-always @(posedge clk) begin
-    A_q <= A;
-end
-
-
-always @(posedge clk) begin
-    if (rst) begin
-        first_q <= 0;
-    end
-    else if (write_addr == (K - 1)) begin
-        first_q <= 1;
-    end
-end
+shift_reg #(
+    .LAT   (1),
+    .WIDTH (1),
+    .RST_EN(1)
+)
+o_valid_shift_reg
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (ren),
+    .o_data (o_valid)
+);
 
 
 counter #(
@@ -148,6 +138,37 @@ counter #(
 );
 
 
+
+// Load modulus value on reset or load_q
+always @(posedge clk) begin
+    if (rst) begin
+        qH_int <= 0;
+    end else if (load_q) begin
+        qH_int <= qH;
+    end
+end
+
+
+// Register A 
+always @(posedge clk) begin
+    A_q <= A;
+end
+
+
+always @(posedge clk) begin
+    if (rst) begin
+        first_q <= 0;
+    end
+    else if (first) begin
+        first_q <= 0;
+    end
+    else if (write_addr == (K - 1)) begin
+        first_q <= 1;
+    end
+end
+
+
+
 // State machine and counters
 always @(posedge clk) begin
     if (rst) begin
@@ -163,7 +184,6 @@ end
 // State machine and counters
 always @(*) begin
     next_state  = state;  // Reset to idle state
-    o_valid     = 0;       // Reset valid signal
     done        = 0;       // Reset done signal
     busy        = 0;       // Reset done signal
     bram_wen    = 0;       // Disable BRAM writes
@@ -181,9 +201,6 @@ always @(*) begin
         end
         ST_READ: begin
             busy = 1;
-            if (read_addr == 1) begin
-                o_valid = 1;
-            end
             if (read_addr == (K - 1)) begin
                 done       = 1;
                 next_state = ST_IDLE;
@@ -214,6 +231,10 @@ always @(*) begin
             if (wen) begin
                 start_read = 1;
                 next_state = ST_WRITE_INIT;
+            end
+            else if (ren) begin
+                start_read = 1;
+                next_state = ST_READ;
             end
             else if (write_addr == (K - 1)) begin
                 next_state = ST_IDLE;

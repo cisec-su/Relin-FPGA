@@ -1,7 +1,8 @@
 module counter
    #(
-        parameter WIDTH    = 10,
-        parameter AUTO_INC = 1
+        parameter WIDTH      = 10,
+        parameter AUTO_INC   = 1 ,
+        parameter AUTO_WIDTH = WIDTH
     )
     (   input                  clk  ,
         input                  rst  ,
@@ -15,7 +16,7 @@ always @(posedge clk) begin
     if (rst) begin
         ctr <= 0;
     end
-    else if (inc || (AUTO_INC && (ctr != 0))) begin
+    else if (inc || (AUTO_INC && (ctr[AUTO_WIDTH-1:0] != {AUTO_WIDTH{1'b0}}))) begin
         ctr <= ctr + 1;
     end
 end

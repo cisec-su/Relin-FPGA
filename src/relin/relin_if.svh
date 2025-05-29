@@ -9,19 +9,20 @@ interface relin_t
 
 // ========== Input ports ==========
 logic                 i_p0_en;
-logic [ID_WIDTH-1:0]  i_p0_idx;
-logic [LOGL-1:0]      i_p0_idy;
+logic [ID_WIDTH-1:0]  i_p0_id;
+logic [LOGL-1:0]      i_p0_idx;
 
 logic                 i_p1_en;
-logic [ID_WIDTH-1:0]  i_p1_idx;
+logic [ID_WIDTH-1:0]  i_p1_id;
+logic [LOGL-1:0]      i_p1_idx;
 logic [LOGL-1:0]      i_p1_idy;
 
 logic                 i_p2_en;
-logic [ID_WIDTH-1:0]  i_p2_idx;
+logic [LOGL-1:0]      i_p2_idx;
 logic [LOGL-1:0]      i_p2_idy;
 
 logic                 o_p3_en;
-logic [ID_WIDTH-1:0]  o_p3_idx;
+logic [LOGL-1:0]      o_p3_idx;
 logic [LOGL-1:0]      o_p3_idy;
 
 // ========== Output ports ==========
@@ -46,8 +47,8 @@ logic [LOGQ-1:0]      o_p3_data [0:TP-1];
 
 // ========== Modports ==========
 modport master (
-  output i_p0_en, i_p0_idx, i_p0_idy,
-  output i_p1_en, i_p1_idx, i_p1_idy,
+  output i_p0_en, i_p0_id, i_p0_idx,
+  output i_p1_en, i_p1_id, i_p1_idx, i_p1_idy,
   output i_p2_en, i_p2_idx, i_p2_idy,
   output o_p3_en, o_p3_idx, o_p3_idy, o_p3_data,
 
@@ -58,8 +59,8 @@ modport master (
 );
 
 modport slave (
-  input  i_p0_en, i_p0_idx, i_p0_idy,
-  input  i_p1_en, i_p1_idx, i_p1_idy,
+  input  i_p0_en, i_p0_id, i_p0_idx,
+  input  i_p1_en, i_p1_id, i_p1_idx, i_p1_idy,
   input  i_p2_en, i_p2_idx, i_p2_idy,
   input  o_p3_en, o_p3_idx, o_p3_idy, o_p3_data,
 

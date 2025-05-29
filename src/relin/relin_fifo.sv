@@ -1,6 +1,7 @@
 module relin_fifo
    #(   
         parameter K     = 1 ,
+        parameter M     = K ,
         parameter TP    = 32,
         parameter LOGQ  = 64
     )
@@ -15,6 +16,7 @@ module relin_fifo
 
 
 localparam LOGK = $rtoi($ceil($clog2(K)));
+localparam LOGM = $rtoi($ceil($clog2(M)));
 
 wire [LOGK-1:0] ctr_i;
 wire [LOGK-1:0] ctr_o;
@@ -24,7 +26,8 @@ wire bram_wen;
 assign bram_wen = wen | (|ctr_i);
 
 counter #(
-    .WIDTH(LOGK)
+    .WIDTH(LOGK),
+    .AUTO_WIDTH(LOGM)
 ) ctr_i_inst (
     .clk   (clk   ),
     .rst   (rst   ),
@@ -33,7 +36,8 @@ counter #(
 );
 
 counter #(
-    .WIDTH(LOGK)
+    .WIDTH(LOGK),
+    .AUTO_WIDTH(LOGM)    
 ) ctr_o_inst (
     .clk   (clk   ),
     .rst   (rst   ),
