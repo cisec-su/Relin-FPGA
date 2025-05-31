@@ -35,6 +35,7 @@ module relin_mem
         output [LOGQ-1:0]     i_p1_data    [0:TP-1],
         // input port 2
         input                 i_p2_en              ,
+        // ID is always RLK_1
         input  [LOGL-1:0]     i_p2_idx             ,
         input  [LOGL-1:0]     i_p2_idy             ,
         output reg            i_p2_ready           ,
@@ -43,8 +44,9 @@ module relin_mem
         output [LOGQ-1:0]     i_p2_data    [0:TP-1],
         // output port 0
         input                 o_p3_en              ,
+        // ID is always RLK_1
+        input  [ID_WIDTH-1:0] o_p3_id              ,
         input  [LOGL-1:0]     o_p3_idx             ,
-        input  [LOGL-1:0]     o_p3_idy             ,
         output reg            o_p3_ready           ,
         output                o_p3_done            ,
         input  [LOGQ-1:0]     o_p3_data    [0:TP-1],
@@ -82,8 +84,8 @@ assign i_p2_done        = relin_t.i_p2_done;
 
 // ========== Interface P3 ==========
 assign relin_t.o_p3_en   = o_p3_en;
+assign relin_t.o_p3_id   = o_p3_id;
 assign relin_t.o_p3_idx  = o_p3_idx;
-assign relin_t.o_p3_idy  = o_p3_idy;
 assign relin_t.o_p3_data = o_p3_data;
 assign o_p3_done         = relin_t.o_p3_done;
 assign o_p3_ready        = relin_t.o_p3_ready;

@@ -12,8 +12,8 @@ module relin_cu_out
         input                     fn_o_valid  ,
         input                     o_p3_done   ,
         input                     o_p3_ready  ,
-        output reg [ID_WIDTH-1:0] o_p3_idx    ,
-        output reg [LOGL    -1:0] o_p3_idy    ,
+        output reg [ID_WIDTH-1:0] o_p3_id    ,
+        output reg [LOGL    -1:0] o_p3_idx    ,
         output reg                o_p3_en     ,
         output reg                done_single ,
         output reg                done_all
@@ -88,8 +88,8 @@ always @(*) begin
     done_all    = 1'b0;
     ctr_inc     = 1'b0;
     ctr_rst     = 1'b0;
-    o_p3_en   = 1'b0;
-    o_p3_idx    = 0;
+    o_p3_en     = 1'b0;
+    o_p3_id     = 0;
 
     case (state)
         ST_IDLE: begin
@@ -99,8 +99,9 @@ always @(*) begin
             end
         end
         ST_POLY_0_WRITE_START: begin
+            o_p3_idx = ctr;
             if (fn_o_valid & o_p3_ready) begin
-                o_p3_idx = `POLY_0;
+                o_p3_id = `POLY_0;
                 o_p3_en = 1'b1;
                 next_state = ST_POLY_0_WRITE_WAIT_DONE;
             end
@@ -112,7 +113,7 @@ always @(*) begin
         end
         ST_POLY_1_WRITE_START: begin
             if (fn_o_valid & o_p3_ready) begin
-                o_p3_idx = `POLY_1;
+                o_p3_id = `POLY_1;
                 o_p3_en = 1'b1;
                 next_state = ST_POLY_1_WRITE_WAIT_DONE;
             end

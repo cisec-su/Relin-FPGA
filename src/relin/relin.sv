@@ -7,7 +7,7 @@ module relin
         parameter LOGQH    = 17       ,
         parameter LOGN     = 16       ,
         parameter LOGTP    = 5        , // coefficient throughput
-        parameter NUM_PSI  = 1 << LOGN, // number of twiddles that must be loaded **?
+        parameter PSI_CC   = (1 << (LOGN - LOGTP))*3,
         // delay configuration between modules
         parameter CU_P1_P2__HAD__DELAY      = 2 ,
         parameter Q_MUX__NTT__DELAY         = 2 ,
@@ -15,8 +15,10 @@ module relin
         parameter Q_MUX__ACC__DELAY         = 2 ,
         parameter Q_MUX__FN__DELAY          = 2 ,
         parameter CU_OUT__CU_P0_NTT__DELAY  = 2 ,
+        parameter FN__CU_P0_NTT__DELAY      = 2 ,
         parameter CU_ACC__CU_P0_NTT__DELAY  = 2 ,
-        parameter ACC__NTT_MUX__DELAY       = 2
+        parameter ACC__NTT_MUX__DELAY       = 2 ,
+        parameter NTT__FEED_PSI__DELAY      = 2
         // parameter ACC0_REN__ACC1_REN__DELAY = 10
     )
     (
@@ -34,7 +36,7 @@ localparam K = 1 << LOGK;
 localparam LOGL = $rtoi($ceil($clog2(L + 1)));
 localparam TP = 1 << LOGTP;
 localparam ID_WIDTH = $rtoi($ceil($clog2(`NUM_MEM_OBJ)));
-
+localparam NUM_PSI = PSI_CC * LOGTP;
 
 wire [LOGQH-1:0] qH_ntt, qH_had, qH_acc, qH_fn;
 wire [LOGQ-1:0] half_fn;
@@ -57,15 +59,15 @@ wire [LOGL-1:0] i_p2_idx;
 wire [LOGL-1:0] i_p2_idy;
 wire o_p3_en, o_p3_ready, o_p3_done;
 wire [LOGQ-1:0] o_p3_data [TP-1:0];
+wire [ID_WIDTH-1:0] o_p3_id;
 wire [LOGL-1:0] o_p3_idx;
-wire [LOGL-1:0] o_p3_idy;
 // delayed mem
 wire i_p1_valid_d, i_p2_valid_d;
 wire [LOGQ-1:0] i_p1_data_d [TP-1:0];
 wire [LOGQ-1:0] i_p2_data_d [TP-1:0];
 // ntt control path
 wire intt;
-wire ntt_i_valid, intt_i_valid, psi_i_valid;
+wire ntt_i_valid, intt_i_valid, psi_i_valid, feed_psi, psi_r_done;
 wire ntt_o_valid;
 // ntt data path
 wire [LOGQ-1:0] ntt_i_poly [TP-1:0];
@@ -125,7 +127,8 @@ relin_q_shift #(
 ) relin_q_shift_inst (
     .clk     (clk    ),
     .rst     (rst    ),
-    .load_q  (load_q ),
+    .load_q_ABC(load_q),
+    .load_q_D_i(done_single),
     .i       (q_id   ),
     .qH_A    (qH_ntt ),
     .qH_B    (qH_had ),
@@ -136,7 +139,7 @@ relin_q_shift #(
     .load_q_A(load_q_ntt),
     .load_q_B(load_q_had),
     .load_q_C(load_q_acc),
-    .load_q_D(load_q_fn )
+    .load_q_D(load_q_fn)
 );
 
 
@@ -173,8 +176,8 @@ relin_mem #(
     .i_p2_done  (i_p2_done  ),
     .i_p2_data  (i_p2_data  ),
     .o_p3_en    (o_p3_en    ),
+    .o_p3_id    (o_p3_id    ),
     .o_p3_idx   (o_p3_idx   ),
-    .o_p3_idy   (o_p3_idy   ),
     .o_p3_ready (o_p3_ready ),
     .o_p3_done  (o_p3_done  ),
     .o_p3_data  (o_p3_data  ),
@@ -185,14 +188,15 @@ relin_mem #(
 relin_cu_p0_ntt #(
     .L              (L       ),
     .ID_WIDTH       (ID_WIDTH),
-    .LOAD_NTT_DELAY (CU_OUT__CU_P0_NTT__DELAY),
+    .LOAD_NTT_DELAY (FN__CU_P0_NTT__DELAY    ),
     .LOAD_INTT_DELAY(CU_ACC__CU_P0_NTT__DELAY),
-    .LOAD_Q_DELAY   (Q_MUX__NTT__DELAY       )
+    .LOAD_Q_DELAY   (Q_MUX__NTT__DELAY       ),
+    .FEED_PSI_DELAY (NTT__FEED_PSI__DELAY    )
 ) relin_cu_p0_ntt_inst (
     .clk        (clk           ),
     .rst        (rst           ),
     .start      (start         ),
-    .load_ntt   (done_single   ),
+    .load_ntt   (fn_i_done     ),
     .load_intt  (acc_write_done),
     .i_p0_en    (i_p0_en       ),
     .i_p0_valid (i_p0_valid    ),
@@ -206,6 +210,8 @@ relin_cu_p0_ntt #(
     .intt_ready (acc_start_read),
     .i_valid_ntt(ntt_i_valid   ),
     .i_valid_psi(psi_i_valid   ),
+    .feed_psi   (feed_psi      ),
+    .psi_r_done (psi_r_done    ),
     .busy       (              )
 );
 
@@ -214,12 +220,14 @@ relin_ntt_mux #(
     .LOGQH(LOGQH),
     .LOGN (LOGN ),
     .LOGTP(LOGTP),
-    .INTT_DELAY(ACC__NTT_MUX__DELAY)
+    .INTT_DELAY(ACC__NTT_MUX__DELAY),
+    .PSI_CC(PSI_CC)
 ) relin_ntt_mux_inst (
     .clk           (clk           ),
     .rst           (rst           ),
     .load_q        (load_q_ntt    ),
-    .load_psi      (psi_i_valid   ),
+    .psi_valid     (psi_i_valid   ),
+    .feed_psi      (feed_psi      ),
     .qH            (qH_ntt        ),
     .intt          (intt          ),
     .i_valid_ntt   (ntt_i_valid   ),
@@ -227,6 +235,7 @@ relin_ntt_mux #(
     .i_poly_ntt    (ntt_i_poly    ),
     .i_poly_intt   (intt_i_poly   ),
     .psi           (i_psi_data    ),
+    .psi_r_done    (psi_r_done    ),
     .o_poly        (ntt_o_poly    ),
     .o_valid       (ntt_o_valid   )
 );
@@ -373,8 +382,8 @@ relin_cu_out #(
     .fn_o_valid  (fn_o_valid    ),
     .o_p3_done   (o_p3_done     ),
     .o_p3_ready  (o_p3_ready    ),
+    .o_p3_id     (o_p3_id       ),
     .o_p3_idx    (o_p3_idx      ),
-    .o_p3_idy    (o_p3_idy      ),
     .o_p3_en     (o_p3_en       ),
     .done_single (done_single   ),
     .done_all    (done          )

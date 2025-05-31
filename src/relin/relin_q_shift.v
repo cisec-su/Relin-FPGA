@@ -11,7 +11,8 @@ module relin_q_shift
     (
         input                  clk     ,
         input                  rst     ,
-        input                  load_q  ,
+        input                  load_q_ABC,
+        input                  load_q_D_i,
         input  [LOGL -1:0]     i       ,
         output [LOGQH-1:0]     qH_A    ,
         output [LOGQH-1:0]     qH_B    ,
@@ -70,7 +71,7 @@ shift_reg #(
 ) load_q_shift_reg_0 (
     .clk    (clk),
     .rst    (rst),
-    .i_data (load_q),
+    .i_data (load_q_ABC),
     .o_data (load_q_A)
 );
 
@@ -92,7 +93,7 @@ shift_reg #(
 ) load_q_shift_reg_1 (
     .clk    (clk),
     .rst    (rst),
-    .i_data (load_q),
+    .i_data (load_q_ABC),
     .o_data (load_q_B)
 );
 
@@ -114,7 +115,7 @@ shift_reg #(
 ) load_q_shift_reg_2 (
     .clk    (clk),
     .rst    (rst),
-    .i_data (load_q),
+    .i_data (load_q_ABC),
     .o_data (load_q_C)
 );
 
@@ -136,8 +137,8 @@ shift_reg #(
 ) load_q_shift_reg_3 (
     .clk    (clk),
     .rst    (rst),
-    .i_data (load_q),
-    .o_data (load_q_D)
+    .i_data (load_q_D_i),
+    .o_data (load_q_D  )
 );
 
 

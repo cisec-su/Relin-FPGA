@@ -27,7 +27,8 @@ assign bram_wen = wen | (|ctr_i);
 
 counter #(
     .WIDTH(LOGK),
-    .AUTO_WIDTH(LOGM)
+    .AUTO_WIDTH(LOGM),
+    .MAX(K-1)
 ) ctr_i_inst (
     .clk   (clk   ),
     .rst   (rst   ),
@@ -37,7 +38,8 @@ counter #(
 
 counter #(
     .WIDTH(LOGK),
-    .AUTO_WIDTH(LOGM)    
+    .AUTO_WIDTH(LOGM),
+    .MAX(K-1)
 ) ctr_o_inst (
     .clk   (clk   ),
     .rst   (rst   ),
