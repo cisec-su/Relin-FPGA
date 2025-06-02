@@ -9,8 +9,7 @@ module relin_mem
         parameter LOGN     = 16,
         parameter LOGL     = 5 ,
         parameter ID_WIDTH = 4 ,
-        parameter TP       = 32,
-        parameter NUM_PSI  = 1 << LOGN
+        parameter TP       = 32
     )
     (
         input                 clk                  ,

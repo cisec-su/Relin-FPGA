@@ -160,7 +160,7 @@ shift_reg #(
 
 shift_reg #(
     .LAT   (LAT - LAT_ADD - 1),
-    .WIDTH (1)
+    .WIDTH (1                )
 ) shift_reg_fifo_ren (
     .clk    (clk       ),
     .rst    (rst       ),

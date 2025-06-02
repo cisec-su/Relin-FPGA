@@ -1,33 +1,37 @@
 module relin_accum 
    #(
-        parameter LOGK      = 10,   // log2(K), determines the size of the accumulator block
-        parameter LOGQ      = 64,   // Word size for coefficients
-        parameter LOGQH     = 47,   // Modulus size for modular arithmetic
-        parameter FF_ADD    = 0 ,   // Number of flip-flops in the addition pipeline
-        parameter LOGTP     = 32    // Number of coefficients processed in parallel
+        parameter LOGK      = 10,
+        parameter LOGQ      = 64,   
+        parameter LOGQH     = 47,
+        parameter FF_ADD    = 0 ,
+        parameter LOGTP     = 32
     )
     (
-        input              clk       , // Clock signal
-        input              rst       , // Reset signal
+        input              clk       ,
+        input              rst       ,
         input              first     ,
-        input              ren       , // Read enable signal for accumulation
-        input              wen       , // Write enable signal for accumulation
-        input              load_q    , // Signal to load modulus value
-        input  [LOGQH-1:0] qH        , // Modulus value for modular arithmetic
-        output             o_valid   , // Indicates the first valid output cycle
-        output reg         done      , // Signals that the operation (ren or wen) is complete
-        output reg         busy      , // Indicates that the module is currently busy
-        input  [LOGQ -1:0] A [TP-1:0], // Input array of coefficients
-        output [LOGQ -1:0] C [TP-1:0]  // Output array of accumulated coefficients
+        input              ren       ,
+        input              wen       ,
+        input              load_q    ,
+        input  [LOGQH-1:0] qH        ,
+        output             o_valid   ,
+        output reg         done      ,
+        output reg         busy      ,
+        input  [LOGQ -1:0] A [TP-1:0],
+        output [LOGQ -1:0] C [TP-1:0]
     );
 
 ///////////////////////////// Parameters ////////////////////////////////
-localparam TP       = (1 << LOGTP);             // Number of coefficients processed in parallel
-localparam K        = (1 << LOGK);              // Total accumulation blocks based on LOGK
-localparam FF_IN    = 1;                        // Flip-flop for input pipeline stage
-localparam FF_OUT   = 1;                        // Flip-flop for output pipeline stage
-localparam LAT      = FF_ADD + FF_OUT;          // Total pipeline latency
+
+localparam TP       = (1 << LOGTP);
+localparam K        = (1 << LOGK);
+localparam FF_IN    = 1;
+localparam FF_OUT   = 1;
+localparam LAT      = FF_ADD + FF_OUT;
+
 /////////////////////////////////////////////////////////////////////////
+
+
 
 ///////////////////////// Type Declarations ///////////////////////////
 typedef enum logic [4:0] {
@@ -39,22 +43,26 @@ typedef enum logic [4:0] {
 } state_t;
 /////////////////////////////////////////////////////////////////////////
 
-///////////////////////// Signal Declarations ///////////////////////////
-reg  [LOGQH-1:0] qH_int;                  // Stored modulus value
-wire [LOGQ-1 :0] modadd_out   [TP-1:0];   // Output of modular addition pipeline
-reg  [LOGQ-1 :0] A_q          [TP-1:0];   // Register A
 
-wire [LOGQ-1 :0] modadd_in_A  [TP-1:0];
-wire [LOGQ-1 :0] bram_out [TP-1:0];
-reg  [LOGK-1:0] read_addr;                  // Counter for read operations
-reg  [LOGK-1:0] write_addr;                 // Write address for BRAM
-reg start_read, start_write;                // Signals to start read and write operations
+
+
+///////////////////////// Signal Declarations ///////////////////////////
+
+state_t state, next_state;
+
+reg  [LOGQH-1:0] qH_int;
+wire [LOGQ -1:0] modadd_out   [TP-1:0];
+reg  [LOGQ -1:0] A_q          [TP-1:0];
+
+wire [LOGQ -1:0] modadd_in_A  [TP-1:0];
+wire [LOGQ -1:0] bram_out     [TP-1:0];
+reg  [LOGK -1:0] read_addr;
+reg  [LOGK -1:0] write_addr;
+reg  start_read, start_write;
 reg  bram_wen;
 
 reg  first_q;
 
-
-state_t state, next_state;                // State machine signals
 /////////////////////////////////////////////////////////////////////////
 
 for (genvar i = 0; i < TP; i++) begin : OUT_GEN
@@ -128,6 +136,7 @@ counter #(
     .ctr   (read_addr )
 );
 
+
 counter #(
     .WIDTH(LOGK)
 ) ctr_write_inst (
@@ -138,8 +147,6 @@ counter #(
 );
 
 
-
-// Load modulus value on reset or load_q
 always @(posedge clk) begin
     if (rst) begin
         qH_int <= 0;
@@ -149,7 +156,6 @@ always @(posedge clk) begin
 end
 
 
-// Register A 
 always @(posedge clk) begin
     A_q <= A;
 end
@@ -169,10 +175,9 @@ end
 
 
 
-// State machine and counters
 always @(posedge clk) begin
     if (rst) begin
-        state <= ST_IDLE;  // Reset to idle state
+        state <= ST_IDLE;
     end
     else begin
         state <= next_state;
@@ -180,13 +185,11 @@ always @(posedge clk) begin
 end
 
 
-
-// State machine and counters
 always @(*) begin
-    next_state  = state;  // Reset to idle state
-    done        = 0;       // Reset done signal
-    busy        = 0;       // Reset done signal
-    bram_wen    = 0;       // Disable BRAM writes
+    next_state  = state;
+    done        = 0;
+    busy        = 0;
+    bram_wen    = 0;
     start_write = 0;
     start_read  = 0;
     case (state)

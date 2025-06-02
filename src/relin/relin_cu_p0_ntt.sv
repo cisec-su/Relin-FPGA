@@ -69,6 +69,14 @@ reg intt_set, intt_clr;
 
 wire load_ntt_d, load_intt_d;
 
+reg load_ntt_q;
+reg load_ntt_clr;
+wire load_ntt_int;
+
+reg load_intt_q;
+reg load_intt_clr;
+wire load_intt_int;
+
 wire load_q_d, load_q_d_1;
 
 reg intt_ready_int;
@@ -177,6 +185,35 @@ always @(posedge clk) begin
 end
 
 
+always @(posedge clk) begin
+    if (rst) begin
+        load_ntt_q <= 0;
+    end
+    else if (load_ntt_clr) begin
+        load_ntt_q <= 0;
+    end
+    else if (load_ntt_d) begin
+        load_ntt_q <= 1;
+    end
+end
+
+
+always @(posedge clk) begin
+    if (rst) begin
+        load_intt_q <= 0;
+    end
+    else if (load_intt_clr) begin
+        load_intt_q <= 0;
+    end
+    else if (load_intt_d) begin
+        load_intt_q <= 1;
+    end
+end
+
+
+assign load_ntt_int  = load_ntt_q | load_ntt_d;
+assign load_intt_int = load_intt_q | load_intt_d;
+
 
 always @(*) begin
 
@@ -197,6 +234,9 @@ always @(*) begin
     i_valid_ntt = 1'b0;
     i_valid_psi = 1'b0;
     feed_psi = 1'b0;
+    load_ntt_clr = 1'b0;
+    load_intt_clr = 1'b0;
+
 
     case (state)
         ST_IDLE: begin
@@ -208,13 +248,15 @@ always @(*) begin
             ctr_poly_rst = 1;
         end
         ST_READY: begin
-            if (load_intt_d) begin
+            if (load_intt_int) begin
                 next_state = ST_LOAD_IPSI_START;
                 intt_set = 1;
+                load_intt_clr = 1;
             end
-            else if (load_ntt_d) begin
+            else if (load_ntt_int) begin
                 next_state = ST_LOAD_Q;
                 intt_clr = 1;
+                load_ntt_clr = 1;
             end
             ctr_poly_rst = 1;
         end
@@ -254,6 +296,8 @@ always @(*) begin
         end
         ST_LOAD_PSI_WAIT_DONE: begin
             busy = 1;
+            i_p0_id = `PSI;
+            i_p0_idx = ctr_L_;
             if (i_p0_valid) begin
                 i_valid_psi = 1;
                 feed_psi = 1;
@@ -273,6 +317,8 @@ always @(*) begin
         end
         ST_LOAD_POLY_WAIT_DONE: begin
             busy = 1;
+            i_p0_id = `POLY_2;
+            i_p0_idx = ctr_poly;            
             if (i_p0_valid) begin
                 i_valid_ntt = 1;
             end
@@ -298,6 +344,8 @@ always @(*) begin
         end
         ST_LOAD_IPSI_WAIT_DONE: begin
             busy = 1;
+            i_p0_idx = ctr_L_;
+            i_p0_id = `PSI_INV;
             if (i_p0_valid) begin
                 i_valid_psi = 1;
                 feed_psi = 1;

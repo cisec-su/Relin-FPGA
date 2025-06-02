@@ -13,7 +13,8 @@ module relin_q_shift
         input                  rst     ,
         input                  load_q_ABC,
         input                  load_q_D_i,
-        input  [LOGL -1:0]     i       ,
+        input  [LOGL -1:0]     i_ABC   ,
+        input  [LOGL -1:0]     i_D     ,
         output [LOGQH-1:0]     qH_A    ,
         output [LOGQH-1:0]     qH_B    ,
         output [LOGQH-1:0]     qH_C    ,
@@ -28,6 +29,7 @@ module relin_q_shift
 
 
 wire [LOGQH-1:0] qH;
+wire [LOGQH-1:0] qH_D_int;
 wire [LOGQ -1:0] half;
 wire [LOGQ -1:0] q_inv;
 
@@ -35,12 +37,25 @@ relin_q_mux #(
     .LOGL(LOGL),
     .LOGQ(LOGQ),
     .LOGQH(LOGQH)
-) relin_q_mux_inst (
+) relin_q_mux_ABC_inst (
     .clk(clk),
     .rst(rst),
-    .i(i),
+    .i(i_ABC),
     .qH(qH)
 );
+
+
+relin_q_mux #(
+    .LOGL(LOGL),
+    .LOGQ(LOGQ),
+    .LOGQH(LOGQH)
+) relin_q_mux_D_inst (
+    .clk(clk),
+    .rst(rst),
+    .i(i_D),
+    .qH(qH_D_int)
+);
+
 
 
 relin_half_mux #(
@@ -49,7 +64,7 @@ relin_half_mux #(
 ) relin_half_mux_inst (
     .clk(clk),
     .rst(rst),
-    .i(i),
+    .i(i_D),
     .half(half)
 );
 
@@ -60,7 +75,7 @@ relin_q_inv_mux #(
 ) relin_q_inv_mux_inst (
     .clk(clk),
     .rst(rst),
-    .i(i),
+    .i(i_D),
     .q_inv(q_inv)
 );
 
@@ -148,7 +163,7 @@ shift_reg #(
     .RST_EN(0)
 ) qH_shift_reg_3 (
     .clk    (clk),
-    .i_data (qH),
+    .i_data (qH_D_int),
     .o_data (qH_D)
 );
 

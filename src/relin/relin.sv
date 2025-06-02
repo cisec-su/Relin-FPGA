@@ -10,11 +10,13 @@ module relin
         parameter PSI_CC   = (1 << (LOGN - LOGTP))*3,
         // delay configuration between modules
         parameter CU_P1_P2__HAD__DELAY      = 2 ,
+        parameter CU_P1_P2__FIFO__DELAY     = 2 ,
         parameter Q_MUX__NTT__DELAY         = 2 ,
         parameter Q_MUX__HAD__DELAY         = 2 ,
         parameter Q_MUX__ACC__DELAY         = 2 ,
         parameter Q_MUX__FN__DELAY          = 2 ,
         parameter CU_OUT__CU_P0_NTT__DELAY  = 2 ,
+        parameter CU_OUT__CU_ACC__DELAY     = 2 ,
         parameter FN__CU_P0_NTT__DELAY      = 2 ,
         parameter CU_ACC__CU_P0_NTT__DELAY  = 2 ,
         parameter ACC__NTT_MUX__DELAY       = 2 ,
@@ -36,13 +38,12 @@ localparam K = 1 << LOGK;
 localparam LOGL = $rtoi($ceil($clog2(L + 1)));
 localparam TP = 1 << LOGTP;
 localparam ID_WIDTH = $rtoi($ceil($clog2(`NUM_MEM_OBJ)));
-localparam NUM_PSI = PSI_CC * LOGTP;
 
 wire [LOGQH-1:0] qH_ntt, qH_had, qH_acc, qH_fn;
 wire [LOGQ-1:0] half_fn;
 wire [LOGQ-1:0] q_inv_fn;
 // fsm <-> ntt, hadamard, accumulator, final_op
-wire load_q, load_q_ntt, load_q_had, load_q_acc, load_q_fn;
+wire load_q, load_q_ntt, load_q_had, load_q_acc, load_q_fn, fn_load_q_start;
 // mem
 wire i_p0_en, i_p0_ready, i_p0_valid, i_p0_done;
 wire [LOGQ-1:0] i_p0_data [TP-1:0];
@@ -63,6 +64,7 @@ wire [ID_WIDTH-1:0] o_p3_id;
 wire [LOGL-1:0] o_p3_idx;
 // delayed mem
 wire i_p1_valid_d, i_p2_valid_d;
+wire i_p1_valid_d1, i_p2_valid_d1;
 wire [LOGQ-1:0] i_p1_data_d [TP-1:0];
 wire [LOGQ-1:0] i_p2_data_d [TP-1:0];
 // ntt control path
@@ -76,7 +78,9 @@ wire [LOGQ-1:0] i_psi_data [TP-1:0];
 wire [LOGQ-1:0] ntt_o_poly [TP-1:0];
 // fifo control path
 wire fifo_0_ren, fifo_0_wen;
+wire fifo_0_ren_d;
 wire fifo_1_ren, fifo_1_wen;
+wire p1_dis;
 // fifo data path
 wire [LOGQ-1:0] fifo_0_i_data [TP-1:0];
 wire [LOGQ-1:0] fifo_0_o_data [TP-1:0];
@@ -114,6 +118,7 @@ wire [LOGQ-1:0] fn_o_poly   [TP-1:0];
 wire acc_write_done;
 wire acc_start_read;
 wire [LOGL-1:0] q_id;
+wire [LOGL-1:0] fn_q_id;
 
 
 relin_q_shift #(
@@ -128,8 +133,9 @@ relin_q_shift #(
     .clk     (clk    ),
     .rst     (rst    ),
     .load_q_ABC(load_q),
-    .load_q_D_i(done_single),
-    .i       (q_id   ),
+    .load_q_D_i(fn_load_q_start),
+    .i_ABC   (q_id   ),
+    .i_D     (fn_q_id),
     .qH_A    (qH_ntt ),
     .qH_B    (qH_had ),
     .qH_C    (qH_acc ),
@@ -148,8 +154,7 @@ relin_mem #(
     .LOGN    (LOGN    ),
     .LOGL    (LOGL    ),
     .ID_WIDTH(ID_WIDTH),
-    .TP      (TP      ),
-    .NUM_PSI (NUM_PSI )
+    .TP      (TP      )
 ) relin_mem_inst (
     .clk        (clk        ),
     .rst        (rst        ),
@@ -244,7 +249,8 @@ relin_ntt_mux #(
 relin_cu_p1_p2 #(
     .L(L),
     .ID_WIDTH(ID_WIDTH),
-    .HAD_EN_DELAY(CU_P1_P2__HAD__DELAY)
+    .HAD_EN_DELAY(CU_P1_P2__HAD__DELAY ),
+    .P1_DIS_DELAY(CU_P1_P2__FIFO__DELAY)
 ) relin_cu_p1_p2_inst (
     .clk       (clk        ),
     .rst       (rst        ),
@@ -259,8 +265,11 @@ relin_cu_p1_p2 #(
     .i_p2_idx  (i_p2_idx   ),
     .i_p2_idy  (i_p2_idy   ),
     .had_en    (had_en     ),
-    .i_p1_valid(i_p1_valid_d1),
-    .i_p2_valid(i_p2_valid_d1)
+    // .i_p1_valid(i_p1_valid_d1),
+    // .i_p2_valid(i_p2_valid_d1),
+    .i_p1_done (i_p1_done  ),
+    .i_p2_done (i_p2_done  ),
+    .p1_dis    (p1_dis     )
 );
 
 
@@ -373,19 +382,20 @@ relin_final_op_wrapper #(
 
 relin_cu_out #(
     .L          (L       ),
-    .ID_WIDTH   (ID_WIDTH)
+    .ID_WIDTH   (ID_WIDTH),
+    .START_DELAY (CU_OUT__CU_ACC__DELAY)
 ) relin_cu_out_inst (
     .clk         (clk           ),
     .rst         (rst           ),
     .start       (acc_write_done),
-    .fn_i_done   (fn_i_done     ),
     .fn_o_valid  (fn_o_valid    ),
     .o_p3_done   (o_p3_done     ),
     .o_p3_ready  (o_p3_ready    ),
     .o_p3_id     (o_p3_id       ),
     .o_p3_idx    (o_p3_idx      ),
     .o_p3_en     (o_p3_en       ),
-    .done_single (done_single   ),
+    .fn_load_q_start  (fn_load_q_start),
+    .fn_q_id     (fn_q_id       ),
     .done_all    (done          )
 ); 
 
@@ -400,6 +410,7 @@ shift_reg #(
     .o_data (i_p1_valid_d)
 );
 
+
 shift_reg #(
     .LAT   (1),
     .WIDTH (1)
@@ -408,6 +419,16 @@ shift_reg #(
     .rst    (rst          ),
     .i_data (i_p1_valid_d ),
     .o_data (i_p1_valid_d1)
+);
+
+shift_reg #(
+    .LAT   (1),
+    .WIDTH (1)
+) i_fifo_ren_d_shift_reg (
+    .clk    (clk          ),
+    .rst    (rst          ),
+    .i_data (fifo_0_ren   ),
+    .o_data (fifo_0_ren_d )
 );
 
 
@@ -486,7 +507,7 @@ assign intt_i_valid = acc_o_valid;
 
 assign fifo_0_wen = ntt_o_valid;
 assign fifo_1_wen = ntt_o_valid;
-assign fifo_0_ren = i_p1_valid_d;
+assign fifo_0_ren = i_p1_valid_d | p1_dis;
 assign fifo_1_ren = i_p2_valid_d;
 
 assign had_0_i_valid = had_en & i_p1_valid_d1;
@@ -495,7 +516,7 @@ assign had_1_i_valid = had_en & i_p2_valid_d1;
 assign acc_i_valid_0 = had_0_o_valid;
 assign acc_i_valid_1 = had_1_o_valid;
 
-assign fn_i_valid = i_p1_valid_d1;
+assign fn_i_valid = fifo_0_ren_d;
 
 
 endmodule
