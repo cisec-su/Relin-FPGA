@@ -86,6 +86,7 @@ localparam integer C_M31_AXI_DATA_WIDTH = uut.C_M31_AXI_DATA_WIDTH;
 reg          clk           ;
 reg          aresetn       ;
 wire         interrupt     ;
+reg          done          ;
 
 reg  [ 11:0] axils_araddr  ;
 wire         axils_arready ;
@@ -1706,6 +1707,7 @@ axi_hbm #(
 ) hbm_inst (
     .clk                   (clk           ),
     .rst                   (~aresetn      ),
+    .done                  (done          ),
     //////////////////////////// axi4 connections ///////////////////////////
     .m00_axi_awaddr        (m00_axi_awaddr),
     .m00_axi_awlen         (m00_axi_awlen ),
@@ -2670,6 +2672,7 @@ localparam
 
 
 initial begin
+  done = 1'b0;
 
   #`RESET_TIME
   perform_write(ADDR_HBM_ADDR00_0, 32'h00000000); // Mem Addr Low
@@ -2746,12 +2749,11 @@ initial begin
 
   wait_ApDone();
   // #`HUGE_WAIT
-
+  done = 1'b1;
   ////////////////////////////////////////////////////////////////////////////
 
   perform_write(ADDR_AP_CONTROL  , CMD_EXIT);
   #`HUGE_WAIT
-
   $finish;
 
 end

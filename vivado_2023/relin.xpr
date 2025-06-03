@@ -60,7 +60,7 @@
     <Option Name="IPStaticSourceDir" Val="$PIPUSERFILESDIR/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
     <Option Name="DSABoardId" Val="au280"/>
-    <Option Name="WTXSimLaunchSim" Val="1394"/>
+    <Option Name="WTXSimLaunchSim" Val="1411"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
@@ -315,13 +315,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../src/relin/relin_cu_accum.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../src/util/bram.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -560,13 +553,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../src/hbm/parameters.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../src/hbm/relin_hbm_adapter.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -625,7 +611,7 @@
       </File>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
-        <Option Name="TopModule" Val="shuffle_post_process"/>
+        <Option Name="TopModule" Val="kernel"/>
       </Config>
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1" RelGenDir="$PGENDIR/constrs_1">
@@ -717,13 +703,7 @@
       </Config>
     </FileSet>
     <FileSet Name="sim_hbm" Type="SimulationSrcs" RelSrcDir="$PSRCDIR/sim_hbm" RelGenDir="$PGENDIR/sim_hbm">
-      <File Path="$PPRDIR/../src/hbm/parameters.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
+      <Filter Type="Srcs"/>
       <File Path="$PPRDIR/../src/hbm/relin_hbm_adapter.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -856,9 +836,7 @@
     </Run>
     <Run Id="axi_vip_0_synth_1" Type="Ft3:Synth" SrcSet="axi_vip_0" Part="xcu280-fsvh2892-2L-e" ConstrsSet="axi_vip_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/axi_vip_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/axi_vip_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/axi_vip_0_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2023">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2023"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -885,9 +863,7 @@
     </Run>
     <Run Id="axi_vip_0_impl_1" Type="Ft2:EntireDesign" Part="xcu280-fsvh2892-2L-e" ConstrsSet="axi_vip_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="axi_vip_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/axi_vip_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/axi_vip_0_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2023">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2023"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>

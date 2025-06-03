@@ -17,6 +17,7 @@ module relin_hbm_adapter
         input              clk     ,
         input              rst     ,
         input              start   ,
+        input [HBM_ADDR_WIDTH-1:0] dma_address [0:HBM_PC_COUNT-1],
         relin_t.slave      relin_t ,
         axi4_t.master      m_axi [0:HBM_PC_COUNT-1]
     );
@@ -271,16 +272,18 @@ assign rx_address_base_p0_id = (p0_is_poly )    ? 0                   :
 assign rx_address_base_p0_idx = (p0_is_poly )    ? relin_t.i_p0_idx << LOG_POLY_SINGLE_PC_SIZE :
                              /* (p0_is_psi  ) */   relin_t.i_p0_idx * PSI_SINGLE_PC_SIZE;
 
-assign p0_fifo_nempty = fifo_empty[7:0] == 8'd0;
+assign rx_address_p0 = rx_address_base_p0_id + rx_address_base_p0_idx + (p0_ctr_addr << LOG_HBM_BURST_SIZE);
 
 for (genvar g = 0; g < 8; g = g + 1) begin
-    assign rx_address[g] = rx_address_base_p0_id + rx_address_base_p0_idx + (p0_ctr_addr << LOG_HBM_BURST_SIZE);
+    assign rx_address[g] = dma_address[g] + rx_address_p0;
     for (genvar i = 0; i < TPPC; i = i + 1) begin
         assign relin_t.i_p0_data[g*TPPC + i] = fifo_dout[(g*TPPC + i)*LOGQ_ +: LOGQ_];
     end
     assign fifo_rd_en[g] = p0_fifo_rd_en;
     assign rx_start[g] = p0_rx_start;
 end
+
+assign p0_fifo_nempty = fifo_empty[7:0] == 8'd0;
 
 assign p0_rx_done = rx_done[7:0] == {8{1'b1}};
 
@@ -451,16 +454,18 @@ assign rx_address_base_p1_idx = (p1_is_rlk) ? (relin_t.i_p1_idx << LOG_POLY_SING
 
 assign rx_address_base_p1_idy = (p1_is_rlk) ? (relin_t.i_p1_idy << LOG_POLY_SINGLE_PC_SIZE) : 0;
 
-assign p1_fifo_nempty = fifo_empty[15:8] == 8'd0;
+assign rx_address_p1 = rx_address_base_p1_id + rx_address_base_p1_idx + rx_address_base_p1_idy + (p1_ctr_addr << LOG_HBM_BURST_SIZE);
 
 for (genvar g = 8; g < 16; g = g + 1) begin
-    assign rx_address[g] = rx_address_base_p1_id + rx_address_base_p1_idx + rx_address_base_p1_idy + (p1_ctr_addr << LOG_HBM_BURST_SIZE);
+    assign rx_address[g] = dma_address[g] + rx_address_p1;
     for (genvar i = 0; i < TPPC; i = i + 1) begin
         assign relin_t.i_p1_data[(g - 8)*TPPC + i] = fifo_dout[(g*TPPC + i)*LOGQ_ +: LOGQ_];
     end
     assign fifo_rd_en[g] = p1_fifo_rd_en;
     assign rx_start[g] = p1_rx_start;
 end
+
+assign p1_fifo_nempty = fifo_empty[15:8] == 8'd0;
 
 assign p1_rx_done = rx_done[15:8] == {8{1'b1}};
 
@@ -627,7 +632,7 @@ assign rx_address_p2         = rx_address_base_p2_id + rx_address_base_p2_idx + 
 assign p2_fifo_nempty = fifo_empty[23:16] == 8'd0;
 
 for (genvar g = 16; g < 24; g = g + 1) begin
-    assign rx_address[g] = rx_address_p2;
+    assign rx_address[g] = dma_address[g] + rx_address_p2;
     for (genvar i = 0; i < TPPC; i = i + 1) begin
         assign relin_t.i_p2_data[(g - 16)*TPPC + i] = fifo_dout[(g*TPPC + i)*LOGQ_ +: LOGQ_];
     end
@@ -799,9 +804,9 @@ assign tx_address_base_p3_idx = (relin_t.o_p3_idx << LOG_POLY_SINGLE_PC_SIZE);
 assign tx_address_p3 = tx_address_base_p3_id + tx_address_base_p3_idx + (p3_ctr_addr << LOG_HBM_BURST_SIZE);
 
 for (genvar g = 0; g < 8; g = g + 1) begin
-    assign tx_address[g] = tx_address_p3;
+    assign tx_address[g] = dma_address[g + 24] + tx_address_p3;
     for (genvar i = 0; i < TPPC; i = i + 1) begin
-        assign tx_data[g*TPPC + i] = relin_t.o_p3_data[g*TPPC + i];
+        assign tx_data[g][i*LOGQ_ +: LOGQ_] = relin_t.o_p3_data[g*TPPC + i];
     end
     assign tx_start[g] = p3_tx_start;
     assign tx_data_valid[g] = p3_tx_valid;

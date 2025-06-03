@@ -78,8 +78,6 @@ end
 // Modular addition instances
 for (genvar i = 0; i < TP; i++) begin : MODADD_GEN
     modadd #(
-        .LOGA  (LOGQ  ), // Input A width
-        .LOGB  (LOGQ  ), // Input B width
         .LOGQ  (LOGQ  ), // Output width
         .LOGQH (LOGQH ), // Modulus width
         .FF_IN (0     ), // Input pipeline stage. Done manually, see A_q

@@ -91,7 +91,7 @@ always @(*) begin
     ctr_rst     = 1'b0;
     o_p3_en     = 1'b0;
     o_p3_id     = 0;
-    o_p3_idx    = ctr;
+    o_p3_idx    = fn_q_id;
     fn_load_q_start = 1'b0;
 
     case (state)

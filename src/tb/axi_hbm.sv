@@ -70,7 +70,8 @@ module axi_hbm
     )
     (   
         input   wire                                     clk             ,
-        input   wire                                     rst             ,     
+        input   wire                                     rst             ,    
+        input   wire                                     done            ,    
 
         input   wire [C_M00_AXI_ADDR_WIDTH-1:0]          m00_axi_awaddr  ,
         input   wire [8-1:0]                             m00_axi_awlen   ,
@@ -855,10 +856,12 @@ axi_ram #(
     .MEM_FILE_1_NUM(5),
     .STRIDE_1(8),
     .OFFSET_1(0),
-    .MEM_FILE_2_NUM(0),
+    .MEM_FILE_2("../../../../../model/BFV/test_vectors/psi_inv_"),
+    .MEM_FILE_2_NUM(5),
+    .STRIDE_2(8),
+    .OFFSET_2(0),
     .MEM_FILE_3_NUM(0)    
-
-    ) axi_ram_m00 (
+) axi_ram_m00 (
     .clk          (clk),
     .rst          (rst),
     .s_axi_awid   (1'b0),
@@ -911,7 +914,10 @@ axi_ram #(
     .MEM_FILE_1_NUM(5),
     .STRIDE_1(8),
     .OFFSET_1(1),
-    .MEM_FILE_2_NUM(0),
+    .MEM_FILE_2("../../../../../model/BFV/test_vectors/psi_inv_"),
+    .MEM_FILE_2_NUM(5),
+    .STRIDE_2(8),
+    .OFFSET_2(1),
     .MEM_FILE_3_NUM(0)
 ) axi_ram_m01 (
     .clk          (clk),
@@ -966,7 +972,10 @@ axi_ram #(
     .MEM_FILE_1_NUM(5),
     .STRIDE_1(8),
     .OFFSET_1(2),
-    .MEM_FILE_2_NUM(0),
+    .MEM_FILE_2("../../../../../model/BFV/test_vectors/psi_inv_"),
+    .MEM_FILE_2_NUM(5),
+    .STRIDE_2(8),
+    .OFFSET_2(2),
     .MEM_FILE_3_NUM(0)    
 ) axi_ram_m02 (
     .clk          (clk),
@@ -1021,7 +1030,10 @@ axi_ram #(
     .MEM_FILE_1_NUM(5),
     .STRIDE_1(8),
     .OFFSET_1(3),
-    .MEM_FILE_2_NUM(0),
+    .MEM_FILE_2("../../../../../model/BFV/test_vectors/psi_inv_"),
+    .MEM_FILE_2_NUM(5),
+    .STRIDE_2(8),
+    .OFFSET_2(3),
     .MEM_FILE_3_NUM(0)    
 ) axi_ram_m03 (
     .clk          (clk),
@@ -1076,7 +1088,10 @@ axi_ram #(
     .MEM_FILE_1_NUM(5),
     .STRIDE_1(8),
     .OFFSET_1(4),
-    .MEM_FILE_2_NUM(0),
+    .MEM_FILE_2("../../../../../model/BFV/test_vectors/psi_inv_"),
+    .MEM_FILE_2_NUM(5),
+    .STRIDE_2(8),
+    .OFFSET_2(4),
     .MEM_FILE_3_NUM(0)    
 ) axi_ram_m04 (
     .clk          (clk),
@@ -1130,8 +1145,10 @@ axi_ram #(
     .MEM_FILE_1_NUM(5),
     .STRIDE_1(8),
     .OFFSET_1(5),
-    .MEM_FILE_1_NUM(0),
-    .MEM_FILE_2_NUM(0),
+    .MEM_FILE_2("../../../../../model/BFV/test_vectors/psi_inv_"),
+    .MEM_FILE_2_NUM(5),
+    .STRIDE_2(8),
+    .OFFSET_2(5),
     .MEM_FILE_3_NUM(0)    
 ) axi_ram_m05 (
     .clk          (clk),
@@ -1186,7 +1203,10 @@ axi_ram #(
     .MEM_FILE_1_NUM(5),
     .STRIDE_1(8),
     .OFFSET_1(6),
-    .MEM_FILE_2_NUM(0),
+    .MEM_FILE_2("../../../../../model/BFV/test_vectors/psi_inv_"),
+    .MEM_FILE_2_NUM(5),
+    .STRIDE_2(8),
+    .OFFSET_2(6),
     .MEM_FILE_3_NUM(0)    
 ) axi_ram_m06 (
     .clk          (clk),
@@ -1241,7 +1261,10 @@ axi_ram #(
     .MEM_FILE_1_NUM(5),
     .STRIDE_1(8),
     .OFFSET_1(0),
-    .MEM_FILE_2_NUM(0),
+    .MEM_FILE_2("../../../../../model/BFV/test_vectors/psi_inv_"),
+    .MEM_FILE_2_NUM(5),
+    .STRIDE_2(8),
+    .OFFSET_2(7),
     .MEM_FILE_3_NUM(0)    
 ) axi_ram_m07 (
     .clk          (clk),
@@ -2490,6 +2513,109 @@ axi_ram #(
     .s_axi_rvalid (m31_axi_rvalid),
     .s_axi_rready (m31_axi_rready)
 );
+
+localparam MEM_OUT_STRIDE = 8;
+
+localparam MEM_OUT_FILE_0     = "../../../../../model/BFV/test_vectors/relin_ct0_";
+localparam MEM_OUT_FILE_0_NUM = L;
+
+localparam MEM_OUT_FILE_1     = "../../../../../model/BFV/test_vectors/relin_ct1_";
+localparam MEM_OUT_FILE_1_NUM = L;
+
+localparam MEM_FILE_WIDTH  = 64;
+
+
+initial begin
+
+    integer file, code;
+    reg [MEM_FILE_WIDTH:0] temp_data;
+    reg [HBM_DATA_WIDTH-1:0] temp_data_large;
+    reg [HBM_DATA_WIDTH-1:0] temp_data_mem;
+    integer index;
+    integer index_strided;
+    integer index_temp;
+    integer div;
+
+    string mem_file;
+    integer stride;
+    integer offset;
+    integer mem_num;
+    integer i,j;
+
+
+    wait(done);
+
+
+    div = HBM_DATA_WIDTH / MEM_FILE_WIDTH;
+    if (div < 1) begin
+        $error("Error: HBM_DATA_WIDTH must be greater than or equal to MEM_FILE_WIDTH");
+        $finish;
+    end
+
+    index = 0;
+    index_strided = 0;
+
+    stride = MEM_OUT_STRIDE;
+
+    for (j = 0; j < 4; j = j + 1) begin
+        case (j)
+            0: begin
+                mem_file = MEM_OUT_FILE_0;
+                mem_num = MEM_OUT_FILE_0_NUM;
+            end
+            1: begin
+                mem_file = MEM_OUT_FILE_1;
+                mem_num = MEM_OUT_FILE_1_NUM;
+            end
+        endcase
+    
+        $display("Stride: %0d, Offset: %0d, MemFile: %s, MemNum: %0d", stride, offset, mem_file, mem_num);
+
+        for (i = 0; i < mem_num; i = i + 1) begin
+            file = $fopen({mem_file, $sformatf("%0d", i), ".txt"}, "r");
+            if (file == 0) begin
+                $error("Error: Unable to open file %s", {mem_file, $sformatf("%0d", i), ".txt"});
+                $finish;
+            end
+
+            index_temp = 0;
+
+            while (!$feof(file)) begin
+                code = $fscanf(file, "%h\n", temp_data);
+                if (code == 1) begin
+                    temp_data_large[MEM_FILE_WIDTH*index_temp +: MEM_FILE_WIDTH] = temp_data;
+                    index_temp = index_temp + 1;
+                    if (index_temp == div) begin
+                        index_temp = 0;
+                        offset = index % stride;
+                        temp_data_mem = (offset == 0) ? axi_ram_m24.mem[index_strided] : 
+                                        (offset == 1) ? axi_ram_m25.mem[index_strided] : 
+                                        (offset == 2) ? axi_ram_m26.mem[index_strided] : 
+                                        (offset == 3) ? axi_ram_m27.mem[index_strided] : 
+                                        (offset == 4) ? axi_ram_m28.mem[index_strided] : 
+                                        (offset == 5) ? axi_ram_m29.mem[index_strided] : 
+                                        (offset == 6) ? axi_ram_m30.mem[index_strided] : 
+                                                        axi_ram_m31.mem[index_strided] ;
+
+                        if (temp_data_mem !== temp_data_large) begin
+                            $error("Error: Data mismatch at index %0d, expected %h, got %h", index_strided, temp_data_large, temp_data_mem);
+                            $finish;
+                        end
+                        index = index + 1;
+                        index_strided = index >> 3;
+                    end
+                end else begin
+                    $error("Error: Invalid data format in file %s", {mem_file, $sformatf("%0d", i), ".txt"});
+                    $finish;
+                end
+            end
+            $fclose(file);
+        end
+    end
+end
+
+
+
 
 
 endmodule

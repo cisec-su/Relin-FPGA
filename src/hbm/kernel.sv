@@ -967,7 +967,7 @@ localparam TP = 1 << LOGTP;
   wire [32-1:0] ap_timing;
 
   // CSRs <-> DMA
-  wire [64-1:0] dma_address[0:`HBM_PC_COUNT-1];
+  wire [HBM_ADDR_WIDTH-1:0] dma_address[0:`HBM_PC_COUNT-1];
 
 ////////////////////////////////////////////////////////////////////////////////
 // Control Signals
@@ -1186,6 +1186,7 @@ relin_hbm_adapter #(
     .clk     (ap_clk    ),
     .rst     (~ap_rst_n ),
     .start   (ap_start_pulse ),
+    .dma_address(dma_address ),
     .relin_t (relin_t_inst   ),
     .m_axi   (dma_axi        )
 );
