@@ -1141,6 +1141,7 @@ axi_ram #(
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/ct2_"),
     .MEM_FILE_0_NUM(L),
     .STRIDE_0(8),
+    .OFFSET_0(5),
     .MEM_FILE_1("../../../../../model/BFV/test_vectors/psi_"),
     .MEM_FILE_1_NUM(5),
     .STRIDE_1(8),

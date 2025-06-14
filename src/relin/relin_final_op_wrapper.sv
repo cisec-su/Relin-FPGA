@@ -126,7 +126,7 @@ relin_final_op #(
 
 always @(posedge clk) begin
     if (rst) begin
-        state <= ST_IDLE;
+        state <= ST_OP;
     end
     else begin
         state <= next_state;
@@ -154,22 +154,22 @@ always @(*) begin
     last_rst = 0;
     i_done_int = 0;
     case (state)
-        ST_IDLE: begin
-            if (i_valid) begin
-                if (ctr == (L - 1)) begin
-                    ctr_rst = 1;
-                    next_state = ST_OP;
-                end else begin
-                    ctr_inc = 1;
-                end
-            end
-        end
+        // ST_IDLE: begin
+        //     if (i_valid) begin
+        //         if (ctr == (L - 1)) begin
+        //             ctr_rst = 1;
+        //             next_state = ST_OP;
+        //         end else begin
+        //             ctr_inc = 1;
+        //         end
+        //     end
+        // end
         ST_OP: begin
             i_valid_int = i_valid;
             if (i_valid) begin
                 if (ctr == 1) begin
                     ctr_rst = 1;
-                    next_state = ST_IDLE;
+                    next_state = ST_OP;
                     if (ctr_L == L) begin
                         last_set = 1;
                     end else begin

@@ -1,4 +1,4 @@
-module bram
+module uram
    #(
         parameter WIDTH  = 32  ,
         parameter LENGTH = 1024,
@@ -20,7 +20,7 @@ wire [WIDTH-1:0] dout_int;
 reg  [WIDTH-1:0] dout_q;
 
 
-/*(* ram_style="block" *) */reg [WIDTH-1:0] blockram [LENGTH-1:0] = '{default: {WIDTH{1'b0}}};;
+(* ram_style="ultra" *) reg [WIDTH-1:0] blockram [LENGTH-1:0] = '{default: {WIDTH{1'b0}}};;
 
 
 always @(posedge clk) begin

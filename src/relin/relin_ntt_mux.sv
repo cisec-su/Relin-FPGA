@@ -13,14 +13,14 @@ module relin_ntt_mux
         input              load_q               ,
         input              psi_valid            ,
         input              feed_psi             ,
-        input              intt                 ,
         input  [LOGQH-1:0] qH                   ,
         input              i_valid_ntt          ,
         input              i_valid_intt         ,
         input  [LOGQ -1:0] i_poly_ntt   [0:TP-1],
         input  [LOGQ -1:0] i_poly_intt  [0:TP-1],
         input  [LOGQ -1:0] psi          [0:TP-1],
-        output             o_valid              ,
+        output             o_valid_ntt          ,
+        output             o_valid_intt         ,
         output reg         psi_r_done           ,
         output [LOGQ -1:0] o_poly       [0:TP-1]
     );
@@ -29,81 +29,86 @@ module relin_ntt_mux
 localparam TP = 1 << LOGTP;
 localparam LOGK = (LOGN - LOGTP);
 
-wire [LOGQ-1:0] psi_fifo [0:TP-1];
+// wire [LOGQ-1:0] psi_fifo [0:TP-1];
 
 wire [LOGQ-1:0] i_poly [0:TP-1];
 wire [LOGQ-1:0] i_poly_intt_d [0:TP-1];
 wire i_valid_intt_d;
 wire i_valid;
+wire o_valid;
 
-reg  feed_psi_q;
-reg  fifo_full;
-wire fifo_ren;
+reg intt_q;
 
-wire [LOGK-1:0] ctr_K;
+wire intt;
 
-assign fifo_ren = (feed_psi_q | feed_psi) & fifo_full;
+// reg  feed_psi_q;
+// reg  fifo_full;
+// wire fifo_ren;
 
+// wire [LOGK-1:0] ctr_K;
 
-always @(posedge clk) begin
-    if (rst) begin
-        fifo_full <= 0;
-        feed_psi_q <= 0;
-    end
-    else begin
-        if (feed_psi && (fifo_full == 0)) begin
-            feed_psi_q <= 1;
-        end
-        else if (feed_psi_q & fifo_full) begin
-            feed_psi_q <= 0;
-        end
-        if (fifo_ren) begin
-            fifo_full <= 0;
-        end
-        else if (feed_psi) begin
-            fifo_full <= 1;
-        end
-    end
-end
+// assign fifo_ren = (feed_psi_q | feed_psi) & fifo_full;
 
 
-always @(posedge clk) begin
-    if (rst) begin
-        psi_r_done <= 0;
-    end
-    else if (ctr_K == {LOGK{1'b1}}) begin
-        psi_r_done <= 1;
-    end
-    else if (psi_r_done) begin
-        psi_r_done <= 0;
-    end
-end
+// always @(posedge clk) begin
+//     if (rst) begin
+//         fifo_full <= 0;
+//         feed_psi_q <= 0;
+//     end
+//     else begin
+//         if (feed_psi && (fifo_full == 0)) begin
+//             feed_psi_q <= 1;
+//         end
+//         else if (feed_psi_q & fifo_full) begin
+//             feed_psi_q <= 0;
+//         end
+//         if (fifo_ren) begin
+//             fifo_full <= 0;
+//         end
+//         else if (feed_psi) begin
+//             fifo_full <= 1;
+//         end
+//     end
+// end
+
+
+// always @(posedge clk) begin
+//     if (rst) begin
+//         psi_r_done <= 0;
+//     end
+//     else if (ctr_K == {LOGK{1'b1}}) begin
+//         psi_r_done <= 1;
+//     end
+//     else if (psi_r_done) begin
+//         psi_r_done <= 0;
+//     end
+// end
 
 
 
-relin_fifo #(
-    .K   (PSI_CC),
-    .TP  (TP    ),
-    .LOGQ(LOGQ  )
-) relin_fifo_inst_0 (
-    .clk(clk),
-    .rst(rst),
-    .ren(fifo_ren  ),
-    .wen(psi_valid ),
-    .i_data(psi    ),
-    .o_data(psi_fifo)
-);
+// relin_fifo #(
+//     .K   (PSI_CC),
+//     .TP  (TP    ),
+//     .LOGQ(LOGQ  )
+// ) relin_fifo_inst_0 (
+//     .clk(clk),
+//     .rst(rst),
+//     .ren(fifo_ren  ),
+//     .wen(psi_valid ),
+//     .i_data(psi    ),
+//     .o_data(psi_fifo)
+// );
 
 
-counter #(
-    .WIDTH   (LOGK),
-    .AUTO_INC(1   )
-) ctr_K_inst (
-    .clk(clk),
-    .rst(rst),
-    .inc(fifo_ren),
-    .ctr(ctr_K)
-);
+// counter #(
+//     .WIDTH   (LOGK),
+//     .AUTO_INC(1   )
+// ) ctr_K_inst (
+//     .clk(clk),
+//     .rst(rst),
+//     .inc(fifo_ren),
+//     .ctr(ctr_K)
+// );
 
 
 shift_reg_arr #(
@@ -130,7 +135,12 @@ shift_reg #(
 
 
 assign i_poly  = intt ? i_poly_intt_d  : i_poly_ntt;
-assign i_valid = intt ? i_valid_intt_d : i_valid_ntt;
+assign i_valid = i_valid_intt_d | i_valid_ntt;
+
+assign intt = i_valid_intt_d | intt_q;
+
+assign o_valid_ntt  = o_valid & (~intt_q);
+assign o_valid_intt = o_valid &   intt_q ;
 
 
 ntt_wrapper #(
@@ -142,14 +152,28 @@ ntt_wrapper #(
     .clk     (clk     ),
     .rst     (rst     ),
     .load_q  (load_q  ),
-    .load_psi(fifo_ren),
+    .load_psi(psi_valid),
     .intt    (intt    ),
     .qH      (qH      ),
     .i_valid (i_valid ),
     .i_poly  (i_poly  ),
-    .psi     (psi_fifo),
+    .psi     (psi     ),
     .o_valid (o_valid ),
     .o_poly  (o_poly  )
 );
+
+
+always @(posedge clk) begin
+    if (rst) begin
+        intt_q <= 0;
+    end
+    else begin
+        if (i_valid_intt_d)
+            intt_q <= 1;
+        else if (i_valid_ntt)
+            intt_q <= 0;
+    end
+end
+
 
 endmodule

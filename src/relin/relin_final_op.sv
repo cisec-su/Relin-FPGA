@@ -31,6 +31,7 @@ module relin_final_op
         input      [LOGQ  -1:0] A [0:TP-1],
         input      [LOGQ  -1:0] B [0:TP-1],
         output                  o_valid   ,
+        output                  done      ,
         output reg [LOGQ  -1:0] C [0:TP-1]
     );
 
@@ -96,17 +97,16 @@ wire [LOGQ  -1:0] modmul_in_A  [0:TP-1];
 wire [LOGQ  -1:0] modmul_in_B  [0:TP-1];
 wire [LOGQ  -1:0] modmul_out   [0:TP-1];
 
-wire [LOGQ -1:0] bram_in  [0:TP-1];
-wire [LOGQ -1:0] bram_out [0:TP-1]; 
+wire [TP*LOGQ-1:0] bram_in ;
+wire [TP*LOGQ-1:0] bram_out; 
 
-wire [LOGQ-1:0] C_d [0:TP-1];
+wire [LOGQ-1:0] C_int [0:TP-1];
 
 reg [LOGK -1:0] read_addr;
 reg [LOGK -1:0] write_addr;
 reg [4:0]       state;
 reg [4:0]       next_state;
 reg             o_ram_valid;
-reg             done;
 reg             busy;
 reg             bram_wen;
 reg             start_write;
@@ -159,8 +159,8 @@ shift_reg #(
 );
 
 shift_reg #(
-    .LAT   (LAT - LAT_ADD - 1),
-    .WIDTH (1                )
+    .LAT   (LAT - LAT_ADD),
+    .WIDTH (1            )
 ) shift_reg_fifo_ren (
     .clk    (clk       ),
     .rst    (rst       ),
@@ -192,18 +192,18 @@ shift_reg_arr #(
 );
 
 
-relin_fifo #(
-    .K   (K   ),
-    .TP  (TP  ),
-    .LOGQ(LOGQ)
-) relin_fifo_inst_0 (
-    .clk(clk),
-    .rst(rst),
-    .ren(fifo_0_ren),
-    .wen(fifo_0_wen),
-    .i_data(B  ),
-    .o_data(B_d)
-);
+// relin_fifo #(
+//     .K   (K   ),
+//     .TP  (TP  ),
+//     .LOGQ(LOGQ)
+// ) relin_fifo_inst_0 (
+//     .clk(clk),
+//     .rst(rst),
+//     .ren(fifo_0_ren),
+//     .wen(fifo_0_wen),
+//     .i_data(B  ),
+//     .o_data(B_d)
+// );
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -217,15 +217,15 @@ end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     assign modadd_in_A[i]  = (last_q) ? A_d[i] : modmul_out[i];
-    assign modadd_in_B[i]  = (last_q) ? halfmod_q : B_d[i];
+    assign modadd_in_B[i]  = (last_q) ? halfmod_q : {LOGQ{1'b0}};// B_d[i];
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign bram_in[i] = modadd_out[i];
+    assign bram_in[i*LOGQ +: LOGQ] = modadd_out[i];
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign modsub0_in_A[i]  = bram_out[i];
+    assign modsub0_in_A[i]  = bram_out[i*LOGQ +: LOGQ];
     assign modsub0_in_B[i]  = halfmod_q;
 end
 
@@ -240,12 +240,14 @@ for (genvar i = 0; i < TP; i = i + 1) begin
 end
 
 for (genvar i = 0; i < TP; i++) begin
-    assign C_d[i] = modadd_out[i];
+    assign C_int[i] = modadd_out[i];
 end
 
 assign offset_r = offset_q;
 
 assign fifo_0_wen = i_valid;
+
+assign done = write_addr == {LOGK{1'b1}};
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -330,19 +332,17 @@ end
 
 ////////////////////////// BRAM Instances ///////////////////////////////
 
-for (genvar i = 0; i < TP; i++) begin
-    bram #(
-        .WIDTH (LOGQ),
-        .LENGTH(K<<1)
-    ) bram_inst (
-        .clk  (clk        ),
-        .wen  (bram_wen   ),
-        .waddr({offset_w, write_addr}),
-        .din  (bram_in[i] ),
-        .raddr({offset_r, read_addr }),
-        .dout (bram_out[i])
-    );
-end
+bram #(
+    .WIDTH (LOGQ*TP),
+    .LENGTH(K << 1 )
+) bram_inst (
+    .clk  (clk        ),
+    .wen  (bram_wen   ),
+    .waddr({offset_w, write_addr}),
+    .din  (bram_in    ),
+    .raddr({offset_r, read_addr }),
+    .dout (bram_out   )
+);
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -396,7 +396,7 @@ end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     always @(posedge clk) begin
-        C[i] <= C_d[i];
+        C[i] <= C_int[i];
     end
 end
 
@@ -454,8 +454,7 @@ end
 always @(*) begin
     next_state  = state;  // Update state
     o_ram_valid = 0;      // Reset valid signal
-    done        = 0;      // Reset done signal
-    busy        = 0;      // Reset done signal
+    busy        = 0;      // Reset busy signal
     bram_wen    = 0;      // Disable BRAM writes
     start_write = 0;
     start_read  = 0;
@@ -473,7 +472,6 @@ always @(*) begin
         ST_READ: begin
             busy = 1;
             if (read_addr == (K - 1)) begin
-                done       = 1;
                 next_state = ST_IDLE;
             end
         end
@@ -492,7 +490,6 @@ always @(*) begin
             busy = 1;
             bram_wen = 1;
             if (read_addr == (K - 1)) begin
-                done       = 1;
                 next_state = ST_WRITE_END;
             end
         end

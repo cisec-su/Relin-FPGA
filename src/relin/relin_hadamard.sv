@@ -14,8 +14,8 @@ module relin_hadamard
         parameter FF_OUT   = 1 ,
         parameter USE_CSA  = 1 ,
         parameter FF_CSA   = 1 ,
-        parameter MORE_DSP = 1 ,
-        parameter NON_STD  = 0 ,
+        parameter MORE_DSP = 0 ,
+        parameter NON_STD  = 1 ,
         parameter TP       = 32
     )
     (

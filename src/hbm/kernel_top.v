@@ -9,7 +9,7 @@ module kernel #(
   parameter LOGQ  = 60,
   parameter LOGQH = 17,
   parameter LOGTP = 5,
-  parameter L     = 4,
+  parameter L     = 2,
   parameter PSI_CC   = (1 << (LOGN - LOGTP))*3,  
   parameter integer C_S_AXI_CONTROL_ADDR_WIDTH = 12,
   parameter integer C_S_AXI_CONTROL_DATA_WIDTH = 32,

@@ -7,7 +7,7 @@
 `define CLK_HALF      5
 
 module kernel_tb();
-
+parameter L = 2;
 // parameters for kernel
 parameter integer C_S_AXI_CONTROL_ADDR_WIDTH = 12;
 parameter integer C_S_AXI_CONTROL_DATA_WIDTH = 32;
@@ -899,7 +899,8 @@ kernel #(
     .C_S_AXI_CONTROL_ADDR_WIDTH (C_S_AXI_CONTROL_ADDR_WIDTH),
     .C_S_AXI_CONTROL_DATA_WIDTH (C_S_AXI_CONTROL_DATA_WIDTH),
     .HBM_ADDR_WIDTH             (HBM_ADDR_WIDTH),
-    .HBM_DATA_WIDTH             (HBM_DATA_WIDTH)
+    .HBM_DATA_WIDTH             (HBM_DATA_WIDTH),
+    .L                          (L)
 ) uut (
     .ap_clk                (clk           ),
     .interrupt             (interrupt     ),
@@ -1703,7 +1704,8 @@ kernel #(
 
 axi_hbm #(
     .HBM_ADDR_WIDTH             (HBM_ADDR_WIDTH),
-    .HBM_DATA_WIDTH             (HBM_DATA_WIDTH)
+    .HBM_DATA_WIDTH             (HBM_DATA_WIDTH),
+    .L                          (L)
 ) hbm_inst (
     .clk                   (clk           ),
     .rst                   (~aresetn      ),

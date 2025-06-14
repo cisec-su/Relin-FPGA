@@ -15,10 +15,10 @@ module ntt_wrapper
     input              intt                 ,
     input  [LOGQH-1:0] qH                   , 
     input              i_valid              ,
-    input  [LOGQ -1:0] i_poly       [0:TP-1],   //[0:(1<<LOGTP)-1],
-    input  [LOGQ -1:0] psi          [0:TP-1],   //[0:(1<<LOGTP)-2], 
+    input  [LOGQ -1:0] i_poly       [0:TP-1],
+    input  [LOGQ -1:0] psi          [0:TP-1],
     output             o_valid              ,     
-    output [LOGQ -1:0] o_poly       [0:TP-1]    //[0:(1<<LOGTP)-1]
+    output [LOGQ -1:0] o_poly       [0:TP-1]
 );
 
 
@@ -41,7 +41,7 @@ wire [TP*LOGQ-1:0] flat_o_poly;
 
 
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign flat_i_poly[i*LOGQ +: LOGQ] = i_poly_d[i];
+    assign flat_i_poly[i*LOGQ +: LOGQ] = i_poly_d[TP - i - 1];
 end
 
 for (genvar i = 0; i < TP - 1; i = i + 1) begin
@@ -60,10 +60,8 @@ always @(posedge clk) begin
         op    <= OP_LOAD_Q; // OP_RFU
     end else begin
         if (load_q) begin
-            //start <= 1;
             op    <= OP_LOAD_Q; // OP_LOAD_Q
         end else if (load_psi) begin
-            //start <= 1;
             op    <= OP_LOAD_TWIDDLE; // OP_LOAD_TWIDDLE
         end else if (i_valid) begin
             start <= 1;
@@ -114,7 +112,7 @@ shift_reg_arr #(
 
 
 shift_reg #(
-    .LAT    (1),
+    .LAT    (2),
     .WIDTH  (LOGQH),
     .RST_EN (1)
 ) qH_delay (
@@ -143,6 +141,7 @@ tp_ntt_top #(
     .intt    (intt),
     .qH      (qH_d),
     .i_poly  (flat_i_poly),
+    .shuffle_mod(0),
     .psi     (flat_psi),
     .o_poly  (flat_o_poly)
 );

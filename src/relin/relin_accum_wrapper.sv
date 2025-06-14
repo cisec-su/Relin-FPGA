@@ -1,19 +1,20 @@
 module relin_accum_wrapper 
    #(
         parameter L         = 30,
-        parameter LOGK      = 10,
-        parameter LOGQ      = 64,
-        parameter LOGQH     = 47,
+        parameter LOGK      = 7,
+        parameter LOGQ      = 60,
+        parameter LOGQH     = 17,
         parameter FF_ADD    = 0 ,
-        parameter LOGTP     = 32,
-        parameter START_DELAY = 2   // for start_read
+        parameter LOGTP     = 5 ,
+        parameter READ_DELAY  = 10, // between two reads
+        parameter START_DELAY = 2   // for start_read and write_done
 
     )
     (
         input              clk              ,
         input              rst              ,
         input              start_read       ,
-        output reg         write_done       ,
+        // output             write_done       ,
         input              load_q           ,
         input  [LOGQH-1:0] qH               ,
         input  [LOGQ -1:0] i_poly_0 [0:TP-1],
@@ -66,6 +67,11 @@ wire done_1;
 wire first_0;
 wire first_1;
 
+wire start_read_d;
+reg start_read_q;
+reg start_read_clr;
+
+// reg write_done_int;
 
 shift_reg #(
     .LAT   (START_DELAY),
@@ -79,9 +85,21 @@ start_read_shift_reg
     .o_data (start_read_d)
 );
 
+// shift_reg #(
+//     .LAT   (START_DELAY),
+//     .WIDTH (1)
+// )
+// write_done_shift_reg
+// (
+//     .clk    (clk),
+//     .rst    (rst),
+//     .i_data (write_done_int),
+//     .o_data (write_done)
+// );
+
 
 shift_reg #(
-    .LAT   (1),
+    .LAT   (READ_DELAY),
     .WIDTH (1)
 )
 ren_shift_reg
@@ -125,6 +143,20 @@ always @(posedge clk) begin
 end
 
 
+always @(posedge clk) begin
+    if (rst) begin
+        start_read_q <= 1'b0;
+    end
+    else if (start_read_d) begin
+        start_read_q <= 1'b1;
+    end
+    else if (start_read_clr) begin
+        start_read_q <= 1'b0;
+    end
+end
+
+
+
 assign first_0 = i_valid_0 && (ctr_0 == {LOGL{1'b0}});
 assign first_1 = i_valid_1 && (ctr_1 == {LOGL{1'b0}});
 
@@ -132,7 +164,7 @@ assign first_1 = i_valid_1 && (ctr_1 == {LOGL{1'b0}});
 always @(*) begin
 
     next_state_i = state_i;
-    write_done = 1'b0;
+    // write_done_int = 1'b0;
     ctr_0_inc = 1'b0;
     ctr_0_rst = 1'b0;
     ctr_1_inc = 1'b0;
@@ -141,11 +173,12 @@ always @(*) begin
     ren_0 = 1'b0;
     ren_1 = 1'b0;
 
+    start_read_clr = 1'b0;
 
     case (state_i)
         ST_NTT: begin
             if ((ctr_0 == L) && (ctr_1 == L)) begin
-                next_state_i = ST_INTT_0;
+                next_state_i = ST_INTT_1;
                 ctr_0_rst = 1;
                 ctr_1_rst = 1;
             end
@@ -158,14 +191,11 @@ always @(*) begin
                 end
             end
         end
-        ST_INTT_0: begin
-            write_done = 1'b1;
-            next_state_i = ST_INTT_1;
-        end
         ST_INTT_1: begin
-            if (start_read_d) begin
+            if (start_read_q) begin
                 ren_0 = 1;
                 next_state_i = ST_INTT_2;
+                start_read_clr = 1'b1;
             end
         end
         ST_INTT_2: begin
