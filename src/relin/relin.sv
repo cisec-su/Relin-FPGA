@@ -8,21 +8,21 @@ module relin
         parameter LOGN     = 16       ,
         parameter LOGTP    = 5        , // coefficient throughput
         parameter PSI_CC   = (1 << (LOGN - LOGTP))*3,
-        // delay configuration between modules
-        // parameter CU_P1_P2__HAD__DELAY      = 2 ,
-        // parameter CU_P1_P2__FIFO__DELAY     = 2 ,
+
         parameter Q_MUX__NTT__DELAY         = 2 ,
         parameter Q_MUX__HAD__DELAY         = 2 ,
         parameter Q_MUX__ACC__DELAY         = 2 ,
         parameter Q_MUX__FN__DELAY          = 2 ,
-        // parameter CU_OUT__CU_P0_NTT__DELAY  = 2 ,
-        // parameter CU_OUT__CU_ACC__DELAY     = 2 ,
-        // parameter FN__CU_P0_NTT__DELAY      = 2 ,
+
         parameter CU_ACC__CU_P0_NTT__DELAY  = 2 ,
-        parameter ACC__NTT_MUX__DELAY       = 2 ,
-        // parameter NTT__FEED_PSI__DELAY      = 2 ,
         parameter ACC0_REN__ACC1_REN__DELAY = 10,
-        parameter CU_ACC__MAIN_FSM__DELAY   = 2
+
+        parameter MAIN_FSM__CU_ACC__DELAY   = 3 ,
+        parameter MAIN_FSM__FN__DELAY       = 3 ,
+        parameter MAIN_FSM__CU_OUT___DELAY  = 3 ,
+
+        parameter NTT_I__ACC_O__DELAY       = 3 ,
+        parameter NTT_O__FN_I__DELAY        = 3
     )
     (
         input              clk   ,
@@ -137,6 +137,10 @@ wire poly01_i_valid_p, poly01_en;
 wire done_write;
 
 
+wire [LOGQ-1:0] ntt_o_poly_d [TP-1:0];
+wire intt_o_valid_d;
+
+
 relin_q_loader #(
     .L       (L      ),
     .LOGQ    (LOGQ   ),
@@ -224,7 +228,7 @@ relin_ntt_mux #(
     .LOGQH(LOGQH),
     .LOGN (LOGN ),
     .LOGTP(LOGTP),
-    .INTT_DELAY(ACC__NTT_MUX__DELAY),
+    .INTT_DELAY(NTT_I__ACC_O__DELAY),
     .PSI_CC(PSI_CC)
 ) relin_ntt_mux_inst (
     .clk           (clk           ),
@@ -353,36 +357,34 @@ relin_accum_wrapper #(
 );
 
 
-// relin_final_op_wrapper #(
-//     .LOGQ (LOGQ      ),
-//     .LOGQH(LOGQH     ),
-//     .LOGK (LOGN-LOGTP),
-//     .LOGTP(LOGTP     ),
-//     .L    (L         )
-// ) relin_final_op_inst (
-//     .clk    (clk          ),
-//     .rst    (rst          ),
-//     .load_q (load_q_fn    ),
-//     .qH     (qH_fn        ),
-//     .i_valid(fn_i_valid   ),
-//     .halfmod(half_fn      ),
-//     .q_inv  (q_inv_fn     ),
-//     .A      (fn_i_poly_A  ),
-//     .B      (fn_i_poly_B  ),
-//     .o_valid(fn_o_valid   ),
-//     .i_done (fn_i_done    ),
-//     .C      (fn_o_poly    )
-// );
+relin_final_op_wrapper #(
+    .LOGQ (LOGQ      ),
+    .LOGQH(LOGQH     ),
+    .LOGK (LOGN-LOGTP),
+    .LOGTP(LOGTP     ),
+    .L    (L         )
+) relin_final_op_inst (
+    .clk    (clk          ),
+    .rst    (rst          ),
+    .load_q (load_q_fn    ),
+    .qH     (qH_fn        ),
+    .i_valid(fn_i_valid   ),
+    .halfmod(half_fn      ),
+    .q_inv  (q_inv_fn     ),
+    .A      (fn_i_poly_A  ),
+    .B      (fn_i_poly_B  ),
+    .o_valid(fn_o_valid   ),
+    .i_done (fn_i_done    ),
+    .C      (fn_o_poly    )
+);
 
 
 relin_cu_out #(
     .L           (L       ),
     .ID_WIDTH    (ID_WIDTH)
-    // .START_DELAY (CU_OUT__CU_ACC__DELAY)
 ) relin_cu_out_inst (
     .clk         (clk           ),
     .rst         (rst           ),
-    // .start       (cu_out_start  ),
     .o_valid     (o_valid       ),
     .o_p3_done   (o_p3_done     ),
     .o_p3_id     (o_p3_id       ),
@@ -392,22 +394,8 @@ relin_cu_out #(
 ); 
 
 
-// pattern_gen #(
-//     .FEED(2),
-//     .POLL(0)
-// ) pattern_gen_inst (
-//     .clk    (clk),
-//     .rst    (rst),
-//     .i_en   (intt_o_valid    ),
-//     .o_en   (poly01_en       ),
-//     // .i_valid(poly01_i_valid  ),
-//     .o_valid(poly01_i_valid_p)
-// );
-
-wire intt_o_valid_d;
-
 shift_reg #(
-    .LAT   (1),
+    .LAT   (NTT_O__FN_I__DELAY),
     .WIDTH (1)
 )
 intt_o_valid_shift_reg
@@ -417,6 +405,20 @@ intt_o_valid_shift_reg
     .i_data (intt_o_valid  ),
     .o_data (intt_o_valid_d)
 );
+
+
+shift_reg_arr #(
+    .LAT    (NTT_O__FN_I__DELAY),
+    .WIDTH  (LOGQ          ),
+    .LENGTH (TP            ),
+    .RST_EN (0             )
+) ntt_o_poly_shift_reg (
+    .clk    (clk         ),
+    .i_data (ntt_o_poly  ),
+    .o_data (ntt_o_poly_d)
+);
+
+
 
 // data path connections
 for (genvar i = 0; i < TP; i = i + 1) begin
@@ -431,9 +433,9 @@ for (genvar i = 0; i < TP; i = i + 1) begin
     assign had_1_i_poly_B [i] = i_p2_data     [i];
     assign acc_i_poly_0   [i] = had_0_o_poly  [i];
     assign acc_i_poly_1   [i] = had_1_o_poly  [i];
-    assign fn_i_poly_A    [i] = fifo_0_o_data [i];
+    assign fn_i_poly_A    [i] = ntt_o_poly_d  [i];
     assign fn_i_poly_B    [i] = {LOGQ{1'b0}}; //i_p1_data     [i];
-    assign o_p3_data      [i] = ntt_o_poly    [i];//fn_o_poly     [i];
+    assign o_p3_data      [i] = fn_o_poly     [i];
 end
 
 // control path connections
@@ -450,9 +452,9 @@ assign had_1_i_valid = i_p2_valid; // we assume that i_p2_valid is always valid 
 assign acc_i_valid_0 = had_0_o_valid;
 assign acc_i_valid_1 = had_1_o_valid;
 
-// assign fn_i_valid = intt_o_valid_d;//poly01_i_valid_p;
+assign fn_i_valid = intt_o_valid_d;//poly01_i_valid_p;
 
-assign o_valid = intt_o_valid;//fn_o_valid;
+assign o_valid = fn_o_valid;
 
 
 assign acc_start_read  = cu_p0_intt_ready;
@@ -497,6 +499,8 @@ wire [LOGL-1:0] ctr;
 reg  ctr_inc;
 reg  ctr_rst;
 wire acc_o_valid_d;
+wire fn_i_done_d;
+wire done_write_d;
 
 
 counter #(
@@ -521,13 +525,35 @@ end
 
 
 shift_reg #(
-    .LAT   (CU_ACC__MAIN_FSM__DELAY),
+    .LAT   (MAIN_FSM__CU_ACC__DELAY),
     .WIDTH (1)
 ) acc_o_valid_sr (
     .clk    (clk    ),
     .rst    (rst    ),
     .i_data (acc_o_valid),
     .o_data (acc_o_valid_d)
+);
+
+
+shift_reg #(
+    .LAT   (MAIN_FSM__FN__DELAY),
+    .WIDTH (1)
+) fn_i_done_sr (
+    .clk    (clk    ),
+    .rst    (rst    ),
+    .i_data (fn_i_done),
+    .o_data (fn_i_done_d)
+);
+
+
+shift_reg #(
+    .LAT   (MAIN_FSM__CU_OUT___DELAY),
+    .WIDTH (1)
+) write_done_sr (
+    .clk    (clk    ),
+    .rst    (rst    ),
+    .i_data (done_write),
+    .o_data (done_write_d)
 );
 
 
@@ -575,21 +601,21 @@ always @(*) begin
         end
         ST_LOAD_Q_G2: begin
             load_q_g2 = 1;
-            // if (ctr == 0) begin
-            //     next_state = ST_WAIT_FN_DONE;                
-            // end
-            // else begin
+            if (ctr == 0) begin
+                next_state = ST_WAIT_FN_DONE;                
+            end
+            else begin
                 next_state = ST_WAIT_W_DONE;
-            // end
+            end
         end
-        // ST_WAIT_FN_DONE: begin
-        //     if (fn_i_done) begin
-        //         ctr_inc = 1;
-        //         next_state = ST_LOAD_Q_G1;
-        //     end
-        // end
+        ST_WAIT_FN_DONE: begin
+            if (fn_i_done_d) begin
+                ctr_inc = 1;
+                next_state = ST_LOAD_Q_G1;
+            end
+        end
         ST_WAIT_W_DONE: begin
-            if (done_write) begin
+            if (done_write_d) begin
                 if (ctr == L) begin
                     next_state = ST_DONE;
                 end

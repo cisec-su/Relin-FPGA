@@ -64,7 +64,7 @@ counter #(
 bram #(
     .WIDTH (LOGQ*TP),
     .LENGTH(K   ),
-    .FF_OUT(0   )
+    .FF_OUT(1   )
 ) bram_inst (
     .clk  (clk      ),
     .wen  (bram_wen ),

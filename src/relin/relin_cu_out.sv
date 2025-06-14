@@ -39,21 +39,6 @@ wire [LOGL-1:0] ctr;
 reg  ctr_inc;
 reg  ctr_rst;
 
-// wire start_d;
-
-
-// shift_reg #(
-//     .LAT   (START_DELAY),
-//     .WIDTH (1)
-// )
-// start_shift_reg
-// (
-//     .clk    (clk         ),
-//     .rst    (rst         ),
-//     .i_data (start       ),
-//     .o_data (start_d     )
-// );
-
 
 counter #(
     .WIDTH   (LOGL),
@@ -88,11 +73,6 @@ always @(*) begin
     o_p3_idx    = ctr;
 
     case (state)
-        // ST_IDLE: begin
-        //     if (start_d) begin
-        //         next_state = ST_POLY_0_WRITE_START;                
-        //     end
-        // end
         ST_POLY_0_WRITE_START: begin
             o_p3_id = `POLY_0;
             if (o_valid) begin

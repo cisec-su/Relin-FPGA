@@ -114,10 +114,10 @@ wire intt;
 shift_reg_arr #(
     .LAT    (INTT_DELAY),
     .WIDTH  (LOGQ      ),
-    .LENGTH (TP        )
+    .LENGTH (TP        ),
+    .RST_EN (0         )
 ) i_poly_intt_A_shift_reg (
     .clk    (clk          ),
-    .rst    (rst          ),
     .i_data (i_poly_intt  ),
     .o_data (i_poly_intt_d)
 );
