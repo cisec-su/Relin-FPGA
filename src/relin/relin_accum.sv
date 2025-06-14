@@ -40,12 +40,12 @@ reg  [LOGQ -1:0] A_q          [TP-1:0];
 wire [LOGQ -1:0] modadd_in_B  [TP-1:0];
 wire [LOGQ -1:0] modadd_out   [TP-1:0];
 
-wire [TP*LOGQ -1:0] uram_in ;
-wire [TP*LOGQ -1:0] uram_out;
+wire [TP*LOGQ -1:0] bram_in ;
+wire [TP*LOGQ -1:0] bram_out;
 
 reg  [LOGK -1:0] read_addr;
 reg  [LOGK -1:0] write_addr;
-wire  uram_wen;
+wire  bram_wen;
 wire start_read, start_write;
 
 wire wdone, rdone;
@@ -55,19 +55,19 @@ reg  first_q;
 /////////////////////////////////////////////////////////////////////////
 
 for (genvar i = 0; i < TP; i++) begin : OUT_GEN
-    assign C[i] = uram_out[i*LOGQ +: LOGQ];
+    assign C[i] = bram_out[i*LOGQ +: LOGQ];
 end
 
 for (genvar i = 0; i < TP; i++) begin : IN_GEN
-    assign modadd_in_B[i] = (first_q) ? {LOGQ{1'b0}} : uram_out[i*LOGQ +: LOGQ];
+    assign modadd_in_B[i] = (first_q) ? {LOGQ{1'b0}} : bram_out[i*LOGQ +: LOGQ];
 end
 
 for (genvar i = 0; i < TP; i++) begin : BRAM_IN_GEN
-    assign uram_in[i*LOGQ +: LOGQ] = modadd_out[i];
+    assign bram_in[i*LOGQ +: LOGQ] = modadd_out[i];
 end
 
 assign start_read = ren | (wen & ~first);
-assign uram_wen   = start_write | (|write_addr);
+assign bram_wen   = start_write | (|write_addr);
 assign wdone      = write_addr == {LOGK{1'b1}};
 assign rdone      = (read_addr == {LOGK{1'b1}}) && (write_addr == {LOGK{1'b0}}); // write not in progress
 assign done       = wdone | rdone;
@@ -96,13 +96,13 @@ end
 bram #(
     .WIDTH (LOGQ*TP),
     .LENGTH(K      )
-) uram_inst (
+) bram_inst (
     .clk  (clk          ),
-    .wen  (uram_wen     ),
+    .wen  (bram_wen     ),
     .waddr(write_addr   ), 
-    .din  (uram_in      ),
+    .din  (bram_in      ),
     .raddr(read_addr    ),
-    .dout (uram_out     )
+    .dout (bram_out     )
 );
 
 /////////////////////////////////////////////////////////////////////////
