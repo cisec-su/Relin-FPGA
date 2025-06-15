@@ -9,12 +9,12 @@ module relin
         parameter LOGTP    = 5        , // coefficient throughput
         parameter PSI_CC   = (1 << (LOGN - LOGTP))*3,
 
-        parameter Q_MUX__NTT__DELAY         = 2 ,
-        parameter Q_MUX__HAD__DELAY         = 2 ,
-        parameter Q_MUX__ACC__DELAY         = 2 ,
-        parameter Q_MUX__FN__DELAY          = 2 ,
+        parameter Q_MUX__NTT__DELAY         = 3 ,
+        parameter Q_MUX__HAD__DELAY         = 3 ,
+        parameter Q_MUX__ACC__DELAY         = 3 ,
+        parameter Q_MUX__FN__DELAY          = 3 ,
 
-        parameter CU_ACC__CU_P0_NTT__DELAY  = 2 ,
+        parameter CU_ACC__CU_P0_NTT__DELAY  = 3 ,
         parameter ACC0_REN__ACC1_REN__DELAY = 10,
 
         parameter MAIN_FSM__CU_ACC__DELAY   = 3 ,
@@ -443,11 +443,11 @@ assign intt_i_valid = acc_o_valid;
 
 assign fifo_0_wen = ntt_o_valid;// | intt_o_valid;
 // assign fifo_1_wen = ntt_o_valid;
-assign fifo_0_ren = i_p1_valid;// | intt_o_valid_d;
+assign fifo_0_ren = i_p1_valid;// | intt_o_valid_d; // we assume that i_p2_valid is always valid when rlk0_i_valid is valid
 // assign fifo_1_ren = i_p2_valid_d;
 
 assign had_0_i_valid = i_p1_valid;
-assign had_1_i_valid = i_p2_valid; // we assume that i_p2_valid is always valid when rlk0_i_valid is valid
+assign had_1_i_valid = i_p2_valid;
 
 assign acc_i_valid_0 = had_0_o_valid;
 assign acc_i_valid_1 = had_1_o_valid;

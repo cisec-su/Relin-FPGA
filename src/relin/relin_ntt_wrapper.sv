@@ -21,10 +21,13 @@ module ntt_wrapper
     output [LOGQ -1:0] o_poly       [0:TP-1]
 );
 
+if ((LOGN - 2*LOGTP) > LOGTP) begin
+    UNSUPPORTED_LOGN_LOGTP_COUPLE_WITH_CURRENT_STRATEGY();
+end
 
 
 localparam TP  = 1 << LOGTP;
-localparam tp_ntt_params_t tp_ntt_params = {LOGN, 5, 2, 5, LOGTP, LOGQ, LOGQH, 1, 0};
+localparam tp_ntt_params_t tp_ntt_params = {LOGN, LOGTP, LOGN - 2*LOGTP, LOGTP, LOGTP, LOGQ, LOGQH, 1, 0};
 localparam LAT = tp_ntt_lat(tp_ntt_params) + (1 << (LOGN - LOGTP)) + 2;
 
 

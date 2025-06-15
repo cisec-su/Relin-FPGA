@@ -11,8 +11,8 @@ module relin_final_op_wrapper
         parameter FF_ADDSUB  = 0 ,
         parameter USE_CSA    = 1 ,
         parameter FF_CSA     = 1 ,
-        parameter MORE_DSP   = 1 ,
-        parameter NON_STD    = 0 ,      
+        parameter MORE_DSP   = 0 ,
+        parameter NON_STD    = 1 ,      
         parameter L          = 30
     )
     (

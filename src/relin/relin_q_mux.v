@@ -28,6 +28,10 @@ always @(*) begin
         2      : qH_int = 60'h801a80000000001;
         3      : qH_int = 60'h802500000000001;
         4      : qH_int = 60'h803200000000001;
+        5      : qH_int = 60'h800800000000001;
+        6      : qH_int = 60'h801a80000000001;
+        7      : qH_int = 60'h802500000000001;
+        8      : qH_int = 60'h803200000000001;
         default: qH_int = 60'h800580000000001; // default to first prime
     endcase
 end

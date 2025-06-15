@@ -16,8 +16,8 @@ module relin_final_op
         parameter FF_ADDSUB  = 0 ,
         parameter USE_CSA    = 1 ,
         parameter FF_CSA     = 1 ,
-        parameter MORE_DSP   = 1 ,
-        parameter NON_STD    = 0
+        parameter MORE_DSP   = 0 ,
+        parameter NON_STD    = 1
     )
     (
         input                   clk       ,
@@ -106,7 +106,6 @@ reg [LOGK -1:0] read_addr;
 reg [LOGK -1:0] write_addr;
 reg [4:0]       state;
 reg [4:0]       next_state;
-reg             o_ram_valid;
 reg             busy;
 reg             bram_wen;
 reg             start_write;
@@ -453,7 +452,6 @@ end
 
 always @(*) begin
     next_state  = state;  // Update state
-    o_ram_valid = 0;      // Reset valid signal
     busy        = 0;      // Reset busy signal
     bram_wen    = 0;      // Disable BRAM writes
     start_write = 0;
@@ -462,7 +460,6 @@ always @(*) begin
         ST_IDLE: begin
             if (ren) begin
                 start_read = 1;
-                o_ram_valid = 1;
                 next_state = ST_READ;
             end else if (wen) begin
                 start_read = 1;
