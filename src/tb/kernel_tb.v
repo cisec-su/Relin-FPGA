@@ -3,11 +3,16 @@
 `define HUGE_WAIT   300
 `define LONG_WAIT   100
 `define RESET_TIME   25
-`define CLK_PERIOD   10
-`define CLK_HALF      5
+`define CLK_PERIOD    5
+`define CLK_HALF    2.5
 
 module kernel_tb();
-parameter L = 2;
+parameter LOGN  = 16;
+parameter LOGQ  = 60;
+parameter LOGQH = 17;
+parameter LOGTP = 5 ;
+parameter L     = 28;
+
 // parameters for kernel
 parameter integer C_S_AXI_CONTROL_ADDR_WIDTH = 12;
 parameter integer C_S_AXI_CONTROL_DATA_WIDTH = 32;
@@ -900,6 +905,10 @@ kernel #(
     .C_S_AXI_CONTROL_DATA_WIDTH (C_S_AXI_CONTROL_DATA_WIDTH),
     .HBM_ADDR_WIDTH             (HBM_ADDR_WIDTH),
     .HBM_DATA_WIDTH             (HBM_DATA_WIDTH),
+    .LOGN                       (LOGN),
+    .LOGQ                       (LOGQ),
+    .LOGQH                      (LOGQH),
+    .LOGTP                      (LOGTP),
     .L                          (L)
 ) uut (
     .ap_clk                (clk           ),

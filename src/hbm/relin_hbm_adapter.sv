@@ -503,7 +503,7 @@ always @(posedge clk) begin
     else if (relin_t.i_p1_done) begin
         p1_read_started <= 0;
     end
-    else if (fifo_rd_en) begin
+    else if (p1_fifo_rd_en) begin
         p1_read_started <= 1;
     end
 end
