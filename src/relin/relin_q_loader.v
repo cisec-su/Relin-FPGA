@@ -1,5 +1,6 @@
 module relin_q_loader
    #(   
+        parameter LOGN     = 16,
         parameter L        = 30, // number of primes
         parameter LOGQ     = 64,
         parameter LOGQH    = 17,
@@ -68,6 +69,7 @@ counter #(
 
 
 relin_q_mux #(
+    .LOGN(LOGN),
     .LOGL(LOGL),
     .LOGQ(LOGQ),
     .LOGQH(LOGQH)
@@ -92,6 +94,7 @@ relin_half_mux #(
 
 
 relin_q_inv_mux #(
+    .LOGN(LOGN),
     .LOGL(LOGL),
     .LOGQ(LOGQ)
 ) relin_q_inv_mux_inst (

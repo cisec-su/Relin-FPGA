@@ -142,6 +142,7 @@ wire intt_o_valid_d;
 
 
 relin_q_loader #(
+    .LOGN    (LOGN   ),
     .L       (L      ),
     .LOGQ    (LOGQ   ),
     .LOGQH   (LOGQH  ),
