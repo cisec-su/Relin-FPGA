@@ -97,10 +97,10 @@ wire [HBM_ADDR_WIDTH-1:0] rx_address_base_p2_idx;
 wire [HBM_ADDR_WIDTH-1:0] rx_address_base_p2_idy;
 wire [HBM_ADDR_WIDTH-1:0] tx_address_base_p3_idx;
 
-wire [HBM_ADDR_WIDTH-1:0] rx_address_p0;
-wire [HBM_ADDR_WIDTH-1:0] rx_address_p1;
-wire [HBM_ADDR_WIDTH-1:0] rx_address_p2;
-wire [HBM_ADDR_WIDTH-1:0] tx_address_p3;
+reg [HBM_ADDR_WIDTH-1:0] rx_address_p0;
+reg [HBM_ADDR_WIDTH-1:0] rx_address_p1;
+reg [HBM_ADDR_WIDTH-1:0] rx_address_p2;
+reg [HBM_ADDR_WIDTH-1:0] tx_address_p3;
 
 wire [HBM_PCI_COUNT -1:0] rx_data_valid;
 wire [HBM_DATA_WIDTH-1:0] rx_data [HBM_PCI_COUNT-1:0];
@@ -272,7 +272,9 @@ assign rx_address_base_p0_id = (p0_is_poly )    ? 0                   :
 assign rx_address_base_p0_idx = (p0_is_poly )    ? relin_t.i_p0_idx << LOG_POLY_SINGLE_PC_SIZE :
                              /* (p0_is_psi  ) */   relin_t.i_p0_idx * PSI_SINGLE_PC_SIZE;
 
-assign rx_address_p0 = rx_address_base_p0_id + rx_address_base_p0_idx + (p0_ctr_addr << LOG_HBM_BURST_SIZE);
+always @(posedge clk) begin
+   rx_address_p0 <= rx_address_base_p0_id + rx_address_base_p0_idx + (p0_ctr_addr << LOG_HBM_BURST_SIZE); 
+end
 
 for (genvar g = 0; g < 8; g = g + 1) begin
     assign rx_address[g] = dma_address[g] + rx_address_p0;
@@ -452,7 +454,10 @@ assign rx_address_base_p1_idx = (p1_is_rlk) ? (relin_t.i_p1_idx << LOG_POLY_SING
 
 assign rx_address_base_p1_idy = (p1_is_rlk) ? (relin_t.i_p1_idy << LOG_POLY_SINGLE_PC_SIZE) : 0;
 
-assign rx_address_p1 = rx_address_base_p1_id + rx_address_base_p1_idx + rx_address_base_p1_idy + (p1_ctr_addr << LOG_HBM_BURST_SIZE);
+always @(posedge clk) begin
+   rx_address_p1 <= rx_address_base_p1_id + rx_address_base_p1_idx + rx_address_base_p1_idy + (p1_ctr_addr << LOG_HBM_BURST_SIZE); 
+end
+
 
 for (genvar g = 8; g < 16; g = g + 1) begin
     assign rx_address[g] = dma_address[g] + rx_address_p1;
@@ -622,8 +627,10 @@ end
 assign rx_address_base_p2_id  = 0;
 assign rx_address_base_p2_idx = (relin_t.i_p2_idx << LOG_POLY_SINGLE_PC_SIZE)*L;
 assign rx_address_base_p2_idy = relin_t.i_p2_idy << LOG_POLY_SINGLE_PC_SIZE;
-assign rx_address_p2         = rx_address_base_p2_id + rx_address_base_p2_idx + rx_address_base_p2_idy + (p2_ctr_addr << LOG_HBM_BURST_SIZE);
 
+always @(posedge clk) begin
+   rx_address_p2 <= rx_address_base_p2_id + rx_address_base_p2_idx + rx_address_base_p2_idy + (p2_ctr_addr << LOG_HBM_BURST_SIZE);
+end
 
 assign p2_fifo_nempty = fifo_empty[23:16] == 8'd0;
 
@@ -795,7 +802,10 @@ assign tx_address_base_p3_id =  (relin_t.o_p3_id == `POLY_0) ?    0             
 
 assign tx_address_base_p3_idx = (relin_t.o_p3_idx << LOG_POLY_SINGLE_PC_SIZE);
 
-assign tx_address_p3 = tx_address_base_p3_id + tx_address_base_p3_idx + (p3_ctr_addr << LOG_HBM_BURST_SIZE);
+always @(posedge clk) begin
+    tx_address_p3 <= tx_address_base_p3_id + tx_address_base_p3_idx + (p3_ctr_addr << LOG_HBM_BURST_SIZE);    
+end
+
 
 for (genvar g = 0; g < 8; g = g + 1) begin
     assign tx_address[g] = dma_address[g + 24] + tx_address_p3;

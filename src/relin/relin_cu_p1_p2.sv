@@ -1,9 +1,7 @@
 module relin_cu_p1_p2
    #(   
         parameter L        = 30,
-        parameter ID_WIDTH = 4// ,
-        // parameter HAD_EN_DELAY = 2,
-        // parameter P1_DIS_DELAY = 2
+        parameter ID_WIDTH = 4
     )
     (
         input                     clk         ,
@@ -80,19 +78,6 @@ counter #(
     .inc(ctr_L_inc),
     .ctr(ctr_L)
 );
-
-
-// shift_reg #(
-//     .LAT   (P1_DIS_DELAY),
-//     .WIDTH (1)
-// )
-// p1_dis_shift_reg
-// (
-//     .clk    (clk        ),
-//     .rst    (rst        ),
-//     .i_data (p1_dis_int ),
-//     .o_data (p1_dis     )
-// );
 
 
 always @(posedge clk) begin
