@@ -34,7 +34,7 @@ localparam HBM_PC_COUNT   = HBM_PCI_COUNT + HBM_PCO_COUNT;
 localparam HBM_BURST_LEN  = 128;
 localparam LOG_HBM_BURST_NUM  = $rtoi($ceil($clog2(HBM_BURST_LEN)));
 localparam LOG_HBM_BURST_SIZE = $rtoi($ceil($clog2(HBM_BURST_LEN * (HBM_DATA_WIDTH >> 3))));
-localparam HBM_LAT        = 10;
+localparam HBM_LAT        = 20;
 
 localparam FIFO_WIDTH     = 256;
 
@@ -48,15 +48,13 @@ localparam LOG_POLY_BURST_NUM   = $rtoi($ceil($clog2(POLY_BURST_NUM)));
 localparam LOG_POLY_SINGLE_PC_SIZE = $rtoi($ceil($clog2(POLY_SINGLE_PC_SIZE)));
 localparam PSI_SINGLE_PC_SIZE = ((PSI_NUM * LOGQ_) / 8) / 8; // in Bytes
 localparam LOG_PSI_SINGLE_PC_SIZE = $rtoi($ceil($clog2(PSI_SINGLE_PC_SIZE)));
-localparam PSI_SINGLE_PC_SIZE_ = 1 << LOG_PSI_SINGLE_PC_SIZE;
 localparam PSI_BURST_NUM       = PSI_CC / HBM_BURST_LEN;
 localparam LOG_PSI_BURST_NUM   = $rtoi($ceil($clog2(PSI_BURST_NUM)));
 
 localparam POLY_2_PC_SIZE      = POLY_SINGLE_PC_SIZE * L;
 localparam PSI_ADDR_OFFSET     = POLY_2_PC_SIZE;
-localparam PSI_TOTAL_SIZE      = PSI_SINGLE_PC_SIZE * (L + 1);
-localparam PSI_PC_SIZE         = PSI_TOTAL_SIZE / 8;
-localparam PSI_INV_ADDR_OFFSET = PSI_ADDR_OFFSET + (PSI_PC_SIZE / 8);
+localparam PSI_PC_SIZE         = PSI_SINGLE_PC_SIZE * (L + 1);
+localparam PSI_INV_ADDR_OFFSET = PSI_ADDR_OFFSET + PSI_PC_SIZE;
 
 localparam RLK_0_PC_SIZE      = POLY_SINGLE_PC_SIZE * L * (L + 1);
 localparam POLY_0_ADDR_OFFSET = RLK_0_PC_SIZE + 8;

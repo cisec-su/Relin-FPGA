@@ -38,7 +38,6 @@
 ../TP-NTT/src/tp_ntt/addr_gen.v
 ../TP-NTT/src/tp_ntt/automorphism_unit.v
 ../TP-NTT/src/tp_ntt/tp_ntt_core_wrapper.sv
-../TP-NTT/src/tp_ntt/shuffle_post_process.v
 ../TP-NTT/src/tp_ntt/tp_ntt_top_w_shuffle.sv
 ../TP-NTT/src/tp_ntt/tp_ntt_core.sv
 ../TP-NTT/src/tp_ntt/tp_ntt_top.sv

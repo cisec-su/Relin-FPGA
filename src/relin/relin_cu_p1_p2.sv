@@ -18,8 +18,7 @@ module relin_cu_p1_p2
         output reg [LOGL-1:0]     i_p2_idy    ,
         output reg                rlk0_i_valid,
         output reg                poly01_i_valid,
-        input                     i_p2_done//   ,
-        // output                    p1_dis
+        input                     i_p2_done
     );
 
 `include "relin_mem.svh"

@@ -15,7 +15,7 @@ module relin
         parameter Q_MUX__FN__DELAY          = 3 ,
 
         parameter CU_ACC__CU_P0_NTT__DELAY  = 3 ,
-        parameter ACC0_REN__ACC1_REN__DELAY = 10*(1 << (LOGN-12)),
+        parameter ACC0_REN__ACC1_REN__DELAY = 40*(1 << (LOGN-12)),
 
         parameter MAIN_FSM__CU_ACC__DELAY   = 3 ,
         parameter MAIN_FSM__FN__DELAY       = 3 ,
@@ -251,8 +251,6 @@ relin_ntt_mux #(
 relin_cu_p1_p2 #(
     .L(L),
     .ID_WIDTH(ID_WIDTH)
-    // .HAD_EN_DELAY(CU_P1_P2__HAD__DELAY ),
-    // .P1_DIS_DELAY(CU_P1_P2__FIFO__DELAY)
 ) relin_cu_p1_p2_inst (
     .clk       (clk        ),
     .rst       (rst        ),
