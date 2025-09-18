@@ -159,12 +159,12 @@ shift_reg #(
 );
 
 shift_reg #(
-    .LAT   (LAT - LAT_ADD - 1),
+    .LAT   (LAT - LAT_ADD - LAT_BRAM_READ - 1),
     .WIDTH (1                )
 ) shift_reg_fifo_ren (
     .clk    (clk       ),
     .rst    (rst       ),
-    .i_data (i_valid   ),
+    .i_data (i_valid && !last),
     .o_data (fifo_0_ren)
 );
 
@@ -193,9 +193,9 @@ shift_reg_arr #(
 
 
 relin_fifo #(
-    .K   (K   ),
-    .TP  (TP  ),
-    .LOGQ(LOGQ)
+    .K   (2 * K ),
+    .TP  (TP    ),
+    .LOGQ(LOGQ  )
 ) relin_fifo_inst_0 (
     .clk(clk),
     .rst(rst),
@@ -245,7 +245,7 @@ end
 
 assign offset_r = offset_q;
 
-assign fifo_0_wen = i_valid;
+assign fifo_0_wen = i_valid && !last;
 
 /////////////////////////////////////////////////////////////////////////
 
