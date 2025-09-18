@@ -1,0 +1,151 @@
+`include "tp_ntt.svh"
+
+module ntt_wrapper
+#(
+    parameter LOGQ     = 64,
+    parameter LOGQH    = 17,
+    parameter LOGN     = 16,
+    parameter LOGTP    = 5
+)
+(
+    input              clk                  ,
+    input              rst                  ,
+    input              load_q               ,
+    input              load_psi             ,
+    input              intt                 ,
+    input  [LOGQH-1:0] qH                   , 
+    input              i_valid              ,
+    input  [LOGQ -1:0] i_poly       [0:TP-1],   //[0:(1<<LOGTP)-1],
+    input  [LOGQ -1:0] psi          [0:TP-1],   //[0:(1<<LOGTP)-2], 
+    output             o_valid              ,     
+    output [LOGQ -1:0] o_poly       [0:TP-1]    //[0:(1<<LOGTP)-1]
+);
+
+
+
+localparam TP  = 1 << LOGTP;
+localparam tp_ntt_params_t tp_ntt_params = {LOGN, 5, 2, 5, LOGTP, LOGQ, LOGQH, 1, 0};
+localparam LAT = tp_ntt_lat(tp_ntt_params) + (1 << (LOGN - LOGTP)) + 2;
+
+
+
+reg start;
+tp_ntt_op_t op;
+wire [LOGQ-1:0]  i_poly_d [0:TP-1];
+wire [LOGQ-1:0]  psi_d    [0:TP-1];
+wire [LOGQH-1:0] qH_d;
+wire [TP*LOGQ-1:0] flat_i_poly;
+wire [(TP-1)*LOGQ-1:0] flat_psi;
+wire [TP*LOGQ-1:0] flat_o_poly;
+
+
+
+for (genvar i = 0; i < TP; i = i + 1) begin
+    assign flat_i_poly[i*LOGQ +: LOGQ] = i_poly_d[i];
+end
+
+for (genvar i = 0; i < TP - 1; i = i + 1) begin
+    assign flat_psi[i*LOGQ +: LOGQ] = psi_d[i];
+end
+
+for (genvar i = 0; i < TP; i = i + 1) begin
+    assign o_poly[TP - i - 1] = flat_o_poly[i*LOGQ +: LOGQ];
+end
+
+
+
+always @(posedge clk) begin
+    if (rst) begin
+        start <= 0;
+        op    <= OP_LOAD_Q; // OP_RFU
+    end else begin
+        if (load_q) begin
+            //start <= 1;
+            op    <= OP_LOAD_Q; // OP_LOAD_Q
+        end else if (load_psi) begin
+            //start <= 1;
+            op    <= OP_LOAD_TWIDDLE; // OP_LOAD_TWIDDLE
+        end else if (i_valid) begin
+            start <= 1;
+            op    <= OP_NTT; // OP_NTT
+        end else begin
+            start <= 0;
+            op    <= OP_NTT; // OP_NTT
+        end
+    end
+end
+
+
+
+shift_reg #(
+    .LAT    (LAT),
+    .WIDTH  (1),
+    .RST_EN (1)
+) o_valid_shift_reg (
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (i_valid),
+    .o_data (o_valid)
+);
+
+
+shift_reg_arr #(
+    .LAT    (2),
+    .WIDTH  (LOGQ),
+    .LENGTH (TP)
+) i_poly_delay (
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (i_poly),
+    .o_data (i_poly_d)
+);
+
+
+shift_reg_arr #(
+    .LAT    (2),
+    .WIDTH  (LOGQ),
+    .LENGTH (TP)
+) psi_delay (
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (psi),
+    .o_data (psi_d)
+);
+
+
+shift_reg #(
+    .LAT    (1),
+    .WIDTH  (LOGQH),
+    .RST_EN (1)
+) qH_delay (
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (qH),
+    .o_data (qH_d)
+);
+
+
+tp_ntt_top #(
+    .LOGN     (tp_ntt_params.LOGN    ),
+    .LOGN1    (tp_ntt_params.LOGN1   ),
+    .LOGN2    (tp_ntt_params.LOGN2   ),
+    .LOGN3    (tp_ntt_params.LOGN3   ),
+    .LOGTP    (tp_ntt_params.LOGTP   ),
+    .LOGQ     (tp_ntt_params.LOGQ    ),
+    .LOGQH    (tp_ntt_params.LOGQH   ),
+    .NON_STD  (tp_ntt_params.NON_STD ), 
+    .MORE_DSP (tp_ntt_params.MORE_DSP)    
+) tp_ntt_top_inst (
+    .clk     (clk),
+    .rst     (rst),
+    .start   (start),
+    .op      (op),
+    .intt    (intt),
+    .qH      (qH_d),
+    .i_poly  (flat_i_poly),
+    .psi     (flat_psi),
+    .o_poly  (flat_o_poly)
+);
+
+
+endmodule

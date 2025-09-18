@@ -3,13 +3,12 @@
 `include "modmul_wlm.svh"
 `include "wlm.svh"
 
-module final_op
+module relin_final_op
    #(   
         parameter LOGK       = 10,
         parameter LOGQ       = 64,
         parameter LOGQH      = 48,
         parameter LOGTP      = 5 ,
-        parameter CORRECT    = 1 ,
         parameter FF_IN      = 1 ,
         parameter FF_MUL     = 1 ,
         parameter FF_SUM     = 0 ,
@@ -31,7 +30,7 @@ module final_op
         input      [LOGQ  -1:0] halfmod   ,
         input      [LOGQ  -1:0] A [0:TP-1],
         input      [LOGQ  -1:0] B [0:TP-1],
-        output reg              o_valid   ,
+        output                  o_valid   ,
         output reg [LOGQ  -1:0] C [0:TP-1]
     );
 
@@ -46,7 +45,7 @@ localparam LAT_SUB0 = modsub_lat(modsub0_params);
 localparam modsub_params_t modsub1_params = {LOGQ, LOGQH, 0, FF_ADDSUB, 1};
 localparam LAT_SUB1 = modsub_lat(modsub1_params);
 
-localparam modmul_wlm_params_t modmul_params = {LOGQ, LOGQH, CORRECT, 0, FF_MUL, FF_SUM, FF_SUB, 1, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
+localparam modmul_wlm_params_t modmul_params = {LOGQ, LOGQH, 1, 0, FF_MUL, FF_SUM, FF_SUB, 1, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
 localparam LAT_MUL = modmul_wlm_lat(modmul_params);
 
 localparam LAT_BRAM_READ = 2;
@@ -73,12 +72,7 @@ reg [LOGQH -1:0] qH_q;
 reg [LOGQ  -1:0] q_inv_q;
 reg [LOGQ  -1:0] halfmod_q;
 
-reg o_valid_last;
-reg o_valid_not_last;
 wire last_d;
-
-wire o_valid_last_shifted;
-wire o_valid_not_last_shifted;
 
 wire [LOGQ -1:0] A_d [0:TP-1];
 wire [LOGQ -1:0] B_d [0:TP-1];
@@ -120,34 +114,32 @@ reg             start_read;
 reg             wen;
 reg             ren;
 
+reg             offset_q;
+wire            offset_w;
+wire            offset_r;
+
+wire            fifo_0_ren;
+wire            fifo_0_wen;
+
 /////////////////////////////////////////////////////////////////////////
 
 
 
 //////////////////////// Input Registering //////////////////////////////
 
+
 shift_reg #(
-    .SHIFT (LAT_LAST - 1),
-    .WIDTH (1           )
-) shift_reg_o_valid_last (
-    .clk    (clk         ),
-    .rst    (rst         ),
-    .i_data (o_valid_last),
-    .o_data (o_valid_last_shifted     )
+    .LAT   (LAT),
+    .WIDTH (1  )
+) shift_reg_o_valid_q (
+    .clk    (clk    ),
+    .rst    (rst    ),
+    .i_data (i_valid & !last),
+    .o_data (o_valid)
 );
 
 shift_reg #(
-    .SHIFT (LAT - 1),
-    .WIDTH (1      )
-) shift_reg_o_valid_not_last (
-    .clk    (clk                     ),
-    .rst    (rst                     ),
-    .i_data (o_valid_not_last        ),
-    .o_data (o_valid_not_last_shifted)
-);
-
-shift_reg #(
-    .SHIFT (LAT_LAST - 1),
+    .LAT   (LAT_LAST - 1),
     .WIDTH (1           )
 ) shift_reg_last_d (
     .clk    (clk   ),
@@ -156,8 +148,29 @@ shift_reg #(
     .o_data (last_d)
 );
 
+shift_reg #(
+    .LAT   (LAT_ADD),
+    .WIDTH (1      )
+) shift_reg_offset_w (
+    .clk    (clk     ),
+    .rst    (rst     ),
+    .i_data (offset_q),
+    .o_data (offset_w)
+);
+
+shift_reg #(
+    .LAT   (LAT - LAT_ADD - LAT_BRAM_READ - 1),
+    .WIDTH (1                )
+) shift_reg_fifo_ren (
+    .clk    (clk       ),
+    .rst    (rst       ),
+    .i_data (i_valid && !last),
+    .o_data (fifo_0_ren)
+);
+
+
 shift_reg_arr #(
-    .SHIFT (1   ),
+    .LAT   (1   ),
     .WIDTH (LOGQ),
     .LENGTH(TP  )
 ) shift_reg_A_last (
@@ -168,7 +181,7 @@ shift_reg_arr #(
 );
 
 shift_reg_arr #(
-    .SHIFT (A_SHIFT - 1),
+    .LAT   (A_SHIFT - 1),
     .WIDTH (LOGQ       ),
     .LENGTH(TP         )
 ) shift_reg_A_sub1 (
@@ -178,15 +191,18 @@ shift_reg_arr #(
     .o_data (A_sub1)
 );
 
-shift_reg_arr #(
-    .SHIFT (1      ),
-    .WIDTH (LOGQ   ),
-    .LENGTH(TP     )
-) shift_reg_B_d (
-    .clk    (clk),
-    .rst    (rst),
-    .i_data (B  ),
-    .o_data (B_d)
+
+relin_fifo #(
+    .K   (2 * K ),
+    .TP  (TP    ),
+    .LOGQ(LOGQ  )
+) relin_fifo_inst_0 (
+    .clk(clk),
+    .rst(rst),
+    .ren(fifo_0_ren),
+    .wen(fifo_0_wen),
+    .i_data(B  ),
+    .o_data(B_d)
 );
 
 /////////////////////////////////////////////////////////////////////////
@@ -226,6 +242,10 @@ end
 for (genvar i = 0; i < TP; i++) begin
     assign C_d[i] = modadd_out[i];
 end
+
+assign offset_r = offset_q;
+
+assign fifo_0_wen = i_valid && !last;
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -269,9 +289,9 @@ for (genvar i = 0; i < TP; i = i + 1) begin
     modsub #(
         .LOGQ  (LOGQ     ),
         .LOGQH (LOGQH    ),
-        .FF_IN (1        ),
+        .FF_IN (0        ),
         .FF_SUB(FF_ADDSUB),
-        .FF_OUT(0        )
+        .FF_OUT(1        )
     ) modsub_inst1 (
         .clk(clk            ),
         .A  (modsub1_in_A[i]),
@@ -285,7 +305,7 @@ for (genvar i = 0; i < TP; i = i + 1) begin
     modmul_wlm #(
         .LOGQ    (LOGQ    ),
         .LOGQH   (LOGQH   ),
-        .CORRECT (CORRECT ),
+        .CORRECT (1       ),
         .FF_IN   (0       ),
         .FF_MUL  (FF_MUL  ),
         .FF_SUM  (FF_SUM  ),
@@ -313,13 +333,13 @@ end
 for (genvar i = 0; i < TP; i++) begin
     bram #(
         .WIDTH (LOGQ),
-        .LENGTH(K   )
+        .LENGTH(K<<1)
     ) bram_inst (
         .clk  (clk        ),
         .wen  (bram_wen   ),
-        .waddr(write_addr ),
+        .waddr({offset_w, write_addr}),
         .din  (bram_in[i] ),
-        .raddr(read_addr  ),
+        .raddr({offset_r, read_addr }),
         .dout (bram_out[i])
     );
 end
@@ -330,7 +350,6 @@ end
 
 ///////////////////////////// Sequential Logic //////////////////////////
 
-assign o_valid = o_valid_last_shifted || o_valid_not_last_shifted;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -349,12 +368,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
-        qH_q <= 0;
-        q_inv_q <= 0;
-        halfmod_q <= 0;
-    end
-    else if (load_q) begin
+    if (load_q) begin
         qH_q <= qH;
         q_inv_q <= q_inv;
         halfmod_q <= halfmod;
@@ -379,22 +393,20 @@ always @(posedge clk) begin
     end
 end
 
-always @(posedge clk) begin
-    if (i_valid && last) begin
-        o_valid_last <= 1;
-    end
-    else if (i_valid && !last) begin
-        o_valid_not_last <= 1;
-    end
-    else begin
-        o_valid_last <= 0;
-        o_valid_not_last <= 0;
+
+for (genvar i = 0; i < TP; i = i + 1) begin
+    always @(posedge clk) begin
+        C[i] <= C_d[i];
     end
 end
 
+
 always @(posedge clk) begin
-    for (int i = 0; i < TP; i = i + 1) begin
-        C[i] <= C_d[i];
+    if (rst) begin
+        offset_q <= 1;
+    end
+    else if (i_valid) begin
+        offset_q <= offset_q ^ 1;
     end
 end
 
@@ -467,22 +479,25 @@ always @(*) begin
         end
         ST_WRITE_INIT: begin
             busy = 1;
-            if (read_addr == LAT_LAST - 2) begin
+            if (read_addr == (LAT_LAST - 2)) begin
                 bram_wen = 1;
                 start_write = 1;
                 next_state  = ST_WRITE_LOOP;
             end
+            if (write_addr != 0) begin
+                bram_wen = 1;
+            end            
         end
         ST_WRITE_LOOP: begin
             busy = 1;
             bram_wen = 1;
-            if (write_addr == (K - 1)) begin
+            if (read_addr == (K - 1)) begin
                 done       = 1;
                 next_state = ST_WRITE_END;
             end
         end
         ST_WRITE_END: begin
-            bram_wen  = 0;
+            bram_wen  = 1;
             if (wen) begin
                 start_read = 1;
                 next_state = ST_WRITE_INIT;
@@ -491,7 +506,7 @@ always @(*) begin
                 start_read = 1;
                 next_state = ST_READ;
             end
-            else begin
+            else if (write_addr == (K - 1)) begin
                 next_state = ST_IDLE;
             end
         end

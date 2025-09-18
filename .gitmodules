@@ -7,3 +7,7 @@
 [submodule "modmul-hdl"]
 	path = modmul-hdl
 	url = https://github.com/cisec-su/modmul-hdl.git
+[submodule "TP-NTT"]
+	path = TP-NTT
+	url = https://github.com/cisec-su/TP-NTT.git
+	branch = TP_NTT_WLM_MIXED_OPTIMIZED

@@ -3,9 +3,7 @@
     Computes T[i] = A[i] * B[i] mod q for i = 0 to TP-1
 
 */
-`include "modmul_wlm.svh"
-
-module hadamart
+module relin_hadamard
     #(
         parameter LOGQ     = 32,
         parameter LOGQH    = 15,
@@ -21,18 +19,24 @@ module hadamart
         parameter TP       = 32
     )
     (
-        input               clk     ,
-        input               rst     ,
-        input               load_q  ,
+        input               clk         ,
+        input               rst         ,
+        input               load_q      ,
+        input               i_valid     ,
         input  [LOGQ  -1:0] A   [TP-1:0],
         input  [LOGQ  -1:0] B   [TP-1:0],
-        input  [LOGQH -1:0] qH      ,
-        output [LOGQ - 1:0] T   [TP-1:0]
+        input  [LOGQH -1:0] qH          ,
+        output              o_valid     ,
+        output [LOGQ - 1:0] C   [TP-1:0]
     );
+
+`include "modmul_wlm.svh"
+
+
 
 localparam W = LOGQ - LOGQH;
 
-localparam modmul_wlm_params_t params = {W, LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
+localparam modmul_wlm_params_t params = {LOGQ, LOGQH, 1, FF_IN, FF_MUL, FF_SUM, FF_SUB, FF_OUT, USE_CSA, FF_CSA, MORE_DSP, NON_STD};
 localparam LAT = modmul_wlm_lat(params);
 
 reg [LOGQH -1:0] qH_int;
@@ -45,7 +49,7 @@ always @(posedge clk) begin
         qH_int <= qH;
     end
 end
-    
+
 for (genvar i = 0; i < TP; i++) begin
     modmul_wlm #(
         .LOGQ    (LOGQ    ),
@@ -65,8 +69,23 @@ for (genvar i = 0; i < TP; i++) begin
         .A  (A[i]  ),
         .B  (B[i]  ),
         .qH (qH_int),
-        .T  (T[i]  )
+        .T  (C[i]  )
     );
 end
+
+
+shift_reg #(
+    .LAT   (LAT),
+    .WIDTH (1),
+    .RST_EN(1)
+)
+o_valid_shift_reg
+(
+    .clk    (clk),
+    .rst    (rst),
+    .i_data (i_valid),
+    .o_data (o_valid)
+);
+
 
 endmodule

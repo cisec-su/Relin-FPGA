@@ -37,12 +37,11 @@ localparam FP = 2 * HP;
 
 localparam K = 1 << LOGK;
 
-final_op #(
+relin_final_op #(
     .LOGK(LOGK),
     .LOGQ(LOGQ),
     .LOGQH(LOGQH),
     .LOGTP(LOGTP),
-    .CORRECT(CORRECT),
     .FF_IN(FF_IN),
     .FF_MUL(FF_MUL),
     .FF_SUM(FF_SUM),
@@ -69,7 +68,8 @@ final_op #(
 
 localparam LAT_LAST = final_op_inst.LAT_LAST;
 localparam LAT = final_op_inst.LAT;
-localparam B_SHIFT = final_op_inst.B_SHIFT;
+localparam B_SHIFT = 0;
+localparam B_SHIFT_OTHER = final_op_inst.B_SHIFT;
 
 integer exp_idx = 0;
 integer mismatch_cnt = 0;
@@ -83,6 +83,7 @@ integer s;
 integer r;
 integer v;
 integer p;
+integer l;
 integer sA;
 integer jA;
 integer sB;
@@ -107,12 +108,12 @@ reg [LOGQ -1:0] memexp [0:(((full_qH + 1) * run_count) * K * TP)-1];
 always #HP clk = ~clk;
 
 initial begin
-    $readmemh("../../../../../Relin-FPGA/test_vectors/final_op/A.txt", memA);
-    $readmemh("../../../../../Relin-FPGA/test_vectors/final_op/B.txt", memB);
-    $readmemh("../../../../../Relin-FPGA/test_vectors/final_op/qH.txt", memqH);
-    $readmemh("../../../../../Relin-FPGA/test_vectors/final_op/halfmod.txt", memhalfmod);
-    $readmemh("../../../../../Relin-FPGA/test_vectors/final_op/q_inv.txt", memq_inv);
-    $readmemh("../../../../../Relin-FPGA/test_vectors/final_op/C.txt", memexp);
+    $readmemh("/home/berenaydogan/ClonedRepos/Relin-FPGA/test_vectors/final_op/A.txt", memA);
+    $readmemh("/home/berenaydogan/ClonedRepos/Relin-FPGA/test_vectors/final_op/B.txt", memB);
+    $readmemh("/home/berenaydogan/ClonedRepos/Relin-FPGA/test_vectors/final_op/qH.txt", memqH);
+    $readmemh("/home/berenaydogan/ClonedRepos/Relin-FPGA/test_vectors/final_op/halfmod.txt", memhalfmod);
+    $readmemh("/home/berenaydogan/ClonedRepos/Relin-FPGA/test_vectors/final_op/q_inv.txt", memq_inv);
+    $readmemh("/home/berenaydogan/ClonedRepos/Relin-FPGA/test_vectors/final_op/C.txt", memexp);
 end
 
 always @(posedge clk) begin
@@ -152,6 +153,17 @@ end
 
 initial begin
     $display("Starting simulation.");
+
+    #(1*FP);
+
+    clk = 0;
+    rst = 0;
+    i_valid = 0;
+    last = 0;
+    load_q = 0;
+
+    #(1*FP);
+
     clk = 0;
     rst = 1;
     i_valid = 0;
@@ -177,25 +189,31 @@ initial begin
 
         #(1*FP);
 
-        i_valid = 1;
-        last = 1;
-        load_q = 0;
+        for (l = 0; l < 2; l = l + 1) begin
+            qH = memqH[r * (qH_count + 1)];
+            halfmod = memhalfmod[r * (qH_count + 1)];
 
-        for (j = 0; j < K; j = j + 1) begin
-
-            for (i = 0; i < TP; i = i + 1) begin
-                A[i] = memA[((j + (r * (full_qH + 1) * K))  * TP) + i];
-            end
-
-            #(1*FP);
-
-            i_valid = 0;
-            last = 0;
+            i_valid = 1;
+            last = 1;
             load_q = 0;
 
+            for (j = 0; j < K; j = j + 1) begin
+
+                for (i = 0; i < TP; i = i + 1) begin
+                    A[i] = memA[((j + (r * (full_qH + 1) * K))  * TP) + i];
+                end
+
+                #(1*FP);
+
+                i_valid = 0;
+                last = 0;
+                load_q = 0;
+
+            end
+     
         end
 
-        #((LAT_LAST - 1) * FP);
+        #((LAT_LAST - 1) * FP);   
 
         for (p = 0; p < qH_count; p = p + 1) begin
 
@@ -211,49 +229,33 @@ initial begin
 
             full_poly = poly_count * K;
 
-            for (s = 0; s < full_poly + B_SHIFT; s = s + 1) begin
-                if (s < full_poly) begin
+            for (s = 0; s < full_poly; s = s + 1) begin
 
-                    sA = s / K;
-                    jA = s % K;
+                sA = s / K;
+                jA = s % K;
+                sB = sA;      
+                jB = jA;
 
-                    for (i = 0; i < TP; i = i + 1) begin
-                        A[i] = memA[(((poly_count * p + sA + r * full_qH + r + 1) * K + jA) * TP) + i];
-                    end
-
-                    i_valid = (jA == 0);
-                    last = 0;
-                    load_q = 0;
-
-                end 
-                else begin
-
-                    i_valid = 0;
-                    last = 0;
-                    load_q = 0;
-
+                for (i = 0; i < TP; i = i + 1) begin
+                    A[i] = memA[(((poly_count * p + sA + r * full_qH + r + 1) * K + jA) * TP) + i];
                 end
 
-                B_idx = s + 1 - B_SHIFT;
-
-                if (B_idx >= 0 && B_idx < full_poly) begin
-
-                    sB = B_idx / K;
-                    jB = B_idx % K;
-
-                    for (i = 0; i < TP; i = i + 1) begin
-                        B[i] = memB[((poly_count * p + r * full_qH + sB) * K + jB) * TP + i];
-                    end
-
+                for (i = 0; i < TP; i = i + 1) begin
+                    B[i] = memB[(((poly_count * p + r * full_qH + sB) * K + jB) * TP) + i];
                 end
+
+                i_valid = (s == 0 || s == K);
+                last = 0;
+                load_q = 0;
 
                 #(1*FP);
 
-            end
+            end 
 
-            #((LAT - B_SHIFT) * FP);
+            #(LAT * FP);
 
         end
+
     end
 
     #(5*FP);
