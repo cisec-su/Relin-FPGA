@@ -77,13 +77,9 @@ reg [LOGQH -1:0] qH_q;
 reg [LOGQ  -1:0] q_inv_q;
 reg [LOGQ  -1:0] halfmod_q;
 
-reg o_valid_last_final_op;
-reg o_valid_not_last_final_op;
+reg o_valid_final_op;
 
 wire last_d;
-
-wire o_valid_last_shifted_final_op;
-wire o_valid_not_last_shifted_final_op;
 
 reg o_valid_hadamard;
 wire o_valid_shifted_hadamard;
@@ -128,31 +124,18 @@ reg             start_read;
 reg             wen;
 reg             ren;
 
+reg             offset_q;
+wire            offset_w;
+wire            offset_r;
+
+wire            fifo_0_ren;
+wire            fifo_0_wen;
+
 /////////////////////////////////////////////////////////////////////////
 
 
 
 //////////////////////// Input Registering //////////////////////////////
-
-shift_reg #(
-    .SHIFT (LAT_LAST - 1),
-    .WIDTH (1           )
-) shift_reg_o_valid_last (
-    .clk    (clk         ),
-    .rst    (rst         ),
-    .i_data (o_valid_last_final_op),
-    .o_data (o_valid_last_shifted_final_op     )
-);
-
-shift_reg #(
-    .SHIFT (LAT - 1),
-    .WIDTH (1      )
-) shift_reg_o_valid_not_last (
-    .clk    (clk                     ),
-    .rst    (rst                     ),
-    .i_data (o_valid_not_last_final_op        ),
-    .o_data (o_valid_not_last_shifted_final_op)
-);
 
 shift_reg #(
     .SHIFT (LAT_HADAMARD - 1),
@@ -166,7 +149,17 @@ shift_reg #(
 
 
 shift_reg #(
-    .SHIFT (LAT_LAST - 1),
+    .LAT   (LAT),
+    .WIDTH (1  )
+) shift_reg_o_valid_q (
+    .clk    (clk    ),
+    .rst    (rst    ),
+    .i_data (i_valid & !last),
+    .o_data (o_valid_final_op)
+);
+
+shift_reg #(
+    .LAT   (LAT_LAST - 1),
     .WIDTH (1           )
 ) shift_reg_last_d (
     .clk    (clk   ),
@@ -175,8 +168,29 @@ shift_reg #(
     .o_data (last_d)
 );
 
+shift_reg #(
+    .LAT   (LAT_ADD),
+    .WIDTH (1      )
+) shift_reg_offset_w (
+    .clk    (clk     ),
+    .rst    (rst     ),
+    .i_data (offset_q),
+    .o_data (offset_w)
+);
+
+shift_reg #(
+    .LAT   (LAT - LAT_ADD - LAT_BRAM_READ - 1),
+    .WIDTH (1                )
+) shift_reg_fifo_ren (
+    .clk    (clk       ),
+    .rst    (rst       ),
+    .i_data (i_valid && !last),
+    .o_data (fifo_0_ren)
+);
+
+
 shift_reg_arr #(
-    .SHIFT (1   ),
+    .LAT   (1   ),
     .WIDTH (LOGQ),
     .LENGTH(TP  )
 ) shift_reg_A_last (
@@ -187,7 +201,7 @@ shift_reg_arr #(
 );
 
 shift_reg_arr #(
-    .SHIFT (A_SHIFT - 1),
+    .LAT   (A_SHIFT - 1),
     .WIDTH (LOGQ       ),
     .LENGTH(TP         )
 ) shift_reg_A_sub1 (
@@ -197,15 +211,18 @@ shift_reg_arr #(
     .o_data (A_sub1)
 );
 
-shift_reg_arr #(
-    .SHIFT (1      ),
-    .WIDTH (LOGQ   ),
-    .LENGTH(TP     )
-) shift_reg_B_d (
-    .clk    (clk),
-    .rst    (rst),
-    .i_data (B  ),
-    .o_data (B_d)
+
+relin_fifo #(
+    .K   (2 * K ),
+    .TP  (TP    ),
+    .LOGQ(LOGQ  )
+) relin_fifo_inst_0 (
+    .clk(clk),
+    .rst(rst),
+    .ren(fifo_0_ren),
+    .wen(fifo_0_wen),
+    .i_data(B  ),
+    .o_data(B_d)
 );
 
 /////////////////////////////////////////////////////////////////////////
@@ -245,6 +262,10 @@ end
 for (genvar i = 0; i < TP; i++) begin
     assign C_d[i] = (opcode == OPCODE_HADAMARD) ? modmul_out[i] : modadd_out[i];
 end
+
+assign offset_r = offset_q;
+
+assign fifo_0_wen = i_valid && !last;
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -349,7 +370,17 @@ end
 
 ///////////////////////////// Sequential Logic //////////////////////////
 
-assign o_valid = (opcode == OPCODE_HADAMARD) ? o_valid_shifted_hadamard : (o_valid_last_shifted_final_op || o_valid_not_last_shifted_final_op);
+assign o_valid = (opcode == OPCODE_HADAMARD) ? o_valid_shifted_hadamard : o_valid_final_op;
+
+always @(posedge clk) begin
+    if (i_valid && opcode == OPCODE_HADAMARD) begin
+        o_valid_hadamard <= 1;
+    end
+    else begin
+        o_valid_hadamard <= 0;
+    end
+end
+
 
 always @(posedge clk) begin
     if (rst) begin
@@ -368,12 +399,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
-        qH_q <= 0;
-        q_inv_q <= 0;
-        halfmod_q <= 0;
-    end
-    else if (load_q) begin
+    if (load_q) begin
         qH_q <= qH;
         q_inv_q <= q_inv;
         halfmod_q <= halfmod;
@@ -398,32 +424,20 @@ always @(posedge clk) begin
     end
 end
 
-always @(posedge clk) begin
-    if (i_valid && last) begin
-        o_valid_last_final_op <= 1;
-    end
-    else if (i_valid && !last) begin
-        o_valid_not_last_final_op <= 1;
-    end
-    else begin
-        o_valid_last_final_op <= 0;
-        o_valid_not_last_final_op <= 0;
-    end
-end
 
-always @(posedge clk) begin
-    if (i_valid && opcode == OPCODE_HADAMARD) begin
-        o_valid_hadamard <= 1;
-    end
-    else begin
-        o_valid_hadamard <= 0;
-    end
-end
-
-
-always @(posedge clk) begin
-    for (int i = 0; i < TP; i = i + 1) begin
+for (genvar i = 0; i < TP; i = i + 1) begin
+    always @(posedge clk) begin
         C[i] <= C_d[i];
+    end
+end
+
+
+always @(posedge clk) begin
+    if (rst) begin
+        offset_q <= 1;
+    end
+    else if (i_valid) begin
+        offset_q <= offset_q ^ 1;
     end
 end
 
@@ -469,73 +483,66 @@ always @(posedge clk) begin
 end
 
 always @(*) begin
-    if (opcode == OPCODE_HADAMARD) begin
-        next_state  = ST_IDLE;
-        bram_wen    = 0;
-        start_read  = 0;
-        start_write = 0;
-        o_ram_valid = 0;
-        busy        = 0;
-        done        = 1;
-    end else begin
-        next_state  = state;  // Update state
-        o_ram_valid = 0;      // Reset valid signal
-        done        = 0;      // Reset done signal
-        busy        = 0;      // Reset done signal
-        bram_wen    = 0;      // Disable BRAM writes
-        start_write = 0;
-        start_read  = 0;
-        case (state)
-            ST_IDLE: begin
-                if (ren) begin
-                    start_read = 1;
-                    o_ram_valid = 1;
-                    next_state = ST_READ;
-                end else if (wen) begin
-                    start_read = 1;
-                    next_state = ST_WRITE_INIT;
-                end
+    next_state  = state;  // Update state
+    o_ram_valid = 0;      // Reset valid signal
+    done        = 0;      // Reset done signal
+    busy        = 0;      // Reset done signal
+    bram_wen    = 0;      // Disable BRAM writes
+    start_write = 0;
+    start_read  = 0;
+    case (state)
+        ST_IDLE: begin
+            if (ren) begin
+                start_read = 1;
+                o_ram_valid = 1;
+                next_state = ST_READ;
+            end else if (wen) begin
+                start_read = 1;
+                next_state = ST_WRITE_INIT;
             end
-            ST_READ: begin
-                busy = 1;
-                if (read_addr == (K - 1)) begin
-                    done       = 1;
-                    next_state = ST_IDLE;
-                end
+        end
+        ST_READ: begin
+            busy = 1;
+            if (read_addr == (K - 1)) begin
+                done       = 1;
+                next_state = ST_IDLE;
             end
-            ST_WRITE_INIT: begin
-                busy = 1;
-                if (read_addr == LAT_LAST - 2) begin
-                    bram_wen = 1;
-                    start_write = 1;
-                    next_state  = ST_WRITE_LOOP;
-                end
-            end
-            ST_WRITE_LOOP: begin
-                busy = 1;
+        end
+        ST_WRITE_INIT: begin
+            busy = 1;
+            if (read_addr == (LAT_LAST - 2)) begin
                 bram_wen = 1;
-                if (write_addr == (K - 1)) begin
-                    done       = 1;
-                    next_state = ST_WRITE_END;
-                end
+                start_write = 1;
+                next_state  = ST_WRITE_LOOP;
             end
-            ST_WRITE_END: begin
-                bram_wen  = 0;
-                if (wen) begin
-                    start_read = 1;
-                    next_state = ST_WRITE_INIT;
-                end
-                else if (ren) begin
-                    start_read = 1;
-                    next_state = ST_READ;
-                end
-                else begin
-                    next_state = ST_IDLE;
-                end
+            if (write_addr != 0) begin
+                bram_wen = 1;
+            end            
+        end
+        ST_WRITE_LOOP: begin
+            busy = 1;
+            bram_wen = 1;
+            if (read_addr == (K - 1)) begin
+                done       = 1;
+                next_state = ST_WRITE_END;
             end
-            default: next_state = ST_IDLE;
-        endcase
-    end
+        end
+        ST_WRITE_END: begin
+            bram_wen  = 1;
+            if (wen) begin
+                start_read = 1;
+                next_state = ST_WRITE_INIT;
+            end
+            else if (ren) begin
+                start_read = 1;
+                next_state = ST_READ;
+            end
+            else if (write_addr == (K - 1)) begin
+                next_state = ST_IDLE;
+            end
+        end
+        default: next_state = ST_IDLE;
+    endcase
 end
 
 endmodule
