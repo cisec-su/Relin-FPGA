@@ -7,7 +7,7 @@ module relin
         parameter LOGQH    = 17       ,
         parameter LOGN     = 16       ,
         parameter LOGTP    = 5        , // coefficient throughput
-        parameter PSI_CC   = (1 << (LOGN - LOGTP))*3,
+        parameter PSI_CC   = (1 << (LOGN - LOGTP)),
 
         parameter Q_MUX__NTT__DELAY         = 3 ,
         parameter Q_MUX__HAD__DELAY         = 3 ,
@@ -61,6 +61,8 @@ wire [ID_WIDTH-1:0] i_p0_id;
 wire [LOGL-1:0] i_p0_idx;
 wire i_p1_en, i_p1_valid, i_p1_done;
 wire [LOGQ-1:0] i_p1_data [TP-1:0];
+wire [LOGQ-1:0] i_p1_data_d1 [TP-1:0];
+wire [LOGQ-1:0] i_p2_data_d1 [TP-1:0];
 wire [ID_WIDTH-1:0] i_p1_id;
 wire [LOGL-1:0] i_p1_idx;
 wire [LOGL-1:0] i_p1_idy;
@@ -79,7 +81,7 @@ wire [LOGQ-1:0] i_p1_data_d [TP-1:0];
 wire [LOGQ-1:0] i_p2_data_d [TP-1:0];
 // ntt control path
 wire intt;
-wire ntt_i_valid, intt_i_valid, psi_i_valid, feed_psi, psi_r_done;
+wire ntt_i_valid, intt_i_valid, psi_i_valid, psi_inv_i_valid, feed_psi, psi_r_done;
 wire ntt_o_valid, intt_o_valid;
 // ntt data path
 wire [LOGQ-1:0] ntt_i_poly [TP-1:0];
@@ -123,6 +125,8 @@ wire [LOGQ-1:0] fn_o_poly   [TP-1:0];
 // cu_p0_ntt <-> cu_p1_p2
 // wire acc_write_done;
 wire acc_start_read;
+
+wire i_p1_valid_d1, i_p2_valid_d1;
 
 
 wire o_valid;
@@ -221,6 +225,7 @@ relin_cu_p0_ntt #(
     .i_p0_done  (i_p0_done     ),
     .ntt_i_valid(ntt_i_valid   ),
     .psi_i_valid(psi_i_valid   ),
+    .psi_inv_i_valid(psi_inv_i_valid   ),
     .intt_ready (cu_p0_intt_ready)
 );
 
@@ -236,6 +241,7 @@ relin_ntt_mux #(
     .rst           (rst           ),
     .load_q        (load_q_ntt    ),
     .psi_valid     (psi_i_valid   ),
+    .psi_inv_valid     (psi_inv_i_valid   ),
     .qH            (qH_ntt        ),
     .i_valid_ntt   (ntt_i_valid   ),
     .i_valid_intt  (intt_i_valid  ),
@@ -417,6 +423,51 @@ shift_reg_arr #(
     .o_data (ntt_o_poly_d)
 );
 
+shift_reg_arr #(
+    .LAT    (1),
+    .WIDTH  (LOGQ          ),
+    .LENGTH (TP            ),
+    .RST_EN (0             )
+) had_0_poly_data_b_delay (
+    .clk    (clk         ),
+    .i_data (i_p1_data  ),
+    .o_data (i_p1_data_d1)
+);
+
+shift_reg_arr #(
+    .LAT    (1),
+    .WIDTH  (LOGQ          ),
+    .LENGTH (TP            ),
+    .RST_EN (0             )
+) had_1_poly_data_b_delay (
+    .clk    (clk         ),
+    .i_data (i_p2_data  ),
+    .o_data (i_p2_data_d1)
+);
+
+shift_reg #(
+    .LAT   (1),
+    .WIDTH (1)
+)
+i_p1_valid_shift_reg
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (i_p1_valid  ),
+    .o_data (i_p1_valid_d1)
+);
+
+shift_reg #(
+    .LAT   (1),
+    .WIDTH (1)
+)
+i_p2_valid_shift_reg
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (i_p2_valid  ),
+    .o_data (i_p2_valid_d1)
+);
 
 
 // data path connections
@@ -427,9 +478,9 @@ for (genvar i = 0; i < TP; i = i + 1) begin
     assign fifo_0_i_data  [i] = ntt_o_poly    [i];
     // assign fifo_1_i_data  [i] = ntt_o_poly    [i];
     assign had_0_i_poly_A [i] = fifo_0_o_data [i];
-    assign had_0_i_poly_B [i] = i_p1_data     [i];
+    assign had_0_i_poly_B [i] = i_p1_data_d1  [i];
     assign had_1_i_poly_A [i] = fifo_0_o_data [i];
-    assign had_1_i_poly_B [i] = i_p2_data     [i];
+    assign had_1_i_poly_B [i] = i_p2_data_d1  [i];
     assign acc_i_poly_0   [i] = had_0_o_poly  [i];
     assign acc_i_poly_1   [i] = had_1_o_poly  [i];
     assign fn_i_poly_A    [i] = ntt_o_poly_d  [i];
@@ -445,8 +496,9 @@ assign fifo_0_wen = ntt_o_valid;// | intt_o_valid;
 assign fifo_0_ren = i_p1_valid;// | intt_o_valid_d; // we assume that i_p2_valid is always valid when rlk0_i_valid is valid
 // assign fifo_1_ren = i_p2_valid_d;
 
-assign had_0_i_valid = i_p1_valid;
-assign had_1_i_valid = i_p2_valid;
+//assign had_0_i_valid = i_p1_valid;
+assign had_0_i_valid = i_p1_valid_d1;
+assign had_1_i_valid = i_p2_valid_d1;
 
 assign acc_i_valid_0 = had_0_o_valid;
 assign acc_i_valid_1 = had_1_o_valid;

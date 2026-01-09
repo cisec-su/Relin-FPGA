@@ -8,7 +8,7 @@ module relin_hbm_adapter
         parameter LOGN           = 1 ,
         parameter LOGTP          = 32,
         parameter LOGQ           = 64,
-        parameter PSI_CC        = (1 << (LOGN - LOGTP))*3,
+        parameter PSI_CC        = (1 << (LOGN - LOGTP)),
         parameter HBM_ADDR_WIDTH = 64,
         parameter HBM_DATA_WIDTH = 256
 

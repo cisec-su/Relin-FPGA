@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Product Version: Vivado v2023.1 (64-bit)                              -->
+<!-- Product Version: Vivado v2023.2 (64-bit)                              -->
 <!--                                                                         -->
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.                   -->
 <!-- Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.   -->
 
-<Project Product="Vivado" Version="7" Minor="63" Path="/home/toluntosun/Desktop/PhD/fpga_acceleration/relin/vivado_2023/relin.xpr">
+<Project Product="Vivado" Version="7" Minor="65" Path="/home/cisec/emre/relin_new/vivado_2023/relin.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="020466d18e5c4b95b53ee9b33ef6c1d4"/>
@@ -29,12 +29,12 @@
     <Option Name="SimulatorGccInstallDirVCS" Val=""/>
     <Option Name="SimulatorGccInstallDirRiviera" Val=""/>
     <Option Name="SimulatorGccInstallDirActiveHdl" Val=""/>
-    <Option Name="SimulatorVersionXsim" Val="2023.1"/>
-    <Option Name="SimulatorVersionModelSim" Val="2022.3"/>
-    <Option Name="SimulatorVersionQuesta" Val="2022.3"/>
-    <Option Name="SimulatorVersionXcelium" Val="22.09.001"/>
-    <Option Name="SimulatorVersionVCS" Val="T-2022.06-SP1"/>
-    <Option Name="SimulatorVersionRiviera" Val="2022.04"/>
+    <Option Name="SimulatorVersionXsim" Val="2023.2"/>
+    <Option Name="SimulatorVersionModelSim" Val="2023.2"/>
+    <Option Name="SimulatorVersionQuesta" Val="2023.2"/>
+    <Option Name="SimulatorVersionXcelium" Val="23.03.002"/>
+    <Option Name="SimulatorVersionVCS" Val="U-2023.03-1"/>
+    <Option Name="SimulatorVersionRiviera" Val="2022.10"/>
     <Option Name="SimulatorVersionActiveHdl" Val="13.1"/>
     <Option Name="SimulatorGccVersionXsim" Val="9.3.0"/>
     <Option Name="SimulatorGccVersionModelSim" Val="7.4.0"/>
@@ -60,20 +60,21 @@
     <Option Name="IPStaticSourceDir" Val="$PIPUSERFILESDIR/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
     <Option Name="DSABoardId" Val="au280"/>
-    <Option Name="WTXSimLaunchSim" Val="1821"/>
+    <Option Name="FeatureSet" Val="FeatureSet_Classic"/>
+    <Option Name="WTXSimLaunchSim" Val="2114"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="3"/>
-    <Option Name="WTModelSimExportSim" Val="3"/>
-    <Option Name="WTQuestaExportSim" Val="3"/>
+    <Option Name="WTXSimExportSim" Val="6"/>
+    <Option Name="WTModelSimExportSim" Val="6"/>
+    <Option Name="WTQuestaExportSim" Val="6"/>
     <Option Name="WTIesExportSim" Val="0"/>
-    <Option Name="WTVcsExportSim" Val="3"/>
-    <Option Name="WTRivieraExportSim" Val="3"/>
-    <Option Name="WTActivehdlExportSim" Val="3"/>
+    <Option Name="WTVcsExportSim" Val="6"/>
+    <Option Name="WTRivieraExportSim" Val="6"/>
+    <Option Name="WTActivehdlExportSim" Val="6"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -88,7 +89,7 @@
     <Option Name="ClassicSocBoot" Val="FALSE"/>
     <Option Name="LocalIPRepoLeafDirName" Val="ip_repo"/>
   </Configuration>
-  <FileSets Version="1" Minor="31">
+  <FileSets Version="1" Minor="32">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1" RelGenDir="$PGENDIR/sources_1">
       <Filter Type="Srcs"/>
       <File Path="$PPRDIR/../TP-NTT/src/bu/BRAM.sv">
@@ -476,13 +477,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../TP-NTT/modmul/src/monty/montgomery_shift.sv">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../TP-NTT/modmul/src/intmul/intmul_nonstd_BBAxBBA.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -582,10 +576,10 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../src/hbm/axi.sv">
-        <FileInfo>
+        <FileInfo SFType="VHeader">
           <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
+          <Attr Name="IsVisible" Val="1"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../src/hbm/dma_tx.sv">
@@ -624,6 +618,27 @@
         </FileInfo>
       </File>
       <File Path="$PSRCDIR/sources_1/ip/fifo_sync2/fifo_sync2.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../TP-NTT/src/tp_ntt/twiddle_load.v">
+        <FileInfo SFType="SVerilog">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../TP-NTT/src/tp_ntt/shuffle_process_upd.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../TP-NTT/src/tp_ntt/shuffle_addr_gen.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -716,19 +731,6 @@
         <Option Name="XSimWcfgFile" Val="$PPRDIR/../vivado/relin_tb_behav.wcfg"/>
         <Option Name="XSimWcfgFile" Val="$PPRDIR/relin_tb_behav.wcfg"/>
         <Option Name="xsim.simulate.runtime" Val="3ms"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="axi_vip_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/axi_vip_0" RelGenDir="$PGENDIR/axi_vip_0">
-      <File Path="$PSRCDIR/sources_1/ip/axi_vip_0/axi_vip_0.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <Config>
-        <Option Name="TopModule" Val="axi_vip_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
     <FileSet Name="sim_hbm" Type="SimulationSrcs" RelSrcDir="$PSRCDIR/sim_hbm" RelGenDir="$PGENDIR/sim_hbm">
@@ -828,7 +830,21 @@
         <Option Name="PamPseudoTop" Val="pseudo_tb"/>
         <Option Name="SrcSet" Val="sources_1"/>
         <Option Name="XSimWcfgFile" Val="$PPRDIR/kernel_tb_behav.wcfg"/>
+        <Option Name="XSimWcfgFile" Val="$PPRDIR/kernel_tb_behav.wcfg"/>
         <Option Name="xsim.simulate.runtime" Val="3ms"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="axi_vip_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/axi_vip_0" RelGenDir="$PGENDIR/axi_vip_0">
+      <File Path="$PSRCDIR/sources_1/ip/axi_vip_0/axi_vip_0.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <Config>
+        <Option Name="TopModule" Val="axi_vip_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
   </FileSets>
@@ -853,13 +869,12 @@
       <Option Name="Description" Val="Riviera-PRO Simulator"/>
     </Simulator>
   </Simulators>
-  <Runs Version="1" Minor="20">
-    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xcu280-fsvh2892-2L-e" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="true" IncrementalCheckpoint="$PSRCDIR/utils_1/imports/synth_1/kernel.dcp" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1">
+  <Runs Version="1" Minor="21">
+    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xcu280-fsvh2892-2L-e" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="true" IncrementalCheckpoint="$PSRCDIR/utils_1/imports/synth_1/kernel.dcp" WriteIncrSynthDcp="false" State="current" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2023"/>
         <Step Id="synth_design"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2023"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>

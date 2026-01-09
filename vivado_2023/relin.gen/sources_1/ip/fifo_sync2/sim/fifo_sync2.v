@@ -53,7 +53,7 @@
 `timescale 1ns/1ps
 
 (* DowngradeIPIdentifiedWarnings = "yes" *)
-module fifo_sync (
+module fifo_sync2 (
   clk,
   srst,
   din,

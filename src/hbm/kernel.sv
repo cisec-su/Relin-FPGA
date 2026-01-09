@@ -14,7 +14,7 @@ module kernel_sv #(
   parameter LOGQH = 17,
   parameter LOGTP = 5,
   parameter L     = 30,
-  parameter PSI_CC   = (1 << (LOGN - LOGTP))*3,
+  parameter PSI_CC   = (1 << (LOGN - LOGTP)),
 
 
   parameter integer C_S_AXI_CONTROL_ADDR_WIDTH = 12,

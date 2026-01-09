@@ -51,7 +51,7 @@
 -- The following code must appear in the VHDL architecture header.
 
 ------------- Begin Cut here for COMPONENT Declaration ------ COMP_TAG
-COMPONENT fifo_sync
+COMPONENT fifo_sync2
   PORT (
     clk : IN STD_LOGIC;
     srst : IN STD_LOGIC;
@@ -71,7 +71,7 @@ END COMPONENT;
 -- body. Substitute your own instance name and net names.
 
 ------------- Begin Cut here for INSTANTIATION Template ----- INST_TAG
-your_instance_name : fifo_sync
+your_instance_name : fifo_sync2
   PORT MAP (
     clk => clk,
     srst => srst,
@@ -86,8 +86,8 @@ your_instance_name : fifo_sync
   );
 -- INST_TAG_END ------ End INSTANTIATION Template ---------
 
--- You must compile the wrapper file fifo_sync.vhd when simulating
--- the core, fifo_sync. When compiling the wrapper file, be sure to
+-- You must compile the wrapper file fifo_sync2.vhd when simulating
+-- the core, fifo_sync2. When compiling the wrapper file, be sure to
 -- reference the VHDL simulation library.
 
 

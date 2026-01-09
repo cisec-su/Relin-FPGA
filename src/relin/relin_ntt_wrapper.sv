@@ -38,7 +38,7 @@ wire [LOGQ-1:0]  i_poly_d [0:TP-1];
 wire [LOGQ-1:0]  psi_d    [0:TP-1];
 wire [LOGQH-1:0] qH_d;
 wire [TP*LOGQ-1:0] flat_i_poly;
-wire [(TP-1)*LOGQ-1:0] flat_psi;
+wire [(TP)*LOGQ-1:0] flat_psi;
 wire [TP*LOGQ-1:0] flat_o_poly;
 
 
@@ -47,8 +47,8 @@ for (genvar i = 0; i < TP; i = i + 1) begin
     assign flat_i_poly[i*LOGQ +: LOGQ] = i_poly_d[TP - i - 1];
 end
 
-for (genvar i = 0; i < TP - 1; i = i + 1) begin
-    assign flat_psi[i*LOGQ +: LOGQ] = psi_d[i];
+for (genvar i = 0; i < TP; i = i + 1) begin
+    assign flat_psi[i*LOGQ +: LOGQ] = psi_d[TP - i - 1];
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
@@ -126,28 +126,51 @@ shift_reg #(
 );
 
 
-tp_ntt_top #(
-    .LOGN     (tp_ntt_params.LOGN    ),
-    .LOGN1    (tp_ntt_params.LOGN1   ),
-    .LOGN2    (tp_ntt_params.LOGN2   ),
-    .LOGN3    (tp_ntt_params.LOGN3   ),
-    .LOGTP    (tp_ntt_params.LOGTP   ),
-    .LOGQ     (tp_ntt_params.LOGQ    ),
-    .LOGQH    (tp_ntt_params.LOGQH   ),
-    .NON_STD  (tp_ntt_params.NON_STD ), 
-    .MORE_DSP (tp_ntt_params.MORE_DSP)    
-) tp_ntt_top_inst (
-    .clk     (clk),
-    .rst     (rst),
-    .start   (start),
-    .op      (op),
-    .intt    (intt),
-    .qH      (qH_d),
-    .i_poly  (flat_i_poly),
-    .shuffle_mod(0),
-    .psi     (flat_psi),
-    .o_poly  (flat_o_poly)
-);
+// tp_ntt_top #(
+//     .LOGN     (tp_ntt_params.LOGN    ),
+//     .LOGN1    (tp_ntt_params.LOGN1   ),
+//     .LOGN2    (tp_ntt_params.LOGN2   ),
+//     .LOGN3    (tp_ntt_params.LOGN3   ),
+//     .LOGTP    (tp_ntt_params.LOGTP   ),
+//     .LOGQ     (tp_ntt_params.LOGQ    ),
+//     .LOGQH    (tp_ntt_params.LOGQH   ),
+//     .NON_STD  (tp_ntt_params.NON_STD ), 
+//     .MORE_DSP (tp_ntt_params.MORE_DSP)    
+// ) tp_ntt_top_inst (
+//     .clk     (clk),
+//     .rst     (rst),
+//     .start   (start),
+//     .op      (op),
+//     .intt    (intt),
+//     .shuffle_mod(0),
+//     .qH      (qH_d),
+//     .i_poly  (flat_i_poly),
+//     .psi     (flat_psi),
+//     .o_poly  (flat_o_poly)
+// );
+
+tp_ntt_top_w_shuffle #(
+        .LOGN    (tp_ntt_params.LOGN    ),
+        .LOGN1   (tp_ntt_params.LOGN1   ),
+        .LOGN2   (tp_ntt_params.LOGN2   ),
+        .LOGN3   (tp_ntt_params.LOGN3   ),
+        .LOGTP   (tp_ntt_params.LOGTP   ),
+        .LOGQ    (tp_ntt_params.LOGQ    ),
+        .LOGQH   (tp_ntt_params.LOGQH   ),
+        .NON_STD (tp_ntt_params.NON_STD ),
+        .MORE_DSP(tp_ntt_params.MORE_DSP)
+    ) uut (
+        .clk(clk),
+        .rst(rst),
+        .start(start),
+        .op(op),
+        .intt(intt),
+        .shuffle_mod(0),
+        .qH(qH_d),
+        .i_poly(flat_i_poly),
+        .psi(flat_psi),
+        .o_poly(flat_o_poly)
+    );
 
 
 endmodule

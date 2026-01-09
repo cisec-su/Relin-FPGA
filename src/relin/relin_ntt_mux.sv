@@ -5,13 +5,14 @@ module relin_ntt_mux
         parameter LOGN           = 16,
         parameter LOGTP          = 5 ,
         parameter INTT_DELAY     = 2 ,
-        parameter PSI_CC        = (1 << (LOGN - LOGTP))*3
+        parameter PSI_CC        = (1 << (LOGN - LOGTP))
     )
     (
         input              clk                  ,
         input              rst                  ,
         input              load_q               ,
         input              psi_valid            ,
+        input              psi_inv_valid        ,
         input              feed_psi             ,
         input  [LOGQH-1:0] qH                   ,
         input              i_valid_ntt          ,
@@ -40,6 +41,8 @@ wire o_valid;
 reg intt_q;
 
 wire intt;
+
+wire psi_valid_t;
 
 // reg  feed_psi_q;
 // reg  fifo_full;
@@ -143,6 +146,9 @@ assign o_valid_ntt  = o_valid & (~intt_q);
 assign o_valid_intt = o_valid &   intt_q ;
 
 
+assign psi_valid_t = psi_inv_valid | psi_valid;
+
+
 ntt_wrapper #(
     .LOGQ (LOGQ ),
     .LOGQH(LOGQH),
@@ -152,7 +158,7 @@ ntt_wrapper #(
     .clk     (clk     ),
     .rst     (rst     ),
     .load_q  (load_q  ),
-    .load_psi(psi_valid),
+    .load_psi(psi_valid_t  ),
     .intt    (intt    ),
     .qH      (qH      ),
     .i_valid (i_valid ),
@@ -170,7 +176,11 @@ always @(posedge clk) begin
     else begin
         if (i_valid_intt_d)
             intt_q <= 1;
+        else if(psi_inv_valid)
+            intt_q <= 1;
         else if (i_valid_ntt)
+            intt_q <= 0;
+        else if (psi_valid)
             intt_q <= 0;
     end
 end

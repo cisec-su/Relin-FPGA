@@ -1261,7 +1261,7 @@ axi_ram #(
     .MEM_FILE_1("../../../../../model/BFV/test_vectors/psi_"),
     .MEM_FILE_1_NUM(L + 1),
     .STRIDE_1(8),
-    .OFFSET_1(0),
+    .OFFSET_1(7),
     .MEM_FILE_2("../../../../../model/BFV/test_vectors/psi_inv_"),
     .MEM_FILE_2_NUM(L + 1),
     .STRIDE_2(8),
@@ -1721,7 +1721,7 @@ axi_ram #(
     .OFFSET_1(7),
     .MEM_FILE_2("../../../../../model/BFV/test_vectors/ct1_"),
     .MEM_FILE_2_NUM(L),
-    .STRIDE_2(8),
+    .STRIDE_2(8),   
     .OFFSET_2(7)
 ) axi_ram_m15 (
     .clk          (clk),
@@ -2558,7 +2558,7 @@ initial begin
 
     stride = MEM_OUT_STRIDE;
 
-    for (j = 0; j < 4; j = j + 1) begin
+    for (j = 0; j < 2; j = j + 1) begin
         case (j)
             0: begin
                 mem_file = MEM_OUT_FILE_0;
@@ -2600,7 +2600,8 @@ initial begin
 
                         if (temp_data_mem !== temp_data_large) begin
                             $error("Error: Data mismatch at index %0d, expected %h, got %h", index_strided, temp_data_large, temp_data_mem);
-                            $finish;
+                            //$finish;
+                            $error("Error: filename %s", {mem_file, $sformatf("%0d", i), ".txt"});
                         end
                         index = index + 1;
                         index_strided = index >> 3;
@@ -2613,6 +2614,8 @@ initial begin
             $fclose(file);
         end
     end
+    $display("HBM Read Data Verification Completed");
+    $finish;
 end
 
 

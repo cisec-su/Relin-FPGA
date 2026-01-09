@@ -253,6 +253,7 @@ initial begin
             end
 
             index_temp = 0;
+            $display("Stride: %0d, Offset: %0d, MemFile: %s, MemNum: %0d", stride, offset, mem_file, mem_num);
 
             while (!$feof(file)) begin
                 code = $fscanf(file, "%h\n", temp_data);
@@ -266,7 +267,7 @@ initial begin
                         index_temp = 0;
                         if ((index % stride) == offset) begin
                             mem[index_strided] = temp_data_large;
-                            // $display("[%d] mem[%0d] = %h", offset, index_strided, mem[index_strided]);
+                            $display("[%d] mem[%0d] = %h", offset, index_strided, mem[index_strided]);
                             index_strided = index_strided + 1;
                         end
                         index = index + 1;

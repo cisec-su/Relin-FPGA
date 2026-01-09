@@ -11,7 +11,7 @@
 // otherwise provided in a valid license issued to you by
 // AMD, and to the maximum extent permitted by applicable
 // law: (1) THESE MATERIALS ARE MADE AVAILABLE "AS IS" AND
-// WITH ALL FAULTS, AND XILINX HEREBY DISCLAIMS ALL WARRANTIES
+// WITH ALL FAULTS, AND AMD HEREBY DISCLAIMS ALL WARRANTIES
 // AND CONDITIONS, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING
 // BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, NON-
 // INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE; and
@@ -48,11 +48,11 @@
 
 
 // IP VLNV: xilinx.com:ip:axi_vip:1.1
-// IP Revision: 14
+// IP Revision: 15
 
-(* X_CORE_INFO = "axi_vip_v1_1_14_top,Vivado 2023.1" *)
-(* CHECK_LICENSE_TYPE = "axi_vip_0,axi_vip_v1_1_14_top,{}" *)
-(* CORE_GENERATION_INFO = "axi_vip_0,axi_vip_v1_1_14_top,{x_ipProduct=Vivado 2023.1,x_ipVendor=xilinx.com,x_ipLibrary=ip,x_ipName=axi_vip,x_ipVersion=1.1,x_ipCoreRevision=14,x_ipLanguage=VERILOG,x_ipSimLanguage=MIXED,C_AXI_PROTOCOL=0,C_AXI_INTERFACE_MODE=2,C_AXI_ADDR_WIDTH=64,C_AXI_WDATA_WIDTH=256,C_AXI_RDATA_WIDTH=256,C_AXI_WID_WIDTH=0,C_AXI_RID_WIDTH=0,C_AXI_AWUSER_WIDTH=0,C_AXI_ARUSER_WIDTH=0,C_AXI_WUSER_WIDTH=0,C_AXI_RUSER_WIDTH=0,C_AXI_BUSER_WIDTH=0,C_AXI_SUPPORTS_NARROW=1,C_AXI_HAS_BURST=1,C_AXI_HAS_LOCK=1,C_AXI_HAS\
+(* X_CORE_INFO = "axi_vip_v1_1_15_top,Vivado 2023.2" *)
+(* CHECK_LICENSE_TYPE = "axi_vip_0,axi_vip_v1_1_15_top,{}" *)
+(* CORE_GENERATION_INFO = "axi_vip_0,axi_vip_v1_1_15_top,{x_ipProduct=Vivado 2023.2,x_ipVendor=xilinx.com,x_ipLibrary=ip,x_ipName=axi_vip,x_ipVersion=1.1,x_ipCoreRevision=15,x_ipLanguage=VERILOG,x_ipSimLanguage=MIXED,C_AXI_PROTOCOL=0,C_AXI_INTERFACE_MODE=2,C_AXI_ADDR_WIDTH=64,C_AXI_WDATA_WIDTH=256,C_AXI_RDATA_WIDTH=256,C_AXI_WID_WIDTH=0,C_AXI_RID_WIDTH=0,C_AXI_AWUSER_WIDTH=0,C_AXI_ARUSER_WIDTH=0,C_AXI_WUSER_WIDTH=0,C_AXI_RUSER_WIDTH=0,C_AXI_BUSER_WIDTH=0,C_AXI_SUPPORTS_NARROW=1,C_AXI_HAS_BURST=1,C_AXI_HAS_LOCK=1,C_AXI_HAS\
 _CACHE=1,C_AXI_HAS_REGION=1,C_AXI_HAS_PROT=1,C_AXI_HAS_QOS=1,C_AXI_HAS_WSTRB=1,C_AXI_HAS_BRESP=1,C_AXI_HAS_RRESP=1,C_AXI_HAS_ARESETN=1}" *)
 (* DowngradeIPIdentifiedWarnings = "yes" *)
 module axi_vip_0 (
@@ -174,7 +174,7 @@ TS_PER_BYTE 0, INSERT_VIP 0" *)
 (* X_INTERFACE_INFO = "xilinx.com:interface:aximm:1.0 S_AXI RREADY" *)
 input wire s_axi_rready;
 
-  axi_vip_v1_1_14_top #(
+  axi_vip_v1_1_15_top #(
     .C_AXI_PROTOCOL(0),
     .C_AXI_INTERFACE_MODE(2),
     .C_AXI_ADDR_WIDTH(64),

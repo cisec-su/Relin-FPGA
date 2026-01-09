@@ -54,7 +54,7 @@
 // (in parentheses) to your own signal names.
 
 //----------- Begin Cut here for INSTANTIATION Template ---// INST_TAG
-fifo_sync your_instance_name (
+fifo_sync2 your_instance_name (
   .clk(clk),                  // input wire clk
   .srst(srst),                // input wire srst
   .din(din),                  // input wire [255 : 0] din
@@ -68,7 +68,7 @@ fifo_sync your_instance_name (
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 
-// You must compile the wrapper file fifo_sync.v when simulating
-// the core, fifo_sync. When compiling the wrapper file, be sure to
+// You must compile the wrapper file fifo_sync2.v when simulating
+// the core, fifo_sync2. When compiling the wrapper file, be sure to
 // reference the Verilog simulation library.
 

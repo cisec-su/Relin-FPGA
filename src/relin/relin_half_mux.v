@@ -13,7 +13,7 @@ module relin_half_mux
 
 always @(*) begin
     case (i)
-        default: half = 60'h401900000000000;
+        default: half = 60'h400d40000000000;
     endcase
 end
 

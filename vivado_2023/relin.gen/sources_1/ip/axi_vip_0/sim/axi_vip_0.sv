@@ -11,7 +11,7 @@
 // otherwise provided in a valid license issued to you by
 // AMD, and to the maximum extent permitted by applicable
 // law: (1) THESE MATERIALS ARE MADE AVAILABLE "AS IS" AND
-// WITH ALL FAULTS, AND XILINX HEREBY DISCLAIMS ALL WARRANTIES
+// WITH ALL FAULTS, AND AMD HEREBY DISCLAIMS ALL WARRANTIES
 // AND CONDITIONS, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING
 // BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, NON-
 // INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE; and
@@ -48,7 +48,7 @@
 
 
 // IP VLNV: xilinx.com:ip:axi_vip:1.1
-// IP Revision: 14
+// IP Revision: 15
 
 `timescale 1ns/1ps
 
@@ -172,7 +172,7 @@ TS_PER_BYTE 0, INSERT_VIP 0" *)
 (* X_INTERFACE_INFO = "xilinx.com:interface:aximm:1.0 S_AXI RREADY" *)
 input wire s_axi_rready;
 
-  axi_vip_v1_1_14_top #(
+  axi_vip_v1_1_15_top #(
     .C_AXI_PROTOCOL(0),
     .C_AXI_INTERFACE_MODE(2),
     .C_AXI_ADDR_WIDTH(64),
