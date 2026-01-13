@@ -5,11 +5,11 @@
 
 
 module kernel #(
-  parameter LOGN  = 16,
+  parameter LOGN  = 12,
   parameter LOGQ  = 60,
   parameter LOGQH = 17,
   parameter LOGTP = 5 ,
-  parameter L     = 28,
+  parameter L     = 2,
   parameter PSI_CC   = (1 << (LOGN - LOGTP)),  
   parameter integer C_S_AXI_CONTROL_ADDR_WIDTH = 12,
   parameter integer C_S_AXI_CONTROL_DATA_WIDTH = 32,

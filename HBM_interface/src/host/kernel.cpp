@@ -35,7 +35,7 @@
 #define OUTPUT_FILE   "../../../scripts/kernel/kernel_4096_O_64_computed.txt"
 
 #define POLY_N        (4096)
-#define PSI_N         (12288)
+#define PSI_N         (4096)
 #define L             (2)
 
 #define PCI_COUNT          (24)
@@ -245,6 +245,8 @@ int main(int argc, char *argv[]) {
   //////////////////////////////////////////////////////////////////////////////
   // Prepare Memory Buffers
 
+  std::cout << "Allocating host-side buffers" << std::endl;
+
   uint64_t ct_0     [L    ][POLY_N] = {0x0};
   uint64_t ct_1     [L    ][POLY_N] = {0x0};
   uint64_t ct_2     [L    ][POLY_N] = {0x0};
@@ -253,19 +255,23 @@ int main(int argc, char *argv[]) {
   uint64_t rlk_0    [L * (L + 1)][POLY_N] = {0x0};
   uint64_t rlk_1    [L * (L + 1)][POLY_N] = {0x0};
 
+  
+  std::cout << "[INFO] Reading input files" << std::endl;
   //////////////////////////////////////////////////// p0 /////////////////////////////////////////////////////////////
   readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct2_"         , (uint64_t*) ct_2   , L          , POLY_N);
   readManyMemFileFlat("../../../scripts/kernel/test_vectors/psi_"         , (uint64_t*) psi    , L + 1      ,  PSI_N);
   readManyMemFileFlat("../../../scripts/kernel/test_vectors/psi_inv_"     , (uint64_t*) psi_inv, L + 1      ,  PSI_N);
+  std::cout << "[INFO] p0 files are read" << std::endl;
   //////////////////////////////////////////////////// p1 /////////////////////////////////////////////////////////////
   readManyMemFileFlat("../../../scripts/kernel/test_vectors/relinkey_0_"  , (uint64_t*) rlk_0  , L * (L + 1), POLY_N);
   // readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct0_"         , (uint64_t*) ct_0   , L          , POLY_N);
   // readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct1_"         , (uint64_t*) ct_1   , L          , POLY_N);
+  std::cout << "[INFO] p1 files are read" << std::endl;
   //////////////////////////////////////////////////// p2 /////////////////////////////////////////////////////////////
   readManyMemFileFlat("../../../scripts/kernel/test_vectors/relinkey_1_"  , (uint64_t*) rlk_1  , L * (L + 1), POLY_N);
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  
+  std::cout << "[INFO] Input files are read" << std::endl;
 
 
   std::cout << "[INFO] Prepare BO for Host->Device" << std::endl;
@@ -297,7 +303,7 @@ int main(int argc, char *argv[]) {
     std::cout << "[INFO] hbm_i[" << i << "] is ready" << std::endl;
   }
   ///////////////////////////////////////////////////////////////////////////////////////////////
-
+  std::cout << "[INFO] Writing inputs to device HBM" << std::endl;
 
   unsigned int offset;
 
