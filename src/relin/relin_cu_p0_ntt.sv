@@ -15,12 +15,24 @@ module relin_cu_p0_ntt
         output reg                ntt_i_valid  ,
         output reg                psi_i_valid  ,
         output reg                psi_inv_i_valid  ,
-        output reg                intt_ready   
+        output reg                intt_ready ,
+        output reg    [15:0]           relin_cu_p0_state,
+        output reg   [LOGL-1:0]           ctr_L_out,
+        output reg   [LOGL-1:0]           ctr_L__out,
+        output reg   [LOGL-1:0]           ctr_poly_out
+
     );
 
 `include "relin_mem.svh"
 
 localparam LOGL  = $rtoi($ceil($clog2(L + 1)));
+
+always @(posedge clk) begin
+    relin_cu_p0_state <= state;
+    ctr_L_out <= ctr_L;
+    ctr_L__out <= ctr_L_;
+    ctr_poly_out <= ctr_poly;
+end
 
 
 typedef enum reg[15:0] {

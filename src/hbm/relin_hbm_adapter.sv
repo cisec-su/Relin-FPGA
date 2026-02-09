@@ -18,6 +18,10 @@ module relin_hbm_adapter
         input              rst     ,
         input              start   ,
         input [HBM_ADDR_WIDTH-1:0] dma_address [0:HBM_PC_COUNT-1],
+        output reg [5:0] hbm_p0_dbg,
+        output reg [5:0] hbm_p1_dbg,
+        output reg [5:0] hbm_p2_dbg,
+        output reg [5:0] hbm_p3_dbg,
         relin_t.slave      relin_t ,
         axi4_t.master      m_axi [0:HBM_PC_COUNT-1]
     );
@@ -133,7 +137,7 @@ reg  p0_rx_start;
 wire p0_rx_done;
 
 
-t_state p0_state, next_p0_state;
+(* mark_debug = "true" *) t_state p0_state, next_p0_state;
 
 
 
@@ -840,14 +844,14 @@ end
 
 
 
-always @(posedge clk) begin
-    if (rst) begin
-        p3_state <= ST_IDLE;
-    end
-    else begin
-        p3_state <= next_p3_state;
-    end
-end
+// always @(posedge clk) begin
+//     if (rst) begin
+//         p3_state <= ST_IDLE;
+//     end
+//     else begin
+//         p3_state <= next_p3_state;
+//     end
+// end
 
 
 always @(posedge clk) begin
@@ -922,6 +926,12 @@ end
 
 /////////////////////////////////////////////////////////////////////////
 
+always @(posedge clk) begin
+    hbm_p0_dbg <= p0_state;
+    hbm_p1_dbg <= p1_state;
+    hbm_p2_dbg <= p2_state;
+    hbm_p3_dbg <= p3_state;
+end
 
 
 ///////////////////////// misc. sequential logic ////////////////////////

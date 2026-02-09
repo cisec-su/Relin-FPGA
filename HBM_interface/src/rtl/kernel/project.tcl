@@ -91,7 +91,7 @@ if {$for_sim == no} {
   ipx::associate_bus_interfaces -busif s_axi_control -clock ap_clk [ipx::current_core]
 
   set_property xpm_libraries {XPM_CDC XPM_MEMORY XPM_FIFO} [ipx::current_core]
-  set_property supported_families { } [ipx::current_core]
+  #set_property supported_families { } [ipx::current_core]
   set_property auto_family_support_level level_2 [ipx::current_core]
 
   ipx::update_checksums [ipx::current_core]

@@ -1,13 +1,13 @@
 import os
 
-computed_dir = "computed"
-correct_dir  = "correct_results"
+computed_dir = "correct_results"
+correct_dir  = "computed"
 
 pairs = [
-    ("ct0_rl_0.txt", "relin_ct0_0.txt"),
-    ("ct0_rl_1.txt", "relin_ct0_1.txt"),
-    ("ct1_rl_0.txt", "relin_ct1_0.txt"),
-    ("ct1_rl_1.txt", "relin_ct1_1.txt"),
+    ("relin_ct0_0.txt", "ct0_rl_0.txt"),
+    ("relin_ct0_1.txt", "ct0_rl_1.txt"),
+    ("relin_ct1_0.txt", "ct1_rl_0.txt"),
+    ("relin_ct1_1.txt", "ct1_rl_1.txt"),
 ]
 
 def read_decimal_file(path):

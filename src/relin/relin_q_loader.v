@@ -83,6 +83,7 @@ relin_q_mux #(
 
 
 relin_half_mux #(
+    .LOGN(LOGN),
     .LOGL(LOGL),
     .LOGQ(LOGQ)
 ) relin_half_mux_inst (

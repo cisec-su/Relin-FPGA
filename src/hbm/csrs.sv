@@ -74,7 +74,13 @@ module csrs
   output wire [64-1:0]                    hbm_address28,
   output wire [64-1:0]                    hbm_address29,
   output wire [64-1:0]                    hbm_address30,
-  output wire [64-1:0]                    hbm_address31
+  output wire [64-1:0]                    hbm_address31,
+  input  wire [32-1:0]                    ap_debug2,
+  input  wire [32-1:0]                    ap_debug3,
+  input  wire [32-1:0]                    ap_debug4,
+  input  wire [32-1:0]                    ap_debug5,
+  input  wire [32-1:0]                    ap_debug6,
+  input  wire [32-1:0]                    ap_debug7
 );
   //------------------------Address Info-------------------
   // 0x00 : Control signals
@@ -181,6 +187,12 @@ module csrs
     ADDR_HBM_ADDR30_1    = 9'h11c,
     ADDR_HBM_ADDR31_0    = 9'h120,
     ADDR_HBM_ADDR31_1    = 9'h124,
+    ADDR_AP_DEBUG2       = 9'h128,
+    ADDR_AP_DEBUG3       = 9'h12C,
+    ADDR_AP_DEBUG4       = 9'h130,
+    ADDR_AP_DEBUG5       = 9'h134,
+    ADDR_AP_DEBUG6       = 9'h138,
+    ADDR_AP_DEBUG7       = 9'h13C,
     WRIDLE               = 2'd0,
     WRDATA               = 2'd1,
     WRRESP               = 2'd2,
@@ -217,6 +229,12 @@ module csrs
   reg  [31:0]          int_ap_control = 32'b0;
   reg  [31:0]          int_ap_status = 32'b0;
   reg  [31:0]          int_ap_debug = 32'b0;
+  reg  [31:0]          int_ap_debug2 = 32'b0;
+  reg  [31:0]          int_ap_debug3 = 32'b0;
+  reg  [31:0]          int_ap_debug4 = 32'b0;
+  reg  [31:0]          int_ap_debug5 = 32'b0;
+  reg  [31:0]          int_ap_debug6 = 32'b0;  
+  reg  [31:0]          int_ap_debug7 = 32'b0;
   reg  [31:0]          int_ap_timing = 32'b0;
   reg  [31:0]          int_hbm_params_0 = 32'b0;
   reg  [31:0]          int_hbm_params_1 = 32'b0;
@@ -423,6 +441,12 @@ module csrs
           ADDR_HBM_ADDR30_1 : rdata <= 'b0; // int_hbm_address30[63:32];
           ADDR_HBM_ADDR31_0 : rdata <= 'b0; // int_hbm_address31[31: 0];
           ADDR_HBM_ADDR31_1 : rdata <= 'b0; // int_hbm_address31[63:32];
+          ADDR_AP_DEBUG2     : rdata <= int_ap_debug2;
+          ADDR_AP_DEBUG3     : rdata <= int_ap_debug3;
+          ADDR_AP_DEBUG4     : rdata <= int_ap_debug4;
+          ADDR_AP_DEBUG5     : rdata <= int_ap_debug5;
+          ADDR_AP_DEBUG6     : rdata <= int_ap_debug6;
+          ADDR_AP_DEBUG7     : rdata <= int_ap_debug7;
         endcase
       end
     end
@@ -561,6 +585,12 @@ module csrs
       int_ap_control    <= 'b0;
       int_ap_status     <= 'b0;
       int_ap_debug      <= 'b0;
+      int_ap_debug2      <= 'b0;
+      int_ap_debug3      <= 'b0;
+      int_ap_debug4      <= 'b0;
+      int_ap_debug5      <= 'b0;
+      int_ap_debug6      <= 'b0;
+      int_ap_debug7      <= 'b0;
       int_ap_timing     <= 'b0;
       int_hbm_params_0  <= 'b0;
       int_hbm_params_1  <= 'b0;
@@ -602,6 +632,12 @@ module csrs
       if (w_hs && waddr == ADDR_AP_CONTROL   ) int_ap_control           <= (WDATA[31:0] & wmask) | (int_ap_control           & ~wmask);
       int_ap_status <= ap_status;
       int_ap_debug  <= ap_debug;
+      int_ap_debug2  <= ap_debug2;
+      int_ap_debug3  <= ap_debug3;
+      int_ap_debug4  <= ap_debug4;
+      int_ap_debug5  <= ap_debug5;
+      int_ap_debug6  <= ap_debug6;
+      int_ap_debug7  <= ap_debug7;
       int_ap_timing <= ap_timing;
       if (w_hs && waddr == ADDR_HBM_PARAMS_0 ) int_hbm_params_0         <= (WDATA[31:0] & wmask) | (int_hbm_params_0         & ~wmask);
       if (w_hs && waddr == ADDR_HBM_PARAMS_1 ) int_hbm_params_1         <= (WDATA[31:0] & wmask) | (int_hbm_params_1         & ~wmask);

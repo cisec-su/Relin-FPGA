@@ -2600,7 +2600,7 @@ initial begin
 
                         if (temp_data_mem !== temp_data_large) begin
                             $error("Error: Data mismatch at index %0d, expected %h, got %h", index_strided, temp_data_large, temp_data_mem);
-                            //$finish;
+                            $finish;
                             $error("Error: filename %s", {mem_file, $sformatf("%0d", i), ".txt"});
                         end
                         index = index + 1;

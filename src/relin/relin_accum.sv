@@ -17,7 +17,11 @@ module relin_accum
         output             o_valid   ,
         output             done      ,
         input  [LOGQ -1:0] A [TP-1:0],
-        output [LOGQ -1:0] C [TP-1:0]
+        output [LOGQ -1:0] C [TP-1:0],
+        output            wdone     ,
+        output            rdone     ,
+        output   reg   [LOGK-1:0] write_addr_reg,
+        output   reg   [LOGK-1:0] read_addr_reg
     );
 
 ///////////////////////////// Parameters ////////////////////////////////
@@ -30,6 +34,15 @@ localparam ADD_LAT  = FF_ADD + FF_OUT;
 
 /////////////////////////////////////////////////////////////////////////
 
+always @(posedge clk) begin
+    if (rst) begin
+        write_addr_reg <= 0;
+        read_addr_reg  <= 0;
+    end else begin
+        write_addr_reg <= write_addr;
+        read_addr_reg  <= read_addr;
+    end
+end
 
 
 ///////////////////////// Signal Declarations ///////////////////////////
@@ -43,12 +56,12 @@ wire [LOGQ -1:0] modadd_out   [TP-1:0];
 wire [TP*LOGQ -1:0] bram_in ;
 wire [TP*LOGQ -1:0] bram_out;
 
-reg  [LOGK -1:0] read_addr;
-reg  [LOGK -1:0] write_addr;
+wire  [LOGK -1:0] read_addr;
+wire  [LOGK -1:0] write_addr;
 wire  bram_wen;
 wire start_read, start_write;
 
-wire wdone, rdone;
+//wire wdone, rdone;
 
 reg  first_q;
 
@@ -66,11 +79,11 @@ for (genvar i = 0; i < TP; i++) begin : BRAM_IN_GEN
     assign bram_in[i*LOGQ +: LOGQ] = modadd_out[i];
 end
 
-assign start_read = ren | (wen & ~first);
-assign bram_wen   = start_write | (|write_addr);
+assign start_read = ren || (wen && (~first));
+assign bram_wen   = start_write || (|write_addr);
 assign wdone      = write_addr == {LOGK{1'b1}};
 assign rdone      = (read_addr == {LOGK{1'b1}}) && (write_addr == {LOGK{1'b0}}); // write not in progress
-assign done       = wdone | rdone;
+assign done       = wdone || rdone;
 
 ////////////////////// Modular addition instances ///////////////////////////
 

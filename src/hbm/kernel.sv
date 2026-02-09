@@ -7,84 +7,82 @@
 
 `define HBM_PC_COUNT      32
 
+`define LOGN    13
+`define LOGQ    60
+`define LOGQH   17
+`define LOGTP   5
+`define L   4
+`define PSI_CC   (1 << (`LOGN - `LOGTP))
+`define HBM_ADDR_WIDTH    64
+`define HBM_DATA_WIDTH   256
+
 module kernel_sv #(
-
-  parameter LOGN  = 12,
-  parameter LOGQ  = 60,
-  parameter LOGQH = 17,
-  parameter LOGTP = 5,
-  parameter L     = 30,
-  parameter PSI_CC   = (1 << (LOGN - LOGTP)),
-
-
   parameter integer C_S_AXI_CONTROL_ADDR_WIDTH = 12,
   parameter integer C_S_AXI_CONTROL_DATA_WIDTH = 32,
-  parameter integer HBM_ADDR_WIDTH             = 64,
-  parameter integer HBM_DATA_WIDTH             = 256,
-  parameter integer C_M00_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M01_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M02_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M03_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M04_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M05_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M06_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M07_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M08_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M09_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M10_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M11_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M12_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M13_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M14_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M15_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M16_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M17_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M18_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M19_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M20_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M21_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M22_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M23_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M24_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M25_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M26_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M27_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M28_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M29_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M30_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M31_AXI_ADDR_WIDTH       = HBM_ADDR_WIDTH,
-  parameter integer C_M00_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M01_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M02_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M03_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M04_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M05_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M06_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M07_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M08_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M09_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M10_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M11_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M12_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M13_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M14_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M15_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M16_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M17_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M18_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M19_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M20_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M21_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M22_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M23_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M24_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M25_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M26_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M27_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M28_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M29_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M30_AXI_DATA_WIDTH       = HBM_DATA_WIDTH,
-  parameter integer C_M31_AXI_DATA_WIDTH       = HBM_DATA_WIDTH
+  parameter integer C_M00_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M01_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M02_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M03_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M04_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M05_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M06_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M07_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M08_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M09_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M10_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M11_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M12_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M13_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M14_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M15_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M16_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M17_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M18_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M19_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M20_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M21_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M22_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M23_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M24_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M25_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M26_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M27_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M28_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M29_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M30_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M31_AXI_ADDR_WIDTH       = `HBM_ADDR_WIDTH,
+  parameter integer C_M00_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M01_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M02_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M03_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M04_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M05_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M06_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M07_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M08_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M09_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M10_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M11_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M12_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M13_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M14_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M15_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M16_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M17_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M18_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M19_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M20_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M21_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M22_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M23_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M24_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M25_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M26_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M27_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M28_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M29_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M30_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH,
+  parameter integer C_M31_AXI_DATA_WIDTH       = `HBM_DATA_WIDTH
 )
 (
   // Note: A minimum subset of AXI4 memory mapped signals are declared.
@@ -944,8 +942,8 @@ module kernel_sv #(
 ////////////////////////////////////////////////////////////////////////////////
 // Local Parameters
 ////////////////////////////////////////////////////////////////////////////////
-localparam LOGL = $rtoi($ceil($clog2(L + 1)));
-localparam TP = 1 << LOGTP;
+localparam LOGL = $rtoi($ceil($clog2(`L+ 1)));
+localparam TP = 1 << `LOGTP;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Wires and Variables
@@ -964,10 +962,17 @@ localparam TP = 1 << LOGTP;
   wire [32-1:0] ap_control;
   wire [32-1:0] ap_status;
   wire [32-1:0] ap_debug;
+  wire [32-1:0] ap_debug2;
+  wire [32-1:0] ap_debug3;
+  wire [32-1:0] ap_debug4;
+  wire [32-1:0] ap_debug5;
+  wire [32-1:0] ap_debug6;
+  wire [32-1:0] ap_debug7;
+
   wire [32-1:0] ap_timing;
 
   // CSRs <-> DMA
-  wire [HBM_ADDR_WIDTH-1:0] dma_address[0:`HBM_PC_COUNT-1];
+  wire [`HBM_ADDR_WIDTH-1:0] dma_address[0:`HBM_PC_COUNT-1];
 
 ////////////////////////////////////////////////////////////////////////////////
 // Control Signals
@@ -1033,7 +1038,83 @@ localparam TP = 1 << LOGTP;
   // Kernel's Status Registers
 
   assign ap_status = {30'b0, ap_idle, cmd_idle};
-  assign ap_debug = {32'b0};
+// assign ap_debug = {
+//     8'b0,                  // [31:24] free
+//     accum_dbg_state_main, // [23:19] (5 bits)
+//     accum_dbg_state_st12,   // [18:17] (2 bits)
+//     cmd_done,              // [16]
+//     ap_is_busy,            // [15]
+//     relin_dbg_state, // [14:4] (11 bits)
+//     ap_start,              // [3]
+//     ap_idle,               // [2]
+//     ap_ready,              // [1]
+//     ap_done                // [0]
+// // };
+//   assign ap_debug = {
+//     8'b0,                    // [31:24]
+//     accum_dbg_state_main,    // [23:19] 5
+//     accum_dbg_state_st12,    // [18:17] 2
+//     cmd_done,                // [16]
+//     ap_is_busy,              // [15]
+//     relin_dbg_state,         // [14:4]  11
+//     ap_start,                // [3]
+//     ap_idle,                 // [2]
+//     ap_ready,                // [1]
+//     ap_done                  // [0]
+// };
+
+// assign ap_debug2 = {
+//     write_addr0_accum,   // [31:25] 7
+//     read_addr0_accum,    // [24:18] 7
+//     accum_ctr0,          // [17:16] 2
+//     accum_ctr1,          // [15:14] 2
+//     14'b0                // [13:0]
+// };
+
+// assign ap_debug3 = {
+//     cu_out_state,    // [31:21] 11
+//     cu_p0_state,     // [20:5]  16
+//     cu_out_ctr,      // [4:3]   2
+//     3'b0              // [2:0]
+// };
+
+// assign ap_debug4 = {
+//     ctr_L_out_cu_p0,     // [31:30] 2
+//     ctr_L__out_cu_p0,    // [29:28] 2
+//     ctr_poly_out_cu_p0,  // [27:26] 2
+//     26'b0
+// };
+
+// assign ap_debug5 = {
+//     state_p1_p2_out,     // [31:21] 11
+//     ctr_L_out_p1_p2,     // [20:19] 2
+//     ctr_L__out_p1_p2,    // [18:17] 2
+//     ctr_out_p1_p2,       // [16:15] 2
+//     15'b0
+// };
+
+// assign ap_debug6 = {
+//     ctr_relin,   // [31:30] 2
+//     30'b0
+// };
+
+// assign ap_debug7 = {
+//     hbm_p0_dbg,   // [31:26] 6
+//     hbm_p1_dbg,   // [25:20] 6
+//     hbm_p2_dbg,   // [19:14] 6
+//     hbm_p3_dbg,   // [13:8]  6
+//     8'b0
+// };
+
+  assign ap_debug   = ntt_valid_out_dbg[31:0];
+  assign ap_debug2  = fifo_0_dbg_reg[31:0];
+  assign ap_debug3  = fifo_1_dbg_reg[31:0];
+  assign ap_debug4  = i_p1_data_d5_reg[31:0];
+  assign ap_debug5  = i_p2_data_d5_reg[31:0];
+  assign ap_debug6  = had_0_dbg_data[31:0];
+  assign ap_debug7  = had_1_dbg_data[31:0];
+
+
   assign ap_timing = cmd_timing;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1110,7 +1191,13 @@ localparam TP = 1 << LOGTP;
     .hbm_address28     ( dma_address[28]       ),
     .hbm_address29     ( dma_address[29]       ),
     .hbm_address30     ( dma_address[30]       ),
-    .hbm_address31     ( dma_address[31]       )
+    .hbm_address31     ( dma_address[31]       ),
+    .ap_debug2          ( ap_debug2              ),
+    .ap_debug3          ( ap_debug3              ),
+    .ap_debug4          ( ap_debug4              ),
+    .ap_debug5          ( ap_debug5              ),
+    .ap_debug6          ( ap_debug6              ),
+    .ap_debug7          ( ap_debug7              )
   );
 
 
@@ -1144,49 +1231,103 @@ localparam TP = 1 << LOGTP;
 
 // HBM <-> DMA
 axi4_t #(
-    .AXI_ADDR_WIDTH(HBM_ADDR_WIDTH),
-    .AXI_DATA_WIDTH(HBM_DATA_WIDTH)
+    .AXI_ADDR_WIDTH(`HBM_ADDR_WIDTH),
+    .AXI_DATA_WIDTH(`HBM_DATA_WIDTH)
 ) dma_axi[`HBM_PC_COUNT]();
 
 
 relin_t #(
     .LOGL(LOGL),    // From tb parameters
-    .LOGQ(LOGQ),    // From tb parameters
+    .LOGQ(`LOGQ),    // From tb parameters
     .TP(TP)// TP = 2^LOGTP
 ) relin_t_inst ();
 
 
 //////////////////////////////////////////////////////////////////////////////
 
+wire [10:0] relin_dbg_state;
+wire [5:0]  hbm_p0_dbg;
+wire [5:0]  hbm_p1_dbg;
+wire [5:0]  hbm_p2_dbg;
+wire [5:0]  hbm_p3_dbg;
+wire [4:0]  accum_dbg_state_main;
+wire [1:0]  accum_dbg_state_st12;
+
+wire [6:0] write_addr0_accum, read_addr0_accum;
+
+wire [LOGL-1:0] accum_ctr0;
+wire [LOGL-1:0] accum_ctr1;
+wire [LOGL-1:0] cu_out_ctr;
+wire [10:0]      cu_out_state;
+wire [15:0]      cu_p0_state;
+wire [LOGL-1:0] ctr_L_out_cu_p0;
+wire [LOGL-1:0] ctr_L__out_cu_p0;
+wire [LOGL-1:0] ctr_poly_out_cu_p0;
+wire [10:0]       state_p1_p2_out;
+wire [LOGL-1:0] ctr_L_out_p1_p2;
+wire [LOGL-1:0] ctr_L__out_p1_p2;
+wire [LOGL-1:0] ctr_out_p1_p2;
+wire [LOGL-1:0] ctr_relin;
+
+wire [`LOGQ-1:0] ntt_valid_out_dbg, fifo_0_dbg_reg, fifo_1_dbg_reg, i_p1_data_d5_reg, i_p2_data_d5_reg, had_0_dbg_data, had_1_dbg_data;
 
 relin #(
-    .L        (L        ),
-    .LOGQ     (LOGQ     ),
-    .LOGQH    (LOGQH    ),
-    .LOGN     (LOGN     ),
-    .LOGTP    (LOGTP    ),
-    .PSI_CC   (PSI_CC   )
+    .L        (`L       ),
+    .LOGQ     (`LOGQ     ),
+    .LOGQH    (`LOGQH    ),
+    .LOGN     (`LOGN     ),
+    .LOGTP    (`LOGTP    ),
+    .PSI_CC   (`PSI_CC   )
 ) inst_relin (
     .clk     (ap_clk    ),
     .rst     (~ap_rst_n ),
     .start   (ap_start_pulse),
     .done    (cmd_done      ),
+    .accum_dbg_state_main(accum_dbg_state_main),
+    .accum_dbg_state_st12 (accum_dbg_state_st12 ),
+    .accum_ctr0(accum_ctr0),
+    .accum_ctr1(accum_ctr1),
+    .cu_out_ctr(cu_out_ctr    ),
+    .cu_out_state(cu_out_state  ),
+    .cu_p0_state (cu_p0_state  ),
+    .ctr_L_out_cu_p0(ctr_L_out_cu_p0),
+    .ctr_L__out_cu_p0(ctr_L__out_cu_p0),
+    .ctr_poly_out_cu_p0(ctr_poly_out_cu_p0),
+    .state_p1_p2_out(state_p1_p2_out),
+    .ctr_L_out_p1_p2(ctr_L_out_p1_p2),
+    .ctr_L__out_p1_p2(ctr_L__out_p1_p2),
+    .ctr_out_p1_p2(ctr_out_p1_p2),
+    .ctr_relin(ctr_relin),
+    .ntt_valid_out_dbg(ntt_valid_out_dbg),
+    .fifo_0_dbg_reg(fifo_0_dbg_reg),
+    .fifo_1_dbg_reg(fifo_1_dbg_reg),
+    .i_p1_data_d5_reg(i_p1_data_d5_reg),
+    .i_p2_data_d5_reg(i_p2_data_d5_reg),
+    .had_0_dbg_data(had_0_dbg_data),
+    .had_1_dbg_data(had_1_dbg_data),
+    .relin_dbg_state (relin_dbg_state ),
+    .read_addr0(read_addr0_accum),
+    .write_addr0(write_addr0_accum),
     .relin_t (relin_t_inst  )
 );
 
 relin_hbm_adapter #(
-    .L              (L              ),
-    .LOGN           (LOGN           ),
-    .LOGTP          (LOGTP          ),
-    .LOGQ           (LOGQ           ),
-    .PSI_CC         (PSI_CC         ),
-    .HBM_ADDR_WIDTH (HBM_ADDR_WIDTH ),
-    .HBM_DATA_WIDTH (HBM_DATA_WIDTH )
+    .L              (`L             ),
+    .LOGN           (`LOGN           ),
+    .LOGTP          (`LOGTP          ),
+    .LOGQ           (`LOGQ           ),
+    .PSI_CC         (`PSI_CC         ),
+    .HBM_ADDR_WIDTH (`HBM_ADDR_WIDTH ),
+    .HBM_DATA_WIDTH (`HBM_DATA_WIDTH )
 ) inst_relin_hbm_adapter (
     .clk     (ap_clk    ),
     .rst     (~ap_rst_n ),
     .start   (ap_start_pulse ),
     .dma_address(dma_address ),
+    .hbm_p0_dbg (hbm_p0_dbg ),
+    .hbm_p1_dbg (hbm_p1_dbg ),
+    .hbm_p2_dbg (hbm_p2_dbg ),
+    .hbm_p3_dbg (hbm_p3_dbg ),
     .relin_t (relin_t_inst   ),
     .m_axi   (dma_axi        )
 );

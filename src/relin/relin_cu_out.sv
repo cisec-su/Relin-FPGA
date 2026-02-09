@@ -13,13 +13,20 @@ module relin_cu_out
         output reg [ID_WIDTH-1:0] o_p3_id     ,
         output reg [LOGL    -1:0] o_p3_idx    ,
         output reg                o_p3_en     ,
-        output reg                done
+        output reg                done      ,
+        output reg [LOGL    -1:0]  ctr_out,
+        output reg [10:0]          state_out
     );
 
 `include "relin_mem.svh"
 
 
 localparam LOGL = $rtoi($ceil($clog2(L + 1)));
+
+always @(posedge clk) begin
+    ctr_out <= ctr;
+    state_out <= state;
+end
 
 
 typedef enum reg[10:0] {

@@ -18,13 +18,24 @@ module relin_cu_p1_p2
         output reg [LOGL-1:0]     i_p2_idy    ,
         output reg                rlk0_i_valid,
         output reg                poly01_i_valid,
-        input                     i_p2_done
+        input                     i_p2_done,
+        output reg    [10:0]           state_p1_p2_out,
+        output reg   [LOGL-1:0]           ctr_L_out,
+        output reg   [LOGL-1:0]           ctr_L__out,
+        output reg   [LOGL-1:0]           ctr_out
     );
 
 `include "relin_mem.svh"
 
 
 localparam LOGL  = $rtoi($ceil($clog2(L + 1)));
+
+always @(posedge clk) begin
+    state_p1_p2_out <= state;
+    ctr_L_out <= ctr_L;
+    ctr_L__out <= ctr_L_;
+    ctr_out <= ctr;
+end
 
 
 typedef enum reg[10:0] {
@@ -172,10 +183,10 @@ always @(*) begin
                     ctr_inc = 1;
                 end
             end
-            else if (i_p1_done) begin
+            else if (i_p2_done) begin
                 next_state = ST_WAIT_DONE_0;
             end
-            else if (i_p2_done) begin
+            else if (i_p1_done) begin
                 next_state = ST_WAIT_DONE_1;
             end
         end

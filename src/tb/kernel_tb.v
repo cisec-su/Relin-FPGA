@@ -16,7 +16,7 @@ parameter L     = 2;
 // parameters for kernel
 parameter integer C_S_AXI_CONTROL_ADDR_WIDTH = 12;
 parameter integer C_S_AXI_CONTROL_DATA_WIDTH = 32;
-parameter integer HBM_ADDR_WIDTH             = 32;
+parameter integer HBM_ADDR_WIDTH             = 32; // for simulation purposes
 parameter integer HBM_DATA_WIDTH             = 256;
 localparam integer C_M00_AXI_ADDR_WIDTH = uut.C_M00_AXI_ADDR_WIDTH;
 localparam integer C_M00_AXI_DATA_WIDTH = uut.C_M00_AXI_DATA_WIDTH;
