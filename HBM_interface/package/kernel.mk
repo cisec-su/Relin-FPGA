@@ -11,7 +11,7 @@ PART := xcu280-fsvh2892-2L-e
 # PART := xcu55n-fsvh2892-2L-e
 
 # TARGET {sw_emu|hw_emu|hw}
-TARGET := hw_emu
+TARGET := hw
 
 HLS_KERNELS := 
 RTL_KERNELS := kernel.xo

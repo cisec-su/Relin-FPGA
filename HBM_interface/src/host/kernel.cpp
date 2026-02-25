@@ -6,13 +6,13 @@
 #include <stdexcept>
 #include <cstdarg>
 #include <assert.h>
-#include <stdio.h>  
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 #include <inttypes.h>
+#include <vector>
 
+#include <unistd.h>
 #include <chrono>
-
-
 
 // XRT includes
 #include "experimental/xrt_bo.h"
@@ -34,19 +34,43 @@
 #define HBM_PARAMS_0 0x020
 #define HBM_PARAMS_1 0x024
 
-#define AP_DEBUG2   0x128
-#define AP_DEBUG3   0x12C
-#define AP_DEBUG4   0x130
-#define AP_DEBUG5   0x134
-#define AP_DEBUG6   0x138
-#define AP_DEBUG7   0x13C
+#define AP_DEBUG2  0x128
+#define AP_DEBUG3  0x12C
+#define AP_DEBUG4  0x130
+#define AP_DEBUG5  0x134
+#define AP_DEBUG6  0x138
+#define AP_DEBUG7  0x13C
+#define AP_DEBUG8  0x140
+#define AP_DEBUG9  0x144
+#define AP_DEBUG10 0x148
+#define AP_DEBUG11 0x14C
+#define AP_DEBUG12 0x150
+#define AP_DEBUG13 0x154
+#define AP_DEBUG14 0x158
+#define AP_DEBUG15 0x15C
+#define AP_DEBUG16 0x160
+#define AP_DEBUG17 0x164
+#define AP_DEBUG18 0x168
+#define AP_DEBUG19 0x16C
+#define AP_DEBUG20 0x170
+#define AP_DEBUG21 0x174
+#define AP_DEBUG22 0x178
+#define AP_DEBUG23 0x17C
+#define AP_DEBUG24 0x180
+#define AP_DEBUG25 0x184
+#define AP_DEBUG26 0x188
+#define AP_DEBUG27 0x18C
+#define AP_DEBUG28 0x190
+#define AP_DEBUG29 0x194
+#define AP_DEBUG30 0x198
+#define AP_DEBUG31 0x19C
 
-#define INPUT_RB_FILE "../../../scripts/kernel/kernel_4096_I_64_readback.txt"
-#define OUTPUT_FILE   "../../../scripts/kernel/kernel_4096_O_64_computed.txt"
+#define INPUT_RB_FILE "../../../scripts/kernel/kernel_65536_I_64_readback.txt"
+#define OUTPUT_FILE   "../../../scripts/kernel/kernel_65536_O_64_computed.txt"
 
-#define POLY_N        (8192)
-#define PSI_N         (8192)
-#define L             (4)
+#define POLY_N        (65536)
+#define PSI_N         (65536)
+#define L             (28)
 
 #define PCI_COUNT          (24)
 #define P0_OFFSET          (0)
@@ -66,7 +90,7 @@
 
 #define PC_PSI_COEFF_NUM   (PSI_N / PCO_COUNT)
 #define PC_PSI_BYTE_SIZE   (PC_PSI_COEFF_NUM*sizeof(uint64_t))
-#define PC_DATA_U64_SIZE   (4) // num words at each data
+// PC_DATA_U64_SIZE already defined above
 #define PC_PSI_DATA_NUM    (PC_PSI_COEFF_NUM / PC_DATA_U64_SIZE) // coeffs at each PC
 
 
@@ -137,10 +161,10 @@ unsigned int writeManyToPC(const uint64_t *in, unsigned int l, xrt::bo *hbm, uns
 
   for (unsigned int i = 0; i < l; i++) {
     writeToPC(in + (i*n), hbm, n, pc_num, width, hbm_offset + (i * pc_bsize));
+    sleep(0.3); // sleep for 300 ms to avoid overwhelming the device with back-to-back writes
   }
   return l * pc_bsize;
 }
-
 
 
 int writeMemFileOut(const char* filename, uint64_t **memBuffer) {
@@ -266,39 +290,47 @@ int main(int argc, char *argv[]) {
 
   //////////////////////////////////////////////////////////////////////////////
   // Prepare Memory Buffers
+  //
+  // FIX: All large arrays moved from stack to heap via std::vector.
+  //
+  // Original stack usage breakdown (caused segfault):
+  //   ct_0, ct_1, ct_2  : 3 * 14 * 65536 * 8B  =  ~11 MB
+  //   psi, psi_inv       : 2 * 15 * 65536 * 8B  =  ~7.9 MB
+  //   rlk_0, rlk_1       : 2 * 210 * 65536 * 8B =  ~110 MB
+  //   Total              :                        =  ~130 MB  <-- WAY over 8MB stack limit
+  //
+  // Now all allocated on heap; stack usage is negligible.
 
   std::cout << "Allocating host-side buffers" << std::endl;
 
-  uint64_t ct_0     [L    ][POLY_N] = {0x0};
-  uint64_t ct_1     [L    ][POLY_N] = {0x0};
-  uint64_t ct_2     [L    ][POLY_N] = {0x0};
-  uint64_t psi      [L + 1][ PSI_N] = {0x0};
-  uint64_t psi_inv  [L + 1][ PSI_N] = {0x0};
-  uint64_t rlk_0    [L * (L + 1)][POLY_N] = {0x0};
-  uint64_t rlk_1    [L * (L + 1)][POLY_N] = {0x0};
+  std::vector<uint64_t> ct_0   (static_cast<size_t>(L)            * POLY_N, 0);
+  std::vector<uint64_t> ct_1   (static_cast<size_t>(L)            * POLY_N, 0);
+  std::vector<uint64_t> ct_2   (static_cast<size_t>(L)            * POLY_N, 0);
+  std::vector<uint64_t> psi    (static_cast<size_t>(L + 1)        * PSI_N,  0);
+  std::vector<uint64_t> psi_inv(static_cast<size_t>(L + 1)        * PSI_N,  0);
+  std::vector<uint64_t> rlk_0  (static_cast<size_t>(L * (L + 1)) * POLY_N, 0);
+  std::vector<uint64_t> rlk_1  (static_cast<size_t>(L * (L + 1)) * POLY_N, 0);
 
-  
   std::cout << "[INFO] Reading input files" << std::endl;
   //////////////////////////////////////////////////// p0 /////////////////////////////////////////////////////////////
-  readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct2_"         , (uint64_t*) ct_2   , L          , POLY_N);
-  readManyMemFileFlat("../../../scripts/kernel/test_vectors/psi_"         , (uint64_t*) psi    , L + 1      ,  PSI_N);
-  readManyMemFileFlat("../../../scripts/kernel/test_vectors/psi_inv_"     , (uint64_t*) psi_inv, L + 1      ,  PSI_N);
+  readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct2_"        , ct_2.data()   , L          , POLY_N);
+  readManyMemFileFlat("../../../scripts/kernel/test_vectors/psi_"        , psi.data()    , L + 1      ,  PSI_N);
+  readManyMemFileFlat("../../../scripts/kernel/test_vectors/psi_inv_"    , psi_inv.data(), L + 1      ,  PSI_N);
   std::cout << "[INFO] p0 files are read" << std::endl;
   //////////////////////////////////////////////////// p1 /////////////////////////////////////////////////////////////
-  readManyMemFileFlat("../../../scripts/kernel/test_vectors/relinkey_0_"  , (uint64_t*) rlk_0  , L * (L + 1), POLY_N);
-  // readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct0_"         , (uint64_t*) ct_0   , L          , POLY_N);
-  // readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct1_"         , (uint64_t*) ct_1   , L          , POLY_N);
+  readManyMemFileFlat("../../../scripts/kernel/test_vectors/relinkey_0_" , rlk_0.data()  , L * (L + 1), POLY_N);
+  // readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct0_"     , ct_0.data()   , L          , POLY_N);
+  // readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct1_"     , ct_1.data()   , L          , POLY_N);
   std::cout << "[INFO] p1 files are read" << std::endl;
   //////////////////////////////////////////////////// p2 /////////////////////////////////////////////////////////////
-  readManyMemFileFlat("../../../scripts/kernel/test_vectors/relinkey_1_"  , (uint64_t*) rlk_1  , L * (L + 1), POLY_N);
+  readManyMemFileFlat("../../../scripts/kernel/test_vectors/relinkey_1_" , rlk_1.data()  , L * (L + 1), POLY_N);
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   std::cout << "[INFO] Input files are read" << std::endl;
 
-
   std::cout << "[INFO] Prepare BO for Host->Device" << std::endl;
   xrt::bo hbm_i[PCI_COUNT];
-  
+
   ///////////////////////////////////////////////////////////////////////////////////////////////
   for (int i = 0; i < PCI_COUNT; i++) {
     unsigned int pc_size;
@@ -325,50 +357,43 @@ int main(int argc, char *argv[]) {
     std::cout << "[INFO] hbm_i[" << i << "] is ready" << std::endl;
   }
   ///////////////////////////////////////////////////////////////////////////////////////////////
+
   std::cout << "[INFO] Writing inputs to device HBM" << std::endl;
 
   unsigned int offset;
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////// P0 //////////////////////////////////////////////////////////
   offset  = 0;
-  offset += writeManyToPC((uint64_t*) ct_2   , L    , &(hbm_i[P0_OFFSET]), POLY_N, P0_COUNT, PC_DATA_WIDTH, offset);
-  offset += writeManyToPC((uint64_t*) psi    , L + 1, &(hbm_i[P0_OFFSET]), PSI_N , P0_COUNT, PC_DATA_WIDTH, offset);
-  offset += writeManyToPC((uint64_t*) psi_inv, L + 1, &(hbm_i[P0_OFFSET]), PSI_N , P0_COUNT, PC_DATA_WIDTH, offset);
+  offset += writeManyToPC(ct_2.data()   , L    , &(hbm_i[P0_OFFSET]), POLY_N, P0_COUNT, PC_DATA_WIDTH, offset);
+  offset += writeManyToPC(psi.data()    , L + 1, &(hbm_i[P0_OFFSET]), PSI_N , P0_COUNT, PC_DATA_WIDTH, offset);
+  offset += writeManyToPC(psi_inv.data(), L + 1, &(hbm_i[P0_OFFSET]), PSI_N , P0_COUNT, PC_DATA_WIDTH, offset);
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////// P1 //////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
   offset  = 0;
-  offset += writeManyToPC((uint64_t*) rlk_0  , L * (L + 1), &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
-  // offset += writeManyToPC((uint64_t*) ct_0   , L          , &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
-  // offset += writeManyToPC((uint64_t*) ct_1   , L          , &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
+  offset += writeManyToPC(rlk_0.data()  , L * (L + 1), &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
+  // offset += writeManyToPC(ct_0.data() , L          , &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
+  // offset += writeManyToPC(ct_1.data() , L          , &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////// P2 //////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
   offset  = 0;
-  offset += writeManyToPC((uint64_t*) rlk_1  , L * (L + 1), &(hbm_i[P2_OFFSET]), POLY_N, P2_COUNT, PC_DATA_WIDTH, offset);
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  offset += writeManyToPC(rlk_1.data()  , L * (L + 1), &(hbm_i[P2_OFFSET]), POLY_N, P2_COUNT, PC_DATA_WIDTH, offset);
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   for (int i = 0; i < 24; i++)
     std::cout << i << " " << std::hex << hbm_i[i].address() << std::endl;
   std::cout << "Reading back the inputs" << std::endl;
 
-  uint64_t poly[2][POLY_N] = {0x0};
+  // FIX: poly readback buffer on heap (was stack: 2 * 65536 * 8B = 512 KB)
+  std::vector<uint64_t> poly(static_cast<size_t>(2) * POLY_N, 0);
 
-  readManyFromPC((uint64_t*) poly, 2, hbm_i, POLY_N, P0_COUNT, PC_DATA_WIDTH, 0);
+  readManyFromPC(poly.data(), 2, hbm_i, POLY_N, P0_COUNT, PC_DATA_WIDTH, 0);
   std::cout << "[INFO] Read back the inputs" << std::endl;
-  writeManyMemFileFlat("../../../scripts/kernel/kernel_4096_I_64_readback_", (uint64_t*) poly, 2, POLY_N);
-  
+  writeManyMemFileFlat("../../../scripts/kernel/kernel_65536_I_64_readback_", poly.data(), 2, POLY_N);
 
   std::cout << "[INFO] Prepare BO for Device->Host" << std::endl;
   xrt::bo hbm_o[PCO_COUNT];
   for (int i = 0; i < PCO_COUNT; i++) {
-    // Allocate
     hbm_o[i] =
       xrt::bo(
         device,
@@ -395,7 +420,7 @@ int test_kernel(xrt::kernel kernel, xrt::bo *hbm_i, xrt::bo *hbm_o) {
   uint32_t ap_timing    = 0;
   uint32_t hbm_params_0 = 0;
   uint32_t hbm_params_1 = 0;
-    
+
   //////////////////////////////////////////////////////////////////////////////
   // Start running the kernel
 
@@ -449,123 +474,196 @@ int test_kernel(xrt::kernel kernel, xrt::bo *hbm_i, xrt::bo *hbm_o) {
       hbm_o[ 7]     // Pointer to hbm memory [31]
     );
   std::cout << "Running the Kernel" << std::endl;
+
+  //
+
+  run.wait(); // wait for kernel to finish before reading debug registers
+
+  for (int t = 0; t < 10; t++) {
+
+    usleep(3000);
+
+    // ---------- PSI ----------
+    uint32_t psi = kernel.read_register(AP_DEBUG);
+
+    // ---------- NTT ----------
+    uint32_t ntt_i     = kernel.read_register(AP_DEBUG2);
+    uint32_t ntt_valid = kernel.read_register(AP_DEBUG3);
+
+    uint32_t had_0_i_poly_A_dbg      = kernel.read_register(AP_DEBUG22);
+    uint32_t had_0_i_poly_B_dbg  = kernel.read_register(AP_DEBUG23);
+    uint32_t had_0_i_poly_last      = kernel.read_register(AP_DEBUG24);
+    uint32_t had_0_i_poly_last_B  = kernel.read_register(AP_DEBUG25);
+
+    // ---------- Pipeline taps (former FIFO/Hadamard/ACC inputs) ----------
+    uint32_t dbg0_i  = kernel.read_register(AP_DEBUG4);
+    uint32_t dbg0_l  = kernel.read_register(AP_DEBUG5);
+
+    uint32_t dbg4_i  = kernel.read_register(AP_DEBUG6);
+    uint32_t dbg4_l  = kernel.read_register(AP_DEBUG7);
+
+    uint32_t dbg8_i  = kernel.read_register(AP_DEBUG8);
+    uint32_t dbg8_l  = kernel.read_register(AP_DEBUG9);
+
+    uint32_t dbg16_i = kernel.read_register(AP_DEBUG10);
+    uint32_t dbg16_l = kernel.read_register(AP_DEBUG11);
+
+    uint32_t dbg20_i = kernel.read_register(AP_DEBUG12);
+    uint32_t dbg20_l = kernel.read_register(AP_DEBUG13);
+
+    uint32_t dbg27_i = kernel.read_register(AP_DEBUG14);
+    uint32_t dbg27_l = kernel.read_register(AP_DEBUG15);
+
+    // ---------- ACC output ----------
+    uint32_t acc_out   = kernel.read_register(AP_DEBUG16);
+    uint32_t acc_last  = kernel.read_register(AP_DEBUG21);
+
+    // ---------- INTT ----------
+    uint32_t intt_i     = kernel.read_register(AP_DEBUG17);
+    uint32_t intt_last  = kernel.read_register(AP_DEBUG30);
+
+    // ---------- Final FN ----------
+    uint32_t fn_i      = kernel.read_register(AP_DEBUG18);
+    uint32_t fn_iLast  = kernel.read_register(AP_DEBUG31);
+    uint32_t fn_o      = kernel.read_register(AP_DEBUG19);
+    uint32_t fn_oLast  = kernel.read_register(AP_DEBUG20);
+
+    uint32_t stat = kernel.read_register(AP_STATUS);
+
+    printf("\n========== FPGA PIPELINE DEBUG ==========\n");
+
+    printf("PSI                 : 0x%08X\n", psi);
+
+    printf("NTT in              : 0x%08X\n", ntt_i);
+    printf("NTT valid           : 0x%08X\n", ntt_valid);
+
+    printf("Had0 A/B/last/last_B: 0x%08X / 0x%08X / 0x%08X / 0x%08X\n", had_0_i_poly_A_dbg, had_0_i_poly_B_dbg, had_0_i_poly_last, had_0_i_poly_last_B);
+
+    printf("DBG0 in/last        : 0x%08X / 0x%08X\n", dbg0_i, dbg0_l);
+    printf("DBG4 in/last        : 0x%08X / 0x%08X\n", dbg4_i, dbg4_l);
+    printf("DBG8 in/last        : 0x%08X / 0x%08X\n", dbg8_i, dbg8_l);
+    printf("DBG16 in/last       : 0x%08X / 0x%08X\n", dbg16_i, dbg16_l);
+    printf("DBG20 in/last       : 0x%08X / 0x%08X\n", dbg20_i, dbg20_l);
+    printf("DBG27 in/last       : 0x%08X / 0x%08X\n", dbg27_i, dbg27_l);
+
+    printf("ACC out/last        : 0x%08X / 0x%08X\n", acc_out, acc_last);
+
+    printf("INTT in/last        : 0x%08X / 0x%08X\n", intt_i, intt_last);
+
+    printf("FN in/last          : 0x%08X / 0x%08X\n", fn_i, fn_iLast);
+    printf("FN out/last         : 0x%08X / 0x%08X\n", fn_o, fn_oLast);
+
+    printf("STATUS              : 0x%08X\n", stat);
+    printf("=========================================\n");
+
+    if (stat & 0x1) break;
+
+    usleep(1000);
+}
+
+  // for (int t = 0; t < 100; t++) {
+
+  //   usleep(3000); // sleep for 300 ms
+
+  //   // PSI stage
+  //   uint32_t psi = kernel.read_register(AP_DEBUG);
+
+  //   // NTT stage
+  //   uint32_t ntt_i       = kernel.read_register(AP_DEBUG2);
+  //   uint32_t ntt_i_last  = kernel.read_register(AP_DEBUG21);
+  //   uint32_t ntt_valid   = kernel.read_register(AP_DEBUG3);
+  //   uint32_t ntt_o_last  = kernel.read_register(AP_DEBUG22);
+
+  //   // FIFO stage
+  //   uint32_t fifo0_i = kernel.read_register(AP_DEBUG4);
+  //   uint32_t fifo1_i = kernel.read_register(AP_DEBUG5);
+  //   uint32_t fifo0_o = kernel.read_register(AP_DEBUG6);
+  //   uint32_t fifo1_o = kernel.read_register(AP_DEBUG7);
+
+  //   // Hadamard stage
+  //   uint32_t had0A      = kernel.read_register(AP_DEBUG8);
+  //   uint32_t had0B      = kernel.read_register(AP_DEBUG9);
+  //   uint32_t had0_iLast = kernel.read_register(AP_DEBUG23);
+
+  //   uint32_t had1A      = kernel.read_register(AP_DEBUG10);
+  //   uint32_t had1B      = kernel.read_register(AP_DEBUG11);
+  //   uint32_t had1_iLast = kernel.read_register(AP_DEBUG24);
+
+  //   uint32_t had0_out   = kernel.read_register(AP_DEBUG12);
+  //   uint32_t had0_oLast = kernel.read_register(AP_DEBUG25);
+
+  //   uint32_t had1_out   = kernel.read_register(AP_DEBUG13);
+  //   uint32_t had1_oLast = kernel.read_register(AP_DEBUG26);
+
+  //   // Accumulator stage
+  //   uint32_t acc_i0     = kernel.read_register(AP_DEBUG14);
+  //   uint32_t acc_i0Last = kernel.read_register(AP_DEBUG27);
+  //   uint32_t acc_i1     = kernel.read_register(AP_DEBUG15);
+  //   uint32_t acc_i1Last = kernel.read_register(AP_DEBUG28);
+  //   uint32_t acc_out    = kernel.read_register(AP_DEBUG16);
+  //   uint32_t acc_oLast  = kernel.read_register(AP_DEBUG29);
+
+  //   // INTT stage
+  //   uint32_t intt_i     = kernel.read_register(AP_DEBUG17);
+  //   uint32_t intt_iLast = kernel.read_register(AP_DEBUG30);
+
+  //   // Final FN stage
+  //   uint32_t fn_i       = kernel.read_register(AP_DEBUG18);
+  //   uint32_t fn_iLast   = kernel.read_register(AP_DEBUG31);
+  //   uint32_t fn_o       = kernel.read_register(AP_DEBUG19);
+  //   uint32_t fn_oLast   = kernel.read_register(AP_DEBUG20);
+
+  //   uint32_t stat = kernel.read_register(AP_STATUS);
+
+  //   printf("\n========== FPGA PIPELINE DEBUG ==========\n");
+
+  //   // PSI
+  //   printf("PSI                : 0x%08X\n", psi);
+
+  //   // NTT
+  //   printf("NTT in             : 0x%08X\n", ntt_i);
+  //   printf("NTT in last        : 0x%08X\n", ntt_i_last);
+  //   printf("NTT valid          : 0x%08X\n", ntt_valid);
+  //   printf("NTT out last       : 0x%08X\n", ntt_o_last);
+
+  //   // FIFO
+  //   printf("FIFO0 in/out       : 0x%08X -> 0x%08X\n", fifo0_i, fifo0_o);
+  //   printf("FIFO1 in/out       : 0x%08X -> 0x%08X\n", fifo1_i, fifo1_o);
+
+  //   // Hadamard
+  //   printf("HAD0 A/B           : 0x%08X 0x%08X\n", had0A, had0B);
+  //   printf("HAD0 in last       : 0x%08X\n", had0_iLast);
+  //   printf("HAD0 out           : 0x%08X\n", had0_out);
+  //   printf("HAD0 out last      : 0x%08X\n", had0_oLast);
+
+  //   printf("HAD1 A/B           : 0x%08X 0x%08X\n", had1A, had1B);
+  //   printf("HAD1 in last       : 0x%08X\n", had1_iLast);
+  //   printf("HAD1 out           : 0x%08X\n", had1_out);
+  //   printf("HAD1 out last      : 0x%08X\n", had1_oLast);
+
+  //   // ACC
+  //   printf("ACC in0/last       : 0x%08X / 0x%08X\n", acc_i0, acc_i0Last);
+  //   printf("ACC in1/last       : 0x%08X / 0x%08X\n", acc_i1, acc_i1Last);
+  //   printf("ACC out/last       : 0x%08X / 0x%08X\n", acc_out, acc_oLast);
+
+  //   // INTT
+  //   printf("INTT in/last       : 0x%08X / 0x%08X\n", intt_i, intt_iLast);
+
+  //   // FN
+  //   printf("FN in/last         : 0x%08X / 0x%08X\n", fn_i, fn_iLast);
+  //   printf("FN out/last        : 0x%08X / 0x%08X\n", fn_o, fn_oLast);
+
+  //   printf("STATUS             : 0x%08X\n", stat);
+  //   printf("=========================================\n");
+
+  //     if (stat & 0x1) break;
+
+  //   usleep(1000);
+  // }
+
+  //run.wait();
+
   
-  run.wait();
-//   for (int t = 0; t < 2000; t++) { // ~20s if 10ms sleep
-
-//     uint32_t dbg  = kernel.read_register(AP_DEBUG);
-//     uint32_t dbg2 = kernel.read_register(AP_DEBUG2);
-//     uint32_t dbg3 = kernel.read_register(AP_DEBUG3);
-//     uint32_t dbg4 = kernel.read_register(AP_DEBUG4);
-//     uint32_t dbg5 = kernel.read_register(AP_DEBUG5);
-//     uint32_t dbg6 = kernel.read_register(AP_DEBUG6);
-//     uint32_t dbg7 = kernel.read_register(AP_DEBUG7);
-
-//     uint32_t stat = kernel.read_register(AP_STATUS);
-
-//     uint32_t accum_main = (dbg >> 19) & 0x1F;   // [23:19]
-//     uint32_t accum_st12 = (dbg >> 17) & 0x3;    // [18:17]
-//     uint32_t cmd_done   = (dbg >> 16) & 0x1;    // [16]
-//     uint32_t busy       = (dbg >> 15) & 0x1;    // [15]
-//     uint32_t relin      = (dbg >> 4)  & 0x7FF;  // [14:4]
-//     uint32_t ap_start   = (dbg >> 3) & 0x1;
-//     uint32_t ap_idle    = (dbg >> 2) & 0x1;
-//     uint32_t ap_ready   = (dbg >> 1) & 0x1;
-//     uint32_t ap_done    = (dbg >> 0) & 0x1;
-
-//     uint32_t write_addr0_accum = (dbg2 >> 25) & 0x7F;  // [31:25]
-//     uint32_t read_addr0_accum  = (dbg2 >> 18) & 0x7F;  // [24:18]
-//     uint32_t accum_ctr0        = (dbg2 >> 16) & 0x3;   // [17:16]
-//     uint32_t accum_ctr1        = (dbg2 >> 14) & 0x3;   // [15:14]
-
-//     uint32_t cu_out_state = (dbg3 >> 21) & 0x7FF;   // [31:21]
-//     uint32_t cu_p0_state  = (dbg3 >> 5)  & 0xFFFF;  // [20:5]
-//     uint32_t cu_out_ctr   = (dbg3 >> 3)  & 0x3;     // [4:3]
-
-//     uint32_t ctr_L_out_cu_p0    = (dbg4 >> 30) & 0x3; // [31:30]
-//     uint32_t ctr_L__out_cu_p0   = (dbg4 >> 28) & 0x3; // [29:28]
-//     uint32_t ctr_poly_out_cu_p0 = (dbg4 >> 26) & 0x3; // [27:26]
-
-//     uint32_t state_p1_p2_out = (dbg5 >> 21) & 0x7FF; // [31:21]
-//     uint32_t ctr_L_out_p1_p2 = (dbg5 >> 19) & 0x3;   // [20:19]
-//     uint32_t ctr_L__out_p1_p2= (dbg5 >> 17) & 0x3;   // [18:17]
-//     uint32_t ctr_out_p1_p2   = (dbg5 >> 15) & 0x3;   // [16:15]
-
-//     uint32_t ctr_relin = (dbg6 >> 30) & 0x3; // [31:30]
-
-//     uint32_t hbm_p0 = (dbg7 >> 26) & 0x3F; // [31:26]
-//     uint32_t hbm_p1 = (dbg7 >> 20) & 0x3F; // [25:20]
-//     uint32_t hbm_p2 = (dbg7 >> 14) & 0x3F; // [19:14]
-//     uint32_t hbm_p3 = (dbg7 >> 8)  & 0x3F; // [13:8]
-
-//     printf(
-//     "\n==================== KERNEL DEBUG ====================\n"
-//     "AP_STATUS : idle=");
-//     print_bin_w((stat >> 1) & 1, 1);
-//     printf(" done=");
-//     print_bin_w((stat >> 0) & 1, 1);
-//     printf("\n\n");
-
-//     /* -------------------------------------------------- */
-//     printf("[AP_DEBUG]\n");
-//     printf("  accum_main      : "); print_bin_w(accum_main, 5);  printf("\n");
-//     printf("  accum_st12      : "); print_bin_w(accum_st12, 2);  printf("\n");
-//     printf("  relin_state     : "); print_bin_w(relin, 11);       printf("\n");
-//     printf("  cmd_done        : "); print_bin_w(cmd_done, 1);     printf("\n");
-//     printf("  busy            : "); print_bin_w(busy, 1);         printf("\n");
-//     printf("  ap_start        : "); print_bin_w(ap_start, 1);     printf("\n");
-//     printf("  ap_idle         : "); print_bin_w(ap_idle, 1);      printf("\n");
-//     printf("  ap_ready        : "); print_bin_w(ap_ready, 1);     printf("\n");
-//     printf("  ap_done         : "); print_bin_w(ap_done, 1);      printf("\n\n");
-
-//     /* -------------------------------------------------- */
-//     printf("[AP_DEBUG2] (ACCUM ADDR / CTR)\n");
-//     printf("  write_addr0     : "); print_bin_w(write_addr0_accum, 7); printf("\n");
-//     printf("  read_addr0      : "); print_bin_w(read_addr0_accum, 7);  printf("\n");
-//     printf("  accum_ctr0      : "); print_bin_w(accum_ctr0, 2);        printf("\n");
-//     printf("  accum_ctr1      : "); print_bin_w(accum_ctr1, 2);        printf("\n\n");
-
-//     /* -------------------------------------------------- */
-//     printf("[AP_DEBUG3] (CU OUT / P0)\n");
-//     printf("  cu_out_state    : "); print_bin_w(cu_out_state, 11); printf("\n");
-//     printf("  cu_p0_state     : "); print_bin_w(cu_p0_state, 16);  printf("\n");
-//     printf("  cu_out_ctr      : "); print_bin_w(cu_out_ctr, 2);    printf("\n\n");
-
-//     /* -------------------------------------------------- */
-//     printf("[AP_DEBUG4] (CU P0 COUNTERS)\n");
-//     printf("  ctr_L_out       : "); print_bin_w(ctr_L_out_cu_p0, 2);    printf("\n");
-//     printf("  ctr_L__out      : "); print_bin_w(ctr_L__out_cu_p0, 2);   printf("\n");
-//     printf("  ctr_poly_out    : "); print_bin_w(ctr_poly_out_cu_p0, 2);printf("\n\n");
-
-//     /* -------------------------------------------------- */
-//     printf("[AP_DEBUG5] (P1 / P2)\n");
-//     printf("  state_p1_p2     : "); print_bin_w(state_p1_p2_out, 11); printf("\n");
-//     printf("  ctr_L_out       : "); print_bin_w(ctr_L_out_p1_p2, 2);  printf("\n");
-//     printf("  ctr_L__out      : "); print_bin_w(ctr_L__out_p1_p2, 2); printf("\n");
-//     printf("  ctr_out         : "); print_bin_w(ctr_out_p1_p2, 2);    printf("\n\n");
-
-//     /* -------------------------------------------------- */
-//     printf("[AP_DEBUG6]\n");
-//     printf("  ctr_relin       : "); print_bin_w(ctr_relin, 2); printf("\n\n");
-
-//     /* -------------------------------------------------- */
-//     printf("[AP_DEBUG7] (HBM FSMs)\n");
-//     printf("  HBM P0          : "); print_bin_w(hbm_p0, 6); printf("\n");
-//     printf("  HBM P1          : "); print_bin_w(hbm_p1, 6); printf("\n");
-//     printf("  HBM P2          : "); print_bin_w(hbm_p2, 6); printf("\n");
-//     printf("  HBM P3          : "); print_bin_w(hbm_p3, 6); printf("\n");
-
-//     printf("======================================================\n");
-
-
-
-
-
-
-
-//     if (stat & 0x1) break;
-//     usleep(1000);
-// }
 
   std::cout << "Kernel is done" << std::endl;
 
@@ -581,22 +679,37 @@ int test_kernel(xrt::kernel kernel, xrt::bo *hbm_i, xrt::bo *hbm_o) {
 
   //////////////////////////////////////////////////////////////////////////////
   // Get the outputs
+  //
+  // FIX: ct_0_rl and ct_1_rl moved from stack to heap.
+  //      Each was [L][POLY_N] = 14 * 65536 * 8B = ~3.7 MB on the stack.
+  //      Now allocated as flat vectors and accessed via a row-pointer helper.
 
   std::cout << "Reading back the results" << std::endl;
-  uint64_t ct_0_rl[L][POLY_N] = {0x0};
-  uint64_t ct_1_rl[L][POLY_N] = {0x0};
+
+  std::vector<uint64_t> ct_0_rl(static_cast<size_t>(L) * POLY_N, 0);
+  std::vector<uint64_t> ct_1_rl(static_cast<size_t>(L) * POLY_N, 0);
+
+  // Helper: returns pointer to row i in a flat [L * POLY_N] vector
+  auto row = [](std::vector<uint64_t>& v, int i) -> uint64_t* {
+    return v.data() + static_cast<size_t>(i) * POLY_N;
+  };
 
   unsigned int offset = 0;
-  offset += readFromPC((uint64_t*) ct_0_rl[0], hbm_o, POLY_N, PCO_COUNT, PC_DATA_WIDTH, offset);
-  offset += readFromPC((uint64_t*) ct_0_rl[1], hbm_o, POLY_N, PCO_COUNT, PC_DATA_WIDTH, offset);
-  offset += readFromPC((uint64_t*) ct_0_rl[2], hbm_o, POLY_N, PCO_COUNT, PC_DATA_WIDTH, offset);
-  offset += readFromPC((uint64_t*) ct_0_rl[3], hbm_o, POLY_N, PCO_COUNT, PC_DATA_WIDTH, offset);
-  offset += readFromPC((uint64_t*) ct_1_rl[0], hbm_o, POLY_N, PCO_COUNT, PC_DATA_WIDTH, offset);
-  offset += readFromPC((uint64_t*) ct_1_rl[1], hbm_o, POLY_N, PCO_COUNT, PC_DATA_WIDTH, offset);
-  offset += readFromPC((uint64_t*) ct_1_rl[2], hbm_o, POLY_N, PCO_COUNT, PC_DATA_WIDTH, offset);
-  offset += readFromPC((uint64_t*) ct_1_rl[3], hbm_o, POLY_N, PCO_COUNT, PC_DATA_WIDTH, offset);
-  writeManyMemFileFlat("../../../scripts/kernel/computed/ct0_rl_", (uint64_t*) ct_0_rl, L, POLY_N);
-  writeManyMemFileFlat("../../../scripts/kernel/computed/ct1_rl_", (uint64_t*) ct_1_rl, L, POLY_N);
+
+  // Read back L rows of ct_0_rl
+  for (int i = 0; i < L; i++) {
+    offset += readFromPC(row(ct_0_rl, i), hbm_o, POLY_N, PCO_COUNT, PC_DATA_WIDTH, offset);
+  }
+  std::cout << "Reading back ct_0_rl done" << std::endl;
+
+  // Read back L rows of ct_1_rl
+  for (int i = 0; i < L; i++) {
+    offset += readFromPC(row(ct_1_rl, i), hbm_o, POLY_N, PCO_COUNT, PC_DATA_WIDTH, offset);
+  }
+  std::cout << "Reading back ct_1_rl done" << std::endl;
+
+  writeManyMemFileFlat("../../../scripts/kernel/computed/ct0_rl_", ct_0_rl.data(), L, POLY_N);
+  writeManyMemFileFlat("../../../scripts/kernel/computed/ct1_rl_", ct_1_rl.data(), L, POLY_N);
 
   return 1;
 }

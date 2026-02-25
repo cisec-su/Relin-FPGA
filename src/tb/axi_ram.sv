@@ -267,7 +267,7 @@ initial begin
                         index_temp = 0;
                         if ((index % stride) == offset) begin
                             mem[index_strided] = temp_data_large;
-                            $display("[%d] mem[%0d] = %h", offset, index_strided, mem[index_strided]);
+                            //$display("[%d] mem[%0d] = %h", offset, index_strided, mem[index_strided]);
                             index_strided = index_strided + 1;
                         end
                         index = index + 1;

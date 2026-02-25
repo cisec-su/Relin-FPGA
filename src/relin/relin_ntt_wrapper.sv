@@ -24,8 +24,12 @@ module ntt_wrapper
 
 localparam TP  = 1 << LOGTP;
 localparam LOGN1 = LOGTP; // = LOGN3 for 3D, LOGN4 for 4D
-localparam LOGN2 = (LOGN - 2*LOGN1 <= LOGTP) ? LOGN - 2*LOGN1 : (LOGN -  2*LOGN1) >> 1;
-localparam LOGN3 = (LOGN - 2*LOGN1 <= LOGTP) ?          LOGN1 :  LOGN - (2*LOGN1) - LOGN2;
+//localparam LOGN2 = (LOGN - 2*LOGN1 <= LOGTP) ? LOGN - 2*LOGN1 : (LOGN -  2*LOGN1) >> 1;
+//localparam LOGN3 = (LOGN - 2*LOGN1 <= LOGTP) ?          LOGN1 :  LOGN - (2*LOGN1) - LOGN2;
+
+localparam LOGN2 = (LOGN == 12 || LOGN == 13 || LOGN == 14 || LOGN == 15) ? LOGN - 2*LOGN1 : 1;
+localparam LOGN3 = LOGTP;
+
 
 localparam tp_ntt_params_t tp_ntt_params = {LOGN, LOGN1, LOGN2, LOGN3, LOGTP, LOGQ, LOGQH, 1, 0}; 
 localparam LAT = tp_ntt_lat(tp_ntt_params) + (1 << (LOGN - LOGTP)) + 2;

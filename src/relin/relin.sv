@@ -15,7 +15,7 @@ module relin
         parameter Q_MUX__FN__DELAY          = 3 ,
 
         parameter CU_ACC__CU_P0_NTT__DELAY  = 3 ,
-        parameter ACC0_REN__ACC1_REN__DELAY = 40*(1 << (LOGN-12)),
+        parameter ACC0_REN__ACC1_REN__DELAY = 160*(1 << (LOGN-12)),
 
         parameter MAIN_FSM__CU_ACC__DELAY   = 3 ,
         parameter MAIN_FSM__FN__DELAY       = 3 ,
@@ -54,6 +54,44 @@ module relin
         output reg [LOGQ-1:0] i_p2_data_d5_reg,
         output reg [LOGQ-1:0] had_0_dbg_data,
         output reg [LOGQ-1:0] had_1_dbg_data,
+        output reg [LOGQ-1:0] ntt_i_data_dbg,
+        output reg [LOGQ-1:0] ntt_o_data_last_dbg,
+        output reg [LOGQ-1:0] psi_i_data_dbg,
+        output reg [LOGQ-1:0] fifo_0_i_data_dbg,
+        output reg [LOGQ-1:0] fifo_1_i_data_dbg,
+        output reg [LOGQ-1:0] had_0_i_poly_A_dbg,
+        output reg [LOGQ-1:0] had_0_i_poly_B_dbg,
+        output reg [LOGQ-1:0] had_1_i_poly_A_dbg,
+        output reg [LOGQ-1:0] had_1_i_poly_B_dbg,
+        output reg [LOGQ-1:0] acc_i_poly_0_dbg,
+        output reg [LOGQ-1:0] acc_i_poly_1_dbg,
+        output reg [LOGQ-1:0] acc_o_data_dbg,
+        output reg [LOGQ-1:0] intt_i_poly_dbg,
+        output reg [LOGQ-1:0] fn_i_poly_dbg,
+        output reg [LOGQ-1:0] fn_o_poly_dbg,
+        output reg [LOGQ-1:0] ntt_i_data_last_dbg,
+        output reg [LOGQ-1:0] had_0_i_poly_last,
+        output reg [LOGQ-1:0] had_1_i_poly_last,
+        output reg [LOGQ-1:0] had_0_o_poly_last,
+        output reg [LOGQ-1:0] had_1_o_poly_last,
+        output reg [LOGQ-1:0] acc_i_0_poly_last,
+        output reg [LOGQ-1:0] acc_i_1_poly_last,
+        output reg [LOGQ-1:0] acc_o_poly_last,
+        output reg [LOGQ-1:0] intt_i_poly_last,
+        output reg [LOGQ-1:0] fn_i_poly_last,
+        output reg [LOGQ-1:0] fn_o_poly_last,
+        output reg [LOGQ-1:0] acc_i_poly_0_dbg_4,
+        output reg [LOGQ-1:0] acc_i_0_poly_last_4,
+        output reg [LOGQ-1:0] acc_i_poly_0_dbg_8,
+        output reg [LOGQ-1:0] acc_i_0_poly_last_8,
+        output reg [LOGQ-1:0] acc_i_poly_0_dbg_16,
+        output reg [LOGQ-1:0] acc_i_0_poly_last_16,
+        output reg [LOGQ-1:0] acc_i_poly_0_dbg_20,
+        output reg [LOGQ-1:0] acc_i_0_poly_last_20,
+        output reg [LOGQ-1:0] acc_i_poly_0_dbg_27,
+        output reg [LOGQ-1:0] acc_i_0_poly_last_27,
+        output reg [LOGQ-1:0] had_0_i_poly_last_B,
+        output reg [2:0] ctr_start_sig,
         relin_t.master     relin_t
     );
 
@@ -321,7 +359,8 @@ relin_cu_p1_p2 #(
 
 
 relin_fifo #(
-    .K   (K   ),
+    .K   (K ),
+    .M   (2 ),
     .TP  (TP  ),
     .LOGQ(LOGQ)
 ) relin_fifo_inst_0 (
@@ -336,6 +375,7 @@ relin_fifo #(
 
 relin_fifo #(
     .K   (K   ),
+    .M   (2 ),
     .TP  (TP  ),
     .LOGQ(LOGQ)
 ) relin_fifo_inst_1 (
@@ -640,6 +680,197 @@ always @(posedge clk) begin
     end
 end
 
+wire ntt_i_valid_d2, psi_i_valid_d2, fifo_0_i_valid_d2, fifo_1_i_valid_d2;
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+ntt_i_valid_shift
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (ntt_i_valid  ),
+    .o_data (ntt_i_valid_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+psi_i_valid_shift
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (psi_i_valid  ),
+    .o_data (psi_i_valid_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+fifo_0_i_valid_shift
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (fifo_0_wen  ),
+    .o_data (fifo_0_i_valid_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+fifo_1_i_valid_shift
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (fifo_1_wen  ),
+    .o_data (fifo_1_i_valid_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+had_0_i_valid_shift
+(
+    .clk    (clk           ),
+    .rst    (rst           ),
+    .i_data (had_0_i_valid ),
+    .o_data (had_0_i_valid_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+had_1_i_valid_shift
+(
+    .clk    (clk           ),
+    .rst    (rst           ),
+    .i_data (had_1_i_valid ),
+    .o_data (had_1_i_valid_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+acc_i_valid_0_shift
+(
+    .clk    (clk             ),
+    .rst    (rst             ),
+    .i_data (acc_i_valid_0   ),
+    .o_data (acc_i_valid_0_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+acc_i_valid_1_shift
+(
+    .clk    (clk             ),
+    .rst    (rst             ),
+    .i_data (acc_i_valid_1   ),
+    .o_data (acc_i_valid_1_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+acc_o_valid_shift
+(
+    .clk    (clk          ),
+    .rst    (rst          ),
+    .i_data (acc_o_valid  ),
+    .o_data (acc_o_valid_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+intt_i_valid_shift
+(
+    .clk    (clk           ),
+    .rst    (rst           ),
+    .i_data (intt_i_valid  ),
+    .o_data (intt_i_valid_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+fn_i_valid_shift
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (fn_i_valid  ),
+    .o_data (fn_i_valid_d2)
+);
+
+shift_reg #(
+    .LAT   (2),
+    .WIDTH (1)
+)
+fn_o_valid_shift
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (fn_o_valid  ),
+    .o_data (fn_o_valid_d2)
+);
+
+
+
+
+
+
+reg [1:0] ctr_ntt_i_valid      = 2'b00;
+reg [1:0] ctr_psi_i_valid      = 2'b00;
+reg [1:0] ctr_fifo_0_i_valid   = 2'b00;
+reg [1:0] ctr_fifo_1_i_valid   = 2'b00;
+reg [1:0] ctr_had_0_i_valid    = 2'b00;
+reg [1:0] ctr_had_1_i_valid    = 2'b00;
+
+reg [1:0] ctr_accum_1_i_valid  = 2'b00;
+reg [1:0] ctr_acc_o_valid      = 2'b00;
+reg [1:0] ctr_intt_i_valid     = 2'b00;
+reg [1:0] ctr_fn_i_valid       = 2'b00;
+reg [1:0] ctr_fn_o_valid       = 2'b00;
+
+reg [4:0] ctr_accum_0_i_valid       = 5'b00000;
+reg [4:0] ctr_accum_0_i_valid_4     = 5'b00000;
+reg [4:0] ctr_accum_0_i_valid_8     = 5'b00000;
+reg [4:0] ctr_accum_0_i_valid_16    = 5'b00000;
+reg [4:0] ctr_accum_0_i_valid_20    = 5'b00000;
+reg [4:0] ctr_accum_0_i_valid_27    = 5'b00000;
+
+reg [10:0] ctr_to_last, ctr_to_last_ntt_o, ctr_to_had_0_o_poly_last, ctr_to_had_1_o_poly_last, ctr_to_had_0_i_poly_last, ctr_to_had_1_i_poly_last, ctr_to_accum_i_0_last, ctr_to_accum_i_1_last, ctr_to_accum_o_last, ctr_to_intt_i_last, ctr_to_fn_i_last, ctr_to_fn_o_last;
+
+reg [1:0] count, count_ntt_o_data, count_had_0_o_poly, count_had_1_o_poly, count_had_0_i_poly, count_had_1_i_poly, count_accum_0, count_accum_i_1, count_accum_o_last, count_intt_i_poly_last, count_fn_i_poly_last, count_fn_o_poly_last, count_accum_0_4, count_accum_0_8, count_accum_0_16, count_accum_0_20, count_accum_0_27;
+
+reg [10:0] ctr_to_accum_i_0_last_4, ctr_to_accum_i_0_last_8, ctr_to_accum_i_0_last_16, ctr_to_accum_i_0_last_20, ctr_to_accum_i_0_last_27;
+
+
+reg [4:0] ctr_acc_in;
+
+always @(posedge clk) begin
+    if (rst) begin
+        ctr_acc_in <= 'b0;
+    end
+    else begin
+        if (acc_i_valid_0_d2) begin
+            ctr_acc_in <= ctr_acc_in + 1;
+        end
+    end
+end
+
 always @(posedge clk) begin
     if (rst) begin
         ntt_valid_out_dbg <= 'b0;
@@ -649,10 +880,53 @@ always @(posedge clk) begin
         i_p2_data_d5_reg <= 'b0;
         had_0_dbg_data <= 'b0;
         had_1_dbg_data <= 'b0;
+        ctr_start_sig <= 'b0;
+        ctr_to_last <= 'b0;
+        count       <= 'b0;
+        count_ntt_o_data  <= 'b0;
+        ctr_to_last_ntt_o <= 'b0;
+        count_had_0_o_poly <= 'b0;
+        count_had_1_o_poly <= 'b0;
+        count_had_0_i_poly <= 'b0;
+        count_had_1_i_poly <= 'b0;
+        ctr_to_had_0_o_poly_last <= 'b0;
+        ctr_to_had_1_o_poly_last <= 'b0;
+        ctr_to_had_0_i_poly_last <= 'b0;
+        ctr_to_had_1_i_poly_last <= 'b0;
+        count_accum_0 <= 'b0;
+        ctr_to_accum_i_0_last <= 'b0;
+        ctr_to_accum_i_0_last_4 <= 'b0;
+        ctr_to_accum_i_0_last_8 <= 'b0;
+        ctr_to_accum_i_0_last_16 <= 'b0;
+        ctr_to_accum_i_0_last_20 <= 'b0;
+        ctr_to_accum_i_0_last_27 <= 'b0;
+        count_accum_0_4 <= 'b0;
+        count_accum_0_8 <= 'b0;
+        count_accum_0_16 <= 'b0;
+        count_accum_0_20 <= 'b0;
+        count_accum_0_27 <= 'b0;
+        count_accum_i_1 <= 'b0;
+        ctr_to_accum_i_1_last <= 'b0;
+        count_accum_o_last <= 'b0;
+        ctr_to_accum_o_last <= 'b0;
+        count_intt_i_poly_last <= 'b0;
+        ctr_to_intt_i_last <= 'b0;
+        count_fn_i_poly_last <= 'b0;
+        ctr_to_fn_i_last <= 'b0;
+        ctr_to_fn_o_last <= 'b0;
+        count_fn_o_poly_last <= 'b0;
     end
     else begin
         if (ntt_o_valid_d6 && ntt_valid_out_dbg == 'b0) begin
             ntt_valid_out_dbg <= ntt_o_poly_d4_1[0];
+            count_ntt_o_data <= count_ntt_o_data == 2'b00 ? 2'b01: count_ntt_o_data;
+        end
+         if (count_ntt_o_data == 2'b01) begin
+            ctr_to_last_ntt_o <= ctr_to_last_ntt_o + 1;
+        end
+        if (ctr_to_last_ntt_o == K - 4) begin
+            ntt_o_data_last_dbg <= ntt_o_poly_d4_1[0];
+            count_ntt_o_data <= 2'b10;
         end
         if (fifo_0_ren_reg_d2 && fifo_0_dbg_reg == 'b0) begin
             i_p1_data_d5_reg <= i_p1_data_d5[0];
@@ -664,10 +938,218 @@ always @(posedge clk) begin
         end
         if (had_0_o_valid_regd2 && had_0_dbg_data == 'b0) begin
             had_0_dbg_data <= had_0_o_poly[0];
+            count_had_0_o_poly <= count_had_0_o_poly == 2'b00 ? 2'b01: count_had_0_o_poly;
+        end
+        if (count_had_0_o_poly == 2'b01) begin
+            ctr_to_had_0_o_poly_last <= ctr_to_had_0_o_poly_last + 1;
+        end
+        if (ctr_to_had_0_o_poly_last == K - 4) begin
+            had_0_o_poly_last <= had_0_o_poly[0];
+            count_had_0_o_poly <= 2'b10;
         end
         if (had_1_o_valid_regd2 && had_1_dbg_data == 'b0) begin
             had_1_dbg_data <= had_1_o_poly[0];
+            count_had_1_o_poly <= count_had_1_o_poly == 2'b00 ? 2'b01: count_had_1_o_poly;
         end
+        if (count_had_1_o_poly == 2'b01) begin
+            ctr_to_had_1_o_poly_last <= ctr_to_had_1_o_poly_last + 1;
+        end
+        if (ctr_to_had_1_o_poly_last == K - 4) begin
+            had_1_o_poly_last <= had_1_o_poly[0];
+            count_had_1_o_poly <= 2'b10;
+        end
+        if (ntt_i_valid_d2 && ctr_ntt_i_valid == 'b0) begin
+            ctr_ntt_i_valid <= 2'd2;
+            ntt_i_data_dbg <= ntt_i_poly[0];
+            count <= count == 2'b00 ? 2'b01: count;
+        end
+        if (ntt_i_valid_d2 == 1'b1) begin
+            ctr_start_sig <= ctr_start_sig + 1;
+        end
+        if (count == 2'b01) begin
+            ctr_to_last <= ctr_to_last + 1;
+        end
+        if (ctr_to_last == K - 4) begin
+            ntt_i_data_last_dbg <= ntt_i_poly[0];
+            count <= 2'b10;
+        end
+        if (psi_i_valid_d2 && ctr_psi_i_valid == 'b0) begin
+            ctr_psi_i_valid <= 2'd2;
+            psi_i_data_dbg <= ntt_i_psi[0];
+        end
+        if (fifo_0_i_valid_d2 && ctr_fifo_0_i_valid == 'b0) begin
+            ctr_fifo_0_i_valid <= 2'd2;
+            fifo_0_i_data_dbg <= ntt_o_poly_d4_1[0];
+        end
+        if (fifo_1_i_valid_d2 && ctr_fifo_1_i_valid == 'b0) begin
+            ctr_fifo_1_i_valid <= 2'd2;
+            fifo_1_i_data_dbg <= ntt_o_poly_d4_2[0];
+        end
+        if (had_0_i_valid_d2 && ctr_had_0_i_valid == 'b0 && ctr_acc_in == 8'd15) begin
+            ctr_had_0_i_valid <= 2'd2;
+            had_0_i_poly_A_dbg <= had_0_i_poly_A[0];
+            had_0_i_poly_B_dbg <= had_0_i_poly_B[0];
+            count_had_0_i_poly <= count_had_0_i_poly == 2'b00 ? 2'b01: count_had_0_i_poly;
+        end
+        if (count_had_0_i_poly == 2'b01) begin
+            ctr_to_had_0_i_poly_last <= ctr_to_had_0_i_poly_last + 1;
+        end
+        if (ctr_to_had_0_i_poly_last == K - 4) begin
+            had_0_i_poly_last <= had_0_i_poly_A[0];
+            had_0_i_poly_last_B <= had_0_i_poly_B[0];
+            count_had_0_i_poly <= 2'b10;
+        end
+        if (had_1_i_valid_d2 && ctr_had_1_i_valid == 'b0) begin
+            ctr_had_1_i_valid <= 2'd2;
+            had_1_i_poly_A_dbg <= had_1_i_poly_A[0];
+            had_1_i_poly_B_dbg <= had_1_i_poly_B[0];
+            count_had_1_i_poly <= count_had_1_i_poly == 2'b00 ? 2'b01: count_had_1_i_poly;
+        end
+        if (count_had_1_i_poly == 2'b01) begin
+            ctr_to_had_1_i_poly_last <= ctr_to_had_1_i_poly_last + 1;
+        end
+        if (ctr_to_had_1_i_poly_last == K - 4) begin
+            had_1_i_poly_last <= had_1_i_poly_A[0];
+            count_had_1_i_poly <= 2'b10;
+        end
+        if (acc_i_valid_0_d2 && ctr_accum_0_i_valid == 'b0 && ctr_acc_in == 5'd0) begin
+            ctr_accum_0_i_valid <= 2'd2;
+            acc_i_poly_0_dbg <= acc_i_poly_0[0];
+            count_accum_0 <= count_accum_0 == 2'b00 ? 2'b01: count_accum_0;
+        end
+        if (count_accum_0 == 2'b01) begin
+            ctr_to_accum_i_0_last <= ctr_to_accum_i_0_last + 1;
+        end
+        if (ctr_to_accum_i_0_last == K - 4) begin
+            acc_i_0_poly_last <= acc_i_poly_0[0];
+            count_accum_0 <= 2'b10;
+        end
+        if (acc_i_valid_1_d2 && ctr_accum_1_i_valid == 'b0) begin
+            ctr_accum_1_i_valid <= 2'd2;
+            acc_i_poly_1_dbg <= acc_i_poly_1[0];
+            count_accum_i_1 <= count_accum_i_1 == 2'b00 ? 2'b01: count_accum_i_1;
+        end
+        if (count_accum_i_1 == 2'b01) begin
+            ctr_to_accum_i_1_last <= ctr_to_accum_i_1_last + 1;
+        end
+        if (ctr_to_accum_i_1_last == K - 4) begin
+            acc_i_1_poly_last <= acc_i_poly_1[0];
+            count_accum_i_1 <= 2'b10;
+        end
+        if (acc_o_valid_d2 &&  ctr_acc_o_valid == 'b0) begin
+            ctr_acc_o_valid <= 2'd2;
+            acc_o_data_dbg <= acc_o_poly[0];
+            count_accum_o_last <= count_accum_o_last == 2'b00 ? 2'b01: count_accum_o_last;
+        end
+        if (count_accum_o_last == 2'b01) begin
+            ctr_to_accum_o_last <= ctr_to_accum_o_last + 1;
+        end
+        if (ctr_to_accum_o_last == K - 4) begin
+            acc_o_poly_last <= acc_o_poly[0];
+            count_accum_o_last <= 2'b10;
+        end
+         if (intt_i_valid_d2 && ctr_intt_i_valid == 'b0) begin
+            ctr_intt_i_valid <= 2'd2;
+            intt_i_poly_dbg <= intt_i_poly[0];
+            count_intt_i_poly_last <= count_intt_i_poly_last == 2'b00 ? 2'b01: count_intt_i_poly_last;
+        end
+        if (count_intt_i_poly_last == 2'b01) begin
+            ctr_to_intt_i_last <= ctr_to_intt_i_last + 1;
+        end
+        if (ctr_to_intt_i_last == K - 4) begin
+            intt_i_poly_last <= intt_i_poly[0];
+            count_intt_i_poly_last <= 2'b10;
+        end
+        if (fn_i_valid_d2 && ctr_fn_i_valid == 'b0) begin
+            ctr_fn_i_valid <= 2'd2;
+            fn_i_poly_dbg <= fn_i_poly_A[0];
+            count_fn_i_poly_last <= count_fn_i_poly_last == 2'b00 ? 2'b01: count_fn_i_poly_last;
+        end
+        if (count_fn_i_poly_last == 2'b01) begin
+            ctr_to_fn_i_last <= ctr_to_fn_i_last + 1;
+        end
+        if (ctr_to_fn_i_last == K - 4) begin
+            fn_i_poly_last <= fn_i_poly_A[0];
+            count_fn_i_poly_last <= 2'b10;
+        end
+        if (fn_o_valid_d2 && ctr_fn_o_valid == 'b0) begin
+            ctr_fn_o_valid <= 2'd2;
+            fn_o_poly_dbg <= fn_o_poly[0];
+            count_fn_o_poly_last <= count_fn_o_poly_last == 2'b00 ? 2'b01: count_fn_o_poly_last;
+        end
+        if (count_fn_o_poly_last == 2'b01) begin
+            ctr_to_fn_o_last <= ctr_to_fn_o_last + 1;
+        end
+        if (ctr_to_fn_o_last == K - 4) begin
+            fn_o_poly_last <= fn_o_poly[0];
+            count_fn_o_poly_last <= 2'b10;
+        end
+
+        if (acc_i_valid_0_d2 && ctr_accum_0_i_valid_4 == 'b0 && ctr_acc_in == 5'd10) begin
+            ctr_accum_0_i_valid_4 <= 2'd2;
+            acc_i_poly_0_dbg_4 <= acc_i_poly_0[0];
+            count_accum_0_4 <= count_accum_0_4 == 2'b00 ? 2'b01: count_accum_0_4;
+        end
+        if (count_accum_0_4 == 2'b01) begin
+            ctr_to_accum_i_0_last_4 <= ctr_to_accum_i_0_last_4 + 1;
+        end
+        if (ctr_to_accum_i_0_last_4 == K - 4) begin
+            acc_i_0_poly_last_4 <= acc_i_poly_0[0];
+            count_accum_0_4 <= 2'b10;
+        end
+
+        if (acc_i_valid_0_d2 && ctr_accum_0_i_valid_8 == 'b0 && ctr_acc_in == 5'd12) begin
+            ctr_accum_0_i_valid_8 <= 2'd2;
+            acc_i_poly_0_dbg_8 <= acc_i_poly_0[0];
+            count_accum_0_8 <= count_accum_0_8 == 2'b00 ? 2'b01: count_accum_0_8;
+        end
+        if (count_accum_0_8 == 2'b01) begin
+            ctr_to_accum_i_0_last_8 <= ctr_to_accum_i_0_last_8 + 1;
+        end
+        if (ctr_to_accum_i_0_last_8 == K - 4) begin
+            acc_i_0_poly_last_8 <= acc_i_poly_0[0];
+            count_accum_0_8 <= 2'b10;
+        end
+
+        if (acc_i_valid_0_d2 && ctr_accum_0_i_valid_16 == 'b0 && ctr_acc_in == 5'd14) begin
+            ctr_accum_0_i_valid_16 <= 2'd2;
+            acc_i_poly_0_dbg_16 <= acc_i_poly_0[0];
+            count_accum_0_16 <= count_accum_0_16 == 2'b00 ? 2'b01: count_accum_0_16;
+        end
+        if (count_accum_0_16 == 2'b01) begin
+            ctr_to_accum_i_0_last_16 <= ctr_to_accum_i_0_last_16 + 1;
+        end
+        if (ctr_to_accum_i_0_last_16 == K - 4) begin
+            acc_i_0_poly_last_16 <= acc_i_poly_0[0];
+            count_accum_0_16 <= 2'b10;
+        end
+
+        if (acc_i_valid_0_d2 && ctr_accum_0_i_valid_20 == 'b0 && ctr_acc_in == 5'd16) begin
+            ctr_accum_0_i_valid_20 <= 2'd2;
+            acc_i_poly_0_dbg_20 <= acc_i_poly_0[0];
+            count_accum_0_20 <= count_accum_0_20 == 2'b00 ? 2'b01: count_accum_0_20;
+        end
+        if (count_accum_0_20 == 2'b01) begin
+            ctr_to_accum_i_0_last_20 <= ctr_to_accum_i_0_last_20 + 1;
+        end
+        if (ctr_to_accum_i_0_last_20 == K - 4) begin
+            acc_i_0_poly_last_20 <= acc_i_poly_0[0];
+            count_accum_0_20 <= 2'b10;
+        end
+
+        if (acc_i_valid_0_d2 && ctr_accum_0_i_valid_27 == 'b0 && ctr_acc_in == 5'd27) begin
+            ctr_accum_0_i_valid_27 <= 2'd2;
+            acc_i_poly_0_dbg_27 <= acc_i_poly_0[0];
+            count_accum_0_27 <= count_accum_0_27 == 2'b00 ? 2'b01: count_accum_0_27;
+        end
+        if (count_accum_0_27 == 2'b01) begin
+            ctr_to_accum_i_0_last_27 <= ctr_to_accum_i_0_last_27 + 1;
+        end
+        if (ctr_to_accum_i_0_last_27 == K - 4) begin
+            acc_i_0_poly_last_27 <= acc_i_poly_0[0];
+            count_accum_0_27 <= 2'b10;
+        end
+        
     end
 end
 

@@ -54,10 +54,10 @@ typedef enum reg[15:0] {
 t_state next_state;
 
 
-localparam integer PSI_INV_WAIT_CYCLES = 800;
+localparam integer PSI_INV_WAIT_CYCLES = 6000;
 localparam integer WAITW = $clog2(PSI_INV_WAIT_CYCLES + 1);
 
-localparam integer PSI_WAIT_CYCLES = 800;
+localparam integer PSI_WAIT_CYCLES = 6000;
 localparam integer WAITW2 = $clog2(PSI_WAIT_CYCLES + 1);
 
 reg  [WAITW-1:0] wait_ctr;

@@ -46,7 +46,9 @@ module relin_half_mux #(
 localparam [LOGQ-1:0] HALF_VAL =
     (LOGN == 12) ? 64'h0400d40000000000 :
     (LOGN == 13) ? 64'h0401900000000000 :
-    (LOGN == 14) ? 64'h402e40000000000 :
+    (LOGN == 14) ? 64'h0402e40000000000 :
+    (LOGN == 15) ? 64'h0405d40000000000 :
+    (LOGN == 16) ? 64'h040a000000000000 :
                    64'h0400d40000000000;
 
 assign half = HALF_VAL;

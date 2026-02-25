@@ -73,6 +73,8 @@ localparam LOGCTRA = (PSI_CC > POLY_CC) ? LOG_PSI_BURST_NUM : LOG_POLY_BURST_NUM
 localparam FIFO_READ_LAT_PSI  = (PSI_BURST_NUM  - 1) * HBM_LAT; // number of cycles to read from the fifo
 localparam FIFO_READ_LAT_POLY = (POLY_BURST_NUM - 1) * HBM_LAT; // number of cycles to read from the fifo
 
+localparam int PREFILL = (1 << (LOGN - LOGTP));
+
 typedef enum reg[5:0] {
     ST_IDLE       = 6'b000001,
     ST_RW_SINGLE  = 6'b000010,
@@ -187,6 +189,9 @@ t_state p3_state, next_p3_state;
 
 ///////////////////////// input dma and fifo instances //////////////////
 
+wire [11:0] fifo_rd_count [0:HBM_PCI_COUNT-1];
+
+
 for (genvar g = 0; g < HBM_PCI_COUNT; g = g + 1) begin
 
     dma_rx #(
@@ -216,7 +221,8 @@ for (genvar g = 0; g < HBM_PCI_COUNT; g = g + 1) begin
         .rd_en              ( fifo_rd_en[g]                ),
         .dout               ( fifo_dout[(g*FIFO_WIDTH)+:FIFO_WIDTH]),
         .full               ( fifo_full[g]                 ),
-        .empty              ( fifo_empty[g]                ) 
+        .empty              ( fifo_empty[g]                ),
+        .data_count         ( fifo_rd_count[g]             ) 
     );
 
 end
@@ -333,6 +339,44 @@ always @(posedge clk) begin
     end
 end
 
+reg [7:0] ctr_wait_p0;
+
+always @(posedge clk) begin
+    if (rst) begin
+        ctr_wait_p0 <= 0;
+    end
+    else if (p0_state == ST_RW_SINGLE) begin
+        if (ctr_wait_p0 < 8'd51) begin
+            ctr_wait_p0 <= ctr_wait_p0 + 8'd1;
+        end else begin
+            ctr_wait_p0 <= 8'd0;
+        end
+        
+    end
+    else begin
+        ctr_wait_p0 <= '0;
+    end
+end
+
+
+wire p0_prefill_ready_w =
+    (fifo_rd_count[0] >= PREFILL) &
+    (fifo_rd_count[1] >= PREFILL) &
+    (fifo_rd_count[2] >= PREFILL) &
+    (fifo_rd_count[3] >= PREFILL) &
+    (fifo_rd_count[4] >= PREFILL) &
+    (fifo_rd_count[5] >= PREFILL) &
+    (fifo_rd_count[6] >= PREFILL) &
+    (fifo_rd_count[7] >= PREFILL);
+
+reg p0_prefill_ready;
+always @(posedge clk) begin
+  if (rst) p0_prefill_ready <= 1'b0;
+  else if(p0_state == ST_RW_SINGLE || p0_state == ST_RW_MANY_0 || p0_state == ST_RW_MANY_1)
+       p0_prefill_ready <= p0_prefill_ready_w; // register it (stability)
+  else p0_prefill_ready <= 1'b0;
+end
+
 
 always @(posedge clk) begin
     if (rst) begin
@@ -346,7 +390,7 @@ end
 
 always @(*) begin
     next_p0_state = p0_state;
-    relin_t.i_p0_done = 0;
+    //relin_t.i_p0_done = 0;
     relin_t.i_p0_valid = 0;
     p0_fifo_rd_en = 0;
 
@@ -355,6 +399,8 @@ always @(*) begin
     p0_ctr_addr_inc = 0;
     p0_ctr_data_inc = 0;
     p0_ctr_data_rst = 0;
+
+    i_p0_done_int = 0;
 
     case (p0_state)
         ST_IDLE: begin
@@ -369,7 +415,7 @@ always @(*) begin
             end
         end
         ST_RW_SINGLE: begin
-            if (p0_fifo_nempty) begin
+            if (p0_fifo_nempty && p0_prefill_ready) begin
                 p0_fifo_rd_en = 1;
                 p0_ctr_data_inc = 1;
                 relin_t.i_p0_valid = 1;
@@ -379,7 +425,12 @@ always @(*) begin
         ST_RW_MANY_0: begin // to ensure that we read without gaps from the fifo
             if (p0_rx_done) begin
                 if ((~p0_is_poly && ((PSI_BURST_NUM - 1) == p0_ctr_addr)) || (p0_is_poly && ((POLY_BURST_NUM - 1) == p0_ctr_addr))) begin
-                    next_p0_state = ST_RW_END;
+                    if (p0_prefill_ready) begin
+                        next_p0_state = ST_RW_END;
+                    end else begin
+                        next_p0_state = ST_RW_MANY_0;
+                    end
+                    
                 end
                 else begin
                     p0_ctr_addr_inc = 1;
@@ -392,7 +443,7 @@ always @(*) begin
                 p0_fifo_rd_en = 1;
                 p0_ctr_data_inc = 1;
             end
-            else if ((~p0_is_poly && (FIFO_READ_LAT_PSI <= p0_ctr_data)) || (p0_is_poly && (FIFO_READ_LAT_POLY <= p0_ctr_data))) begin
+            else if ((~p0_is_poly && (p0_prefill_ready)) || (p0_is_poly && (p0_prefill_ready))) begin
                 p0_fifo_rd_en = 1;
                 relin_t.i_p0_valid = 1;
                 p0_ctr_data_rst = 1;
@@ -411,7 +462,7 @@ always @(*) begin
                 p0_fifo_rd_en = 1;
                 p0_ctr_data_inc = 1;
             end
-            else if ((~p0_is_poly && (FIFO_READ_LAT_PSI <= p0_ctr_data)) || (p0_is_poly && (FIFO_READ_LAT_POLY <= p0_ctr_data))) begin
+            else if ((~p0_is_poly && (p0_prefill_ready)) || (p0_is_poly && (p0_prefill_ready))) begin
                 p0_fifo_rd_en = 1;
                 p0_ctr_data_rst = 1;
                 relin_t.i_p0_valid = 1;
@@ -423,7 +474,8 @@ always @(*) begin
         ST_RW_END: begin
             p0_fifo_rd_en = 1;
             if ((~p0_is_poly && (p0_ctr_data == (PSI_CC - 1))) || (p0_is_poly && (p0_ctr_data == (POLY_CC - 1)))) begin
-                relin_t.i_p0_done = 1;
+                //relin_t.i_p0_done = 1;
+                i_p0_done_int = 1;
                 next_p0_state = ST_IDLE;
             end
             else begin
@@ -435,6 +487,27 @@ always @(*) begin
         end
     endcase
 end
+
+reg i_p0_done_int;
+wire i_p0_done_d10;
+
+always @(*) begin
+    relin_t.i_p0_done = i_p0_done_d10;
+end
+
+shift_reg #(
+    .LAT   (10),
+    .WIDTH (1)
+)
+i_p0_done_shift_regd10
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (i_p0_done_int  ),
+    .o_data (i_p0_done_d10)
+);
+
+
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -515,6 +588,44 @@ always @(posedge clk) begin
     end
 end
 
+reg [7:0] ctr_wait_p1;
+
+always @(posedge clk) begin
+    if (rst) begin
+        ctr_wait_p1 <= 0;
+    end
+    else if (p1_state == ST_RW_SINGLE) begin
+        if (ctr_wait_p1 < 8'd51) begin
+            ctr_wait_p1 <= ctr_wait_p1 + 8'd1;
+        end else begin
+            ctr_wait_p1 <= 8'd0;
+        end
+        
+    end
+    else begin
+        ctr_wait_p1 <= '0;
+    end
+end
+
+
+wire p1_prefill_ready_w =
+    (fifo_rd_count[8] >= PREFILL) &
+    (fifo_rd_count[9] >= PREFILL) &
+    (fifo_rd_count[10] >= PREFILL) &
+    (fifo_rd_count[11] >= PREFILL) &
+    (fifo_rd_count[12] >= PREFILL) &
+    (fifo_rd_count[13] >= PREFILL) &
+    (fifo_rd_count[14] >= PREFILL) &
+    (fifo_rd_count[15] >= PREFILL);
+
+reg p1_prefill_ready;
+always @(posedge clk) begin
+  if (rst) p1_prefill_ready <= 1'b0;
+  else if(p1_state == ST_RW_SINGLE || p1_state == ST_RW_MANY_0 || p1_state == ST_RW_MANY_1)   
+    p1_prefill_ready <= p1_prefill_ready_w; // register it (stability)
+  else p1_prefill_ready <= 1'b0;
+end
+
 
 always @(posedge clk) begin
     if (rst) begin
@@ -528,7 +639,7 @@ end
 
 always @(*) begin
     next_p1_state = p1_state;
-    relin_t.i_p1_done = 0;
+    //relin_t.i_p1_done = 0;
     relin_t.i_p1_valid = 0;
     p1_fifo_rd_en = 0;
 
@@ -537,6 +648,8 @@ always @(*) begin
     p1_ctr_addr_inc = 0;
     p1_ctr_data_inc = 0;
     p1_ctr_data_rst = 0;
+
+    i_p1_done_int = 0;
 
     case (p1_state)
         ST_IDLE: begin
@@ -551,7 +664,7 @@ always @(*) begin
             end
         end
         ST_RW_SINGLE: begin
-            if (p1_fifo_nempty) begin
+            if (p1_fifo_nempty && p1_prefill_ready) begin
                 p1_fifo_rd_en = 1;
                 p1_ctr_data_inc = 1;
                 relin_t.i_p1_valid = 1;
@@ -561,7 +674,11 @@ always @(*) begin
         ST_RW_MANY_0: begin // to ensure that we read without gaps from the fifo
             if (p1_rx_done) begin
                 if ((POLY_BURST_NUM - 1) == p1_ctr_addr) begin
-                    next_p1_state = ST_RW_END;
+                    if (p1_prefill_ready) begin
+                        next_p1_state = ST_RW_END;
+                    end else begin
+                        next_p1_state = ST_RW_MANY_0;
+                    end
                 end
                 else begin
                     p1_ctr_addr_inc = 1;
@@ -574,7 +691,7 @@ always @(*) begin
                 p1_fifo_rd_en = 1;
                 p1_ctr_data_inc = 1;
             end
-            else if (FIFO_READ_LAT_POLY <= p1_ctr_data) begin
+            else if (p1_prefill_ready) begin
                 p1_fifo_rd_en = 1;
                 relin_t.i_p1_valid = 1;
                 p1_ctr_data_rst = 1;
@@ -593,7 +710,7 @@ always @(*) begin
                 p1_fifo_rd_en = 1;
                 p1_ctr_data_inc = 1;
             end
-            else if (FIFO_READ_LAT_POLY <= p1_ctr_data) begin
+            else if (p1_prefill_ready) begin
                 p1_fifo_rd_en = 1;
                 p1_ctr_data_rst = 1;
                 relin_t.i_p1_valid = 1;
@@ -605,7 +722,8 @@ always @(*) begin
         ST_RW_END: begin
             p1_fifo_rd_en = 1;
             if (p1_ctr_data == (POLY_CC - 1)) begin
-                relin_t.i_p1_done = 1;
+                //relin_t.i_p1_done = 1;
+                i_p1_done_int = 1;
                 next_p1_state = ST_IDLE;
             end
             else begin
@@ -617,6 +735,25 @@ always @(*) begin
         end
     endcase
 end
+
+reg i_p1_done_int;
+wire i_p1_done_d10;
+
+always @(*) begin
+    relin_t.i_p1_done = i_p1_done_d10;
+end
+
+shift_reg #(
+    .LAT   (10),
+    .WIDTH (1)
+)
+i_p1_done_shift_regd10
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (i_p1_done_int  ),
+    .o_data (i_p1_done_d10)
+);
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -698,10 +835,48 @@ always @(posedge clk) begin
     end
 end
 
+reg [7:0] ctr_wait_p2;
+
+always @(posedge clk) begin
+    if (rst) begin
+        ctr_wait_p2 <= 0;
+    end
+    else if (p2_state == ST_RW_SINGLE) begin
+        if (ctr_wait_p2 < 8'd51) begin
+            ctr_wait_p2 <= ctr_wait_p2 + 8'd1;
+        end else begin
+            ctr_wait_p2 <= 8'd0;
+        end
+        
+    end
+    else begin
+        ctr_wait_p2 <= '0;
+    end
+end
+
+wire p2_prefill_ready_w =
+    (fifo_rd_count[16] >= PREFILL) &
+    (fifo_rd_count[17] >= PREFILL) &
+    (fifo_rd_count[18] >= PREFILL) &
+    (fifo_rd_count[19] >= PREFILL) &
+    (fifo_rd_count[20] >= PREFILL) &
+    (fifo_rd_count[21] >= PREFILL) &
+    (fifo_rd_count[22] >= PREFILL) &
+    (fifo_rd_count[23] >= PREFILL);
+
+reg p2_prefill_ready;
+always @(posedge clk) begin
+  if (rst) p2_prefill_ready <= 1'b0;
+  else if(p2_state == ST_RW_SINGLE || p2_state == ST_RW_MANY_0 || p2_state == ST_RW_MANY_1)   
+        p2_prefill_ready <= p2_prefill_ready_w; // register it (stability)
+  else p2_prefill_ready <= 1'b0;
+end
+
+
 
 always @(*) begin
     next_p2_state = p2_state;
-    relin_t.i_p2_done = 0;
+    //relin_t.i_p2_done = 0;
     relin_t.i_p2_valid = 0;
     p2_fifo_rd_en = 0;
 
@@ -710,6 +885,8 @@ always @(*) begin
     p2_ctr_addr_inc = 0;
     p2_ctr_data_inc = 0;
     p2_ctr_data_rst = 0;
+
+    i_p2_done_int = 0;
 
     case (p2_state)
         ST_IDLE: begin
@@ -724,7 +901,7 @@ always @(*) begin
             end
         end
         ST_RW_SINGLE: begin
-            if (p2_fifo_nempty) begin
+            if (p2_fifo_nempty && p2_prefill_ready) begin
                 p2_fifo_rd_en = 1;
                 p2_ctr_data_inc = 1;
                 relin_t.i_p2_valid = 1;
@@ -734,7 +911,11 @@ always @(*) begin
         ST_RW_MANY_0: begin // to ensure that we read without gaps from the fifo
             if (p2_rx_done) begin
                 if ((POLY_BURST_NUM - 1) == p2_ctr_addr) begin
-                    next_p2_state = ST_RW_END;
+                    if (p2_prefill_ready) begin
+                        next_p2_state = ST_RW_END;
+                    end else begin
+                        next_p2_state = ST_RW_MANY_0;
+                    end
                 end
                 else begin
                     p2_ctr_addr_inc = 1;
@@ -747,7 +928,7 @@ always @(*) begin
                 p2_fifo_rd_en = 1;
                 p2_ctr_data_inc = 1;
             end
-            else if (FIFO_READ_LAT_POLY <= p2_ctr_data) begin
+            else if (p2_prefill_ready) begin
                 p2_fifo_rd_en = 1;
                 relin_t.i_p2_valid = 1;
                 p2_ctr_data_rst = 1;
@@ -766,7 +947,7 @@ always @(*) begin
                 p2_fifo_rd_en = 1;
                 p2_ctr_data_inc = 1;
             end
-            else if (FIFO_READ_LAT_POLY <= p2_ctr_data) begin
+            else if (p2_prefill_ready) begin
                 p2_fifo_rd_en = 1;
                 p2_ctr_data_rst = 1;
                 relin_t.i_p2_valid = 1;
@@ -778,7 +959,8 @@ always @(*) begin
         ST_RW_END: begin
             p2_fifo_rd_en = 1;
             if (p2_ctr_data == (POLY_CC - 1)) begin
-                relin_t.i_p2_done = 1;
+                //relin_t.i_p2_done = 1;
+                i_p2_done_int = 1;
                 next_p2_state = ST_IDLE;
             end
             else begin
@@ -790,6 +972,26 @@ always @(*) begin
         end
     endcase
 end
+
+
+reg i_p2_done_int;
+wire i_p2_done_d10;
+
+always @(*) begin
+    relin_t.i_p2_done = i_p2_done_d10;
+end
+
+shift_reg #(
+    .LAT   (10),
+    .WIDTH (1)
+)
+i_p2_done_shift_regd10
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (i_p2_done_int  ),
+    .o_data (i_p2_done_d10)
+);
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -870,13 +1072,15 @@ end
 always @(*) begin
     next_p3_state = p3_state;
 
-    relin_t.o_p3_done = 0;
+    //relin_t.o_p3_done = 0;
 
     p3_tx_start = 0;
 
     p3_ctr_addr_inc = 0;
 
     p3_tx_valid = relin_t.o_p3_en || (p3_ctr_data != 0);
+
+    o_p3_done_int = 0;
 
     case (p3_state)
         ST_IDLE: begin
@@ -912,7 +1116,8 @@ always @(*) begin
         end
         ST_RW_END: begin
             if (tx_done == {HBM_PCO_COUNT{1'b1}}) begin
-                relin_t.o_p3_done = 1;
+                //relin_t.o_p3_done = 1;
+                o_p3_done_int = 1;
                 next_p3_state = ST_IDLE;
             end
         end
@@ -921,6 +1126,25 @@ always @(*) begin
         end
     endcase
 end
+
+reg o_p3_done_int;
+wire o_p3_done_d10;
+
+always @(*) begin
+    relin_t.o_p3_done = o_p3_done_d10;
+end
+
+shift_reg #(
+    .LAT   (10),
+    .WIDTH (1)
+)
+o_p3_done_shift_regd10
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (o_p3_done_int  ),
+    .o_data (o_p3_done_d10)
+);
 
 
 

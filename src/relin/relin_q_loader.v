@@ -241,7 +241,7 @@ shift_reg #(
 
 shift_reg #(
     .LAT   (DELAY_G1),
-    .WIDTH (LOGQ)
+    .WIDTH (1)
 ) done_g1_shift_reg (
     .clk    (clk),
     .rst    (rst),
@@ -252,7 +252,7 @@ shift_reg #(
 
 shift_reg #(
     .LAT   (DELAY_G2),
-    .WIDTH (LOGQ)
+    .WIDTH (1)
 ) done_g2_shift_reg (
     .clk    (clk),
     .rst    (rst),

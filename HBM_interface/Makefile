@@ -4,8 +4,8 @@ RMDIR = rm -rf
 CP = cp -rf
 LN = ln -sf
 ECHO := @echo
-VPP := /home/toluntosun/Xilinx/Vitis/2023.1/bin/v++
-VIVADO := /home/toluntosun/Xilinx/Vivado/2023.1/bin/vivado
+VPP := /home/cisec/Xilinx/Vitis/2023.2/bin/v++
+VIVADO := /home/cisec/Xilinx/Vivado/2023.2/bin/vivado
 
 ################################################################################
 # Help Section
@@ -125,7 +125,7 @@ run:
 ifeq ($(TARGET),$(filter $(TARGET),sw_emu hw_emu))
 	cd $(RUN_DIR) && XCL_EMULATION_MODE=$(TARGET) ./$(PACKAGES) --xclbin $(PACKAGES)
 else
-	cd $(RUN_DIR) && ./$(PACKAGES) --xclbin $(PACKAGES) --device_id 1
+	cd $(RUN_DIR) && ./$(PACKAGES) --xclbin $(PACKAGES) --device_id 0
 endif	
 	
 $(EMCONFIG):

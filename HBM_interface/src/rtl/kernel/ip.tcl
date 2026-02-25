@@ -105,16 +105,17 @@ set_property -dict [
   list                                                    \
     CONFIG.Fifo_Implementation {Common_Clock_Block_RAM}   \
     CONFIG.Input_Data_Width {256}                         \
-    CONFIG.Input_Depth {64}                               \
+    CONFIG.Input_Depth {2048}                               \
     CONFIG.Output_Data_Width {256}                        \
-    CONFIG.Output_Depth {64}                              \
-    CONFIG.Data_Count_Width {6}                           \
-    CONFIG.Write_Data_Count_Width {6}                     \
-    CONFIG.Read_Data_Count_Width {6}                      \
-    CONFIG.Full_Threshold_Negate_Value {61}               \
+    CONFIG.Output_Depth {2048}                              \
+    CONFIG.Data_Count {true}                              \
+    CONFIG.Data_Count_Width {12}                           \
+    CONFIG.Write_Data_Count_Width {12}                     \
+    CONFIG.Read_Data_Count_Width {12}                      \
+    CONFIG.Full_Threshold_Negate_Value {2045}               \
     CONFIG.Performance_Options {First_Word_Fall_Through}  \
     CONFIG.Use_Extra_Logic {true}                         \
-    CONFIG.Full_Threshold_Assert_Value {63}               \
+    CONFIG.Full_Threshold_Assert_Value {2047}               \
     CONFIG.Empty_Threshold_Assert_Value {4}               \
     CONFIG.Empty_Threshold_Negate_Value {5}               \
   ] [get_ips fifo_sync]
