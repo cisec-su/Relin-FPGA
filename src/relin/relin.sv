@@ -285,7 +285,8 @@ relin_mem #(
 
 relin_cu_p0_ntt #(
     .L              (L       ),
-    .ID_WIDTH       (ID_WIDTH)
+    .ID_WIDTH       (ID_WIDTH),
+    .DEPTH          (K       )
 ) relin_cu_p0_ntt_inst (
     .clk        (clk           ),
     .rst        (rst           ),

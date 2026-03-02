@@ -1,7 +1,8 @@
 module relin_cu_p0_ntt
    #(   
         parameter L               = 30,
-        parameter ID_WIDTH        = 4
+        parameter ID_WIDTH        = 4,
+        parameter DEPTH           = 128
     )
     (
         input                     clk          ,
@@ -54,10 +55,10 @@ typedef enum reg[15:0] {
 t_state next_state;
 
 
-localparam integer PSI_INV_WAIT_CYCLES = 6000;
+localparam integer PSI_INV_WAIT_CYCLES = 4*DEPTH;
 localparam integer WAITW = $clog2(PSI_INV_WAIT_CYCLES + 1);
 
-localparam integer PSI_WAIT_CYCLES = 6000;
+localparam integer PSI_WAIT_CYCLES = 4*DEPTH;
 localparam integer WAITW2 = $clog2(PSI_WAIT_CYCLES + 1);
 
 reg  [WAITW-1:0] wait_ctr;
