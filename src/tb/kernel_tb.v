@@ -7,11 +7,11 @@
 `define CLK_HALF    2.5
 
 module kernel_tb();
-parameter LOGN  = 12;
+parameter LOGN  = 14;
 parameter LOGQ  = 60;
 parameter LOGQH = 17;
 parameter LOGTP = 5 ;
-parameter L     = 2;
+parameter L     = 7 ;
 
 // parameters for kernel
 parameter integer C_S_AXI_CONTROL_ADDR_WIDTH = 12;

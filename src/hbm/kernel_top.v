@@ -6,8 +6,8 @@
 
 
 module kernel #(
-  parameter integer LOGN                       = 16,
-  parameter integer L                          = 28,
+  parameter integer LOGN                       = 14,
+  parameter integer L                          = 7,
   parameter integer LOGQ                       = 60,
   parameter integer LOGQH                      = 17,
   parameter integer LOGTP                      = 5,

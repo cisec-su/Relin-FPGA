@@ -1,5 +1,5 @@
 -- (c) Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
--- (c) Copyright 2022-2025 Advanced Micro Devices, Inc. All rights reserved.
+-- (c) Copyright 2022-2026 Advanced Micro Devices, Inc. All rights reserved.
 -- 
 -- This file contains confidential and proprietary information
 -- of AMD and is protected under U.S. and international copyright
@@ -61,6 +61,7 @@ COMPONENT fifo_sync
     dout : OUT STD_LOGIC_VECTOR(255 DOWNTO 0);
     full : OUT STD_LOGIC;
     empty : OUT STD_LOGIC;
+    data_count : OUT STD_LOGIC_VECTOR(11 DOWNTO 0);
     wr_rst_busy : OUT STD_LOGIC;
     rd_rst_busy : OUT STD_LOGIC 
   );
@@ -81,6 +82,7 @@ your_instance_name : fifo_sync
     dout => dout,
     full => full,
     empty => empty,
+    data_count => data_count,
     wr_rst_busy => wr_rst_busy,
     rd_rst_busy => rd_rst_busy
   );
