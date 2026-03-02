@@ -1,12 +1,14 @@
 module relin_cu_p1_p2
    #(   
         parameter L        = 30,
-        parameter ID_WIDTH = 4
+        parameter ID_WIDTH = 4 ,
+        parameter EN_ADD   = 1
     )
     (
         input                     clk         ,
         input                     rst         ,
-        input                     en          ,
+        input                     en_rlk      ,
+        input                     en_poly     ,
         output reg                i_p1_en     ,
         output reg [ID_WIDTH-1:0] i_p1_id     ,
         output reg [LOGL-1:0]     i_p1_idx    ,
@@ -16,8 +18,6 @@ module relin_cu_p1_p2
         output reg                i_p2_en     ,
         output reg [LOGL-1:0]     i_p2_idx    ,
         output reg [LOGL-1:0]     i_p2_idy    ,
-        output reg                rlk0_i_valid,
-        output reg                poly01_i_valid,
         input                     i_p2_done,
         output reg    [10:0]           state_p1_p2_out,
         output reg   [LOGL-1:0]           ctr_L_out,
@@ -63,9 +63,14 @@ reg ctr_L_rst;
 
 // reg p1_dis_int;
 
-reg en_q;
-reg en_q_clr;
-wire en_int;
+reg en_rlk_q;
+reg en_rlk_q_clr;
+wire en_rlk_int;
+
+
+reg en_poly_q;
+reg en_poly_q_clr;
+wire en_poly_int;
 
 
 counter #(
@@ -100,15 +105,29 @@ always @(posedge clk) begin
 end
 
 
+
 always @(posedge clk) begin
     if (rst) begin
-        en_q <= 1'b0;
+        en_rlk_q <= 1'b0;
     end
-    else if (en_q_clr) begin
-        en_q <= 1'b0;
+    else if (en_rlk_q_clr) begin
+        en_rlk_q <= 1'b0;
     end
-    else if (en) begin
-        en_q <= 1'b1;
+    else if (en_rlk) begin
+        en_rlk_q <= 1'b1;
+    end
+end
+
+
+always @(posedge clk) begin
+    if (rst) begin
+        en_poly_q <= 1'b0;
+    end
+    else if (en_poly_q_clr) begin
+        en_poly_q <= 1'b0;
+    end
+    else if (en_poly) begin
+        en_poly_q <= 1'b1;
     end
 end
 
@@ -116,7 +135,8 @@ end
 
 assign ctr_L_ = (ctr_L == 0) ? L : ctr_L - 1;
 
-assign en_int = en | en_q;
+assign en_rlk_int  = en_rlk | en_rlk_q;
+assign en_poly_int = en_poly | en_poly_q;
 
 
 always @(*) begin
@@ -133,11 +153,8 @@ always @(*) begin
     ctr_L_inc = 1'b0;
     ctr_L_rst = 1'b0;
     i_p1_id = `RLK_0;
-    en_q_clr = 1'b0;
-    // p1_dis_int = 1'b0;
-
-    rlk0_i_valid = i_p1_valid;
-    poly01_i_valid = 1'b0;
+    en_rlk_q_clr = 1'b0;
+    en_poly_q_clr = 1'b0;
 
     case (state)
         ST_LOAD_RLK: begin
@@ -146,9 +163,8 @@ always @(*) begin
             i_p1_idy = ctr;
             i_p2_idx = ctr_L_;
             i_p2_idy = ctr;
-            rlk0_i_valid = i_p1_valid;
-            if (en_int) begin
-                en_q_clr = 1;
+            if (en_rlk_int) begin
+                en_rlk_q_clr = 1;
                 i_p1_en = 1;
                 i_p2_en = 1;
                 next_state = ST_WAIT_DONE;
@@ -160,26 +176,26 @@ always @(*) begin
             i_p1_idy = ctr;
             i_p2_idx = ctr_L_;
             i_p2_idy = ctr;
-            rlk0_i_valid = i_p1_valid;
             if (i_p1_done && i_p2_done) begin
-                next_state = ST_LOAD_RLK;
                 if (ctr >= (L - 1)) begin
                     ctr_rst = 1;
-                    if (ctr_L >= L) begin
-                        ctr_L_rst = 1;
+                    if (!EN_ADD || ctr_L == 0) begin
+                        if (ctr_L >= L) begin
+                            ctr_L_rst = 1;
+                        end
+                        else begin
+                            ctr_L_inc = 1;
+                        end
+                    end
+                    if (ctr_L == 0) begin
+                        next_state = ST_LOAD_RLK;
                     end
                     else begin
-                        ctr_L_inc = 1;
+                        next_state = (EN_ADD) ? ST_LOAD_POLY_0 : ST_LOAD_RLK;
                     end
-                    // if (ctr_L == 0) begin
-                    //     next_state = ST_LOAD_RLK;
-                    //     ctr_L_inc = 1;
-                    // end
-                    // else begin
-                    //     next_state = ST_LOAD_POLY_0;
-                    // end
                 end
                 else begin
+                    next_state = ST_LOAD_RLK;                    
                     ctr_inc = 1;
                 end
             end
@@ -196,26 +212,26 @@ always @(*) begin
             i_p1_idy = ctr;
             i_p2_idx = ctr_L_;
             i_p2_idy = ctr;      
-            rlk0_i_valid = i_p1_valid;
             if (i_p1_done) begin
-                next_state = ST_LOAD_RLK;
                 if (ctr >= (L - 1)) begin
                     ctr_rst = 1;
-                    if (ctr_L >= L) begin
-                        ctr_L_rst = 1;
+                    if (!EN_ADD || ctr_L == 0) begin
+                        if (ctr_L >= L) begin
+                            ctr_L_rst = 1;
+                        end
+                        else begin
+                            ctr_L_inc = 1;
+                        end
+                    end
+                    if (ctr_L == 0) begin
+                        next_state = ST_LOAD_RLK;
                     end
                     else begin
-                        ctr_L_inc = 1;
+                        next_state = (EN_ADD) ? ST_LOAD_POLY_0 : ST_LOAD_RLK;
                     end
-                    // if (ctr_L == 0) begin
-                    //     next_state = ST_LOAD_RLK;
-                    //     ctr_L_inc = 1;
-                    // end
-                    // else begin
-                    //     next_state = ST_LOAD_POLY_0;
-                    // end
                 end
                 else begin
+                    next_state = ST_LOAD_RLK;                    
                     ctr_inc = 1;
                 end
             end
@@ -226,26 +242,26 @@ always @(*) begin
             i_p1_idy = ctr;
             i_p2_idx = ctr_L_;
             i_p2_idy = ctr;
-            rlk0_i_valid = i_p1_valid;
             if (i_p2_done) begin
-                next_state = ST_LOAD_RLK;
                 if (ctr >= (L - 1)) begin
                     ctr_rst = 1;
-                    if (ctr_L >= L) begin
-                        ctr_L_rst = 1;
+                    if (!EN_ADD || ctr_L == 0) begin
+                        if (ctr_L >= L) begin
+                            ctr_L_rst = 1;
+                        end
+                        else begin
+                            ctr_L_inc = 1;
+                        end
+                    end
+                    if (ctr_L == 0) begin
+                        next_state = ST_LOAD_RLK;
                     end
                     else begin
-                        ctr_L_inc = 1;
+                        next_state = (EN_ADD) ? ST_LOAD_POLY_0 : ST_LOAD_RLK;
                     end
-                    // if (ctr_L == 0) begin
-                    //     next_state = ST_LOAD_RLK;
-                    //     ctr_L_inc = 1;
-                    // end
-                    // else begin
-                    //     next_state = ST_LOAD_POLY_0;
-                    // end
                 end
                 else begin
+                    next_state = ST_LOAD_RLK;
                     ctr_inc = 1;
                 end
             end
@@ -253,17 +269,15 @@ always @(*) begin
         ST_LOAD_POLY_0: begin
             i_p1_id = `POLY_0;
             i_p1_idx = ctr_L_;
-            poly01_i_valid = i_p1_valid;
-            if (en_int) begin
+            if (en_poly_int) begin
                 i_p1_en = 1;
-                en_q_clr = 1;
+                en_poly_q_clr = 1;
                 next_state = ST_WAIT_DONE_2;
             end
         end
         ST_WAIT_DONE_2: begin
             i_p1_id = `POLY_0;
             i_p1_idx = ctr_L_;
-            poly01_i_valid = i_p1_valid;
             if (i_p1_done) begin
                 next_state = ST_LOAD_POLY_1;
             end
@@ -271,17 +285,15 @@ always @(*) begin
         ST_LOAD_POLY_1: begin
             i_p1_id = `POLY_1;
             i_p1_idx = ctr_L_;
-            poly01_i_valid = i_p1_valid;
-            if (en_int) begin
+            if (en_poly_int) begin
                 i_p1_en = 1;
-                en_q_clr = 1;
+                en_poly_q_clr = 1;
                 next_state = ST_WAIT_DONE_3;
             end
         end
         ST_WAIT_DONE_3: begin
             i_p1_id = `POLY_1;
             i_p1_idx = ctr_L_;
-            poly01_i_valid = i_p1_valid;
             if (i_p1_done) begin
                 next_state = ST_LOAD_RLK;
                 if (ctr_L >= L) begin

@@ -9,6 +9,7 @@ module relin_final_op
         parameter LOGQ       = 64,
         parameter LOGQH      = 48,
         parameter LOGTP      = 5 ,
+        parameter EN_ADD     = 1 ,
         parameter FF_IN      = 1 ,
         parameter FF_MUL     = 1 ,
         parameter FF_SUM     = 0 ,
@@ -57,8 +58,8 @@ localparam LAT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_ADD + LAT_BRAM_READ + 1;
 localparam K  = 1 << LOGK;
 localparam TP = 1 << LOGTP;
 
-localparam A_SHIFT = LAT_SUB0 + LAT_BRAM_READ; 
-localparam B_SHIFT = LAT_SUB0 + LAT_SUB1 + LAT_MUL + LAT_BRAM_READ; 
+localparam A_SHIFT = LAT_SUB0 + LAT_BRAM_READ - 1; 
+localparam B_SHIFT = LAT - LAT_ADD - 1; 
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -117,8 +118,6 @@ reg             offset_q;
 wire            offset_w;
 wire            offset_r;
 
-wire            fifo_0_ren;
-wire            fifo_0_wen;
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -157,16 +156,6 @@ shift_reg #(
     .o_data (offset_w)
 );
 
-shift_reg #(
-    .LAT   (LAT - LAT_ADD),
-    .WIDTH (1            )
-) shift_reg_fifo_ren (
-    .clk    (clk       ),
-    .rst    (rst       ),
-    .i_data (i_valid   ),
-    .o_data (fifo_0_ren)
-);
-
 
 shift_reg_arr #(
     .LAT   (1   ),
@@ -180,9 +169,9 @@ shift_reg_arr #(
 );
 
 shift_reg_arr #(
-    .LAT   (A_SHIFT - 1),
-    .WIDTH (LOGQ       ),
-    .LENGTH(TP         )
+    .LAT   (A_SHIFT),
+    .WIDTH (LOGQ   ),
+    .LENGTH(TP     )
 ) shift_reg_A_sub1 (
     .clk    (clk   ),
     .rst    (rst   ),
@@ -190,19 +179,23 @@ shift_reg_arr #(
     .o_data (A_sub1)
 );
 
-
-// relin_fifo #(
-//     .K   (K   ),
-//     .TP  (TP  ),
-//     .LOGQ(LOGQ)
-// ) relin_fifo_inst_0 (
-//     .clk(clk),
-//     .rst(rst),
-//     .ren(fifo_0_ren),
-//     .wen(fifo_0_wen),
-//     .i_data(B  ),
-//     .o_data(B_d)
-// );
+if (EN_ADD) begin
+    shift_reg_arr #(
+        .LAT    (B_SHIFT    ),
+        .WIDTH  (LOGQ       ),
+        .LENGTH (TP         ),
+        .RST_EN (0          )
+    ) shift_reg_B (
+        .clk    (clk         ),
+        .i_data (B           ),
+        .o_data (B_d         )
+    );
+end
+else begin
+    for (genvar i = 0; i < TP; i = i + 1) begin
+        assign B_d[i] = B[i];
+    end
+end
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -216,7 +209,7 @@ end
 
 for (genvar i = 0; i < TP; i = i + 1) begin
     assign modadd_in_A[i]  = (last_q) ? A_d[i] : modmul_out[i];
-    assign modadd_in_B[i]  = (last_q) ? halfmod_q : {LOGQ{1'b0}};// B_d[i];
+    assign modadd_in_B[i]  = (last_q) ? halfmod_q : B_d[i];
 end
 
 for (genvar i = 0; i < TP; i = i + 1) begin

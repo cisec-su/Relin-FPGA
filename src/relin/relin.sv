@@ -7,6 +7,8 @@ module relin
         parameter LOGQH    = 17       ,
         parameter LOGN     = 16       ,
         parameter LOGTP    = 5        , // coefficient throughput
+        parameter FIFO_M   = 2        , // fifo depth = FIFO_M * (N / TP)
+        parameter EN_ADD   = 1        , // perform the final addition
         parameter PSI_CC   = (1 << (LOGN - LOGTP)),
 
         parameter Q_MUX__NTT__DELAY         = 3 ,
@@ -22,7 +24,7 @@ module relin
         parameter MAIN_FSM__CU_OUT___DELAY  = 3 ,
 
         parameter NTT_I__ACC_O__DELAY       = 3 ,
-        parameter NTT_O__FN_I__DELAY        = 3
+        parameter NTT_O__FIFO_I__DELAY      = 4
     )
     (
         input              clk   ,
@@ -130,13 +132,13 @@ wire [ID_WIDTH-1:0] i_p0_id;
 wire [LOGL-1:0] i_p0_idx;
 wire i_p1_en, i_p1_valid, i_p1_done;
 wire [LOGQ-1:0] i_p1_data [TP-1:0];
-wire [LOGQ-1:0] i_p1_data_d5 [TP-1:0];
-wire [LOGQ-1:0] i_p2_data_d5 [TP-1:0];
+wire [LOGQ-1:0] i_p1_data_d [TP-1:0];
 wire [ID_WIDTH-1:0] i_p1_id;
 wire [LOGL-1:0] i_p1_idx;
 wire [LOGL-1:0] i_p1_idy;
 wire i_p2_en, i_p2_valid, i_p2_done;
 wire [LOGQ-1:0] i_p2_data [TP-1:0];
+wire [LOGQ-1:0] i_p2_data_d [TP-1:0];
 wire [LOGL-1:0] i_p2_idx;
 wire [LOGL-1:0] i_p2_idy;
 wire o_p3_en, o_p3_done;
@@ -144,10 +146,8 @@ wire [LOGQ-1:0] o_p3_data [TP-1:0];
 wire [ID_WIDTH-1:0] o_p3_id;
 wire [LOGL-1:0] o_p3_idx;
 // delayed mem
-wire i_p1_valid_d, i_p2_valid_d, i_p2_valid_d4, i_p1_valid_d4;
-wire i_p1_valid_d1, i_p2_valid_d1, i_p2_valid_d5, i_p1_valid_d5;
-wire [LOGQ-1:0] i_p1_data_d [TP-1:0];
-wire [LOGQ-1:0] i_p2_data_d [TP-1:0];
+wire i_p1_valid_d, i_p2_valid_d;
+wire i_p1_valid_d1, i_p2_valid_d1;
 wire [LOGQ-1:0] i_p2_data_d8 [TP-1:0];
 // ntt control path
 wire intt;
@@ -179,7 +179,7 @@ wire [LOGQ-1:0] had_0_o_poly   [TP-1:0];
 wire [LOGQ-1:0] had_1_o_poly   [TP-1:0];
 // accumulator control path
 wire acc_i_valid_0, acc_i_valid_1;
-wire acc_1_ren, acc_o_valid;
+wire acc_o_valid;
 // accumulator data path
 wire [LOGQ-1:0] acc_i_poly_0 [TP-1:0];
 wire [LOGQ-1:0] acc_i_poly_1 [TP-1:0];
@@ -205,18 +205,16 @@ reg cu_out_start;
 
 wire cu_p0_load_intt, cu_p0_intt_ready;
 
-wire rlk0_i_valid, poly01_i_valid;
-wire poly01_i_valid_p, poly01_en;
-
 wire done_write;
 
 
 wire [LOGQ-1:0] ntt_o_poly_d [TP-1:0];
-wire [LOGQ-1:0] ntt_o_poly_d4_1 [TP-1:0];
-wire [LOGQ-1:0] ntt_o_poly_d4_2 [TP-1:0];
-wire intt_o_valid_d;
-wire ntt_o_valid_d4;
+wire [LOGQ-1:0] ntt_o_poly_d_0 [TP-1:0];
+wire [LOGQ-1:0] ntt_o_poly_d_1 [TP-1:0];
+wire intt_o_valid_d, intt_o_valid_d1, intt_o_valid_d2;
+wire ntt_o_valid_d;
 
+reg p1_sel;
 
 relin_q_loader #(
     .LOGN    (LOGN   ),
@@ -335,11 +333,13 @@ relin_ntt_mux #(
 
 relin_cu_p1_p2 #(
     .L(L),
-    .ID_WIDTH(ID_WIDTH)
+    .ID_WIDTH(ID_WIDTH),
+    .EN_ADD(EN_ADD)
 ) relin_cu_p1_p2_inst (
     .clk       (clk        ),
     .rst       (rst        ),
-    .en        (ntt_o_valid_d4),// | poly01_en),
+    .en_rlk    (ntt_o_valid_d ),
+    .en_poly   (intt_o_valid_d && (ctr != 0)),
     .i_p1_en   (i_p1_en    ),
     .i_p1_id   (i_p1_id    ),
     .i_p1_idx  (i_p1_idx   ),
@@ -350,8 +350,6 @@ relin_cu_p1_p2 #(
     .i_p2_idx  (i_p2_idx   ),
     .i_p2_idy  (i_p2_idy   ),
     .i_p2_done (i_p2_done  ),
-    .rlk0_i_valid (rlk0_i_valid),
-    .poly01_i_valid (poly01_i_valid),
     .state_p1_p2_out(state_p1_p2_out),
     .ctr_L_out(ctr_L_out_p1_p2),
     .ctr_L__out(ctr_L__out_p1_p2),
@@ -360,10 +358,10 @@ relin_cu_p1_p2 #(
 
 
 relin_fifo #(
-    .K   (K ),
-    .M   (2 ),
-    .TP  (TP  ),
-    .LOGQ(LOGQ)
+    .K   (K     ),
+    .M   (FIFO_M),
+    .TP  (TP    ),
+    .LOGQ(LOGQ  )
 ) relin_fifo_inst_0 (
     .clk(clk),
     .rst(rst),
@@ -375,10 +373,10 @@ relin_fifo #(
 
 
 relin_fifo #(
-    .K   (K   ),
-    .M   (2 ),
-    .TP  (TP  ),
-    .LOGQ(LOGQ)
+    .K   (K     ),
+    .M   (FIFO_M),
+    .TP  (TP    ),
+    .LOGQ(LOGQ  )
 ) relin_fifo_inst_1 (
     .clk(clk),
     .rst(rst),
@@ -454,11 +452,13 @@ relin_accum_wrapper #(
 
 
 relin_final_op_wrapper #(
-    .LOGQ (LOGQ      ),
-    .LOGQH(LOGQH     ),
-    .LOGK (LOGN-LOGTP),
-    .LOGTP(LOGTP     ),
-    .L    (L         )
+    .LOGQ  (LOGQ      ),
+    .LOGQH (LOGQH     ),
+    .LOGK  (LOGN-LOGTP),
+    .LOGTP (LOGTP     ),
+    .FIFO_M(FIFO_M    ),
+    .EN_ADD(EN_ADD    ),
+    .L     (L         )
 ) relin_final_op_inst (
     .clk    (clk          ),
     .rst    (rst          ),
@@ -493,7 +493,7 @@ relin_cu_out #(
 
 
 shift_reg #(
-    .LAT   (NTT_O__FN_I__DELAY),
+    .LAT   (NTT_O__FIFO_I__DELAY),
     .WIDTH (1)
 )
 intt_o_valid_shift_reg
@@ -505,7 +505,32 @@ intt_o_valid_shift_reg
 );
 
 shift_reg #(
-    .LAT   (4),
+    .LAT   (1),
+    .WIDTH (1)
+)
+intt_o_valid_shift_reg1
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (intt_o_valid_d ),
+    .o_data (intt_o_valid_d1)
+);
+
+shift_reg #(
+    .LAT   (1),
+    .WIDTH (1)
+)
+intt_o_valid_shift_reg2
+(
+    .clk    (clk         ),
+    .rst    (rst         ),
+    .i_data (intt_o_valid_d1),
+    .o_data (intt_o_valid_d2)
+);
+
+
+shift_reg #(
+    .LAT   (NTT_O__FIFO_I__DELAY),
     .WIDTH (1)
 )
 ntt_o_valid_shift_regd4
@@ -513,92 +538,80 @@ ntt_o_valid_shift_regd4
     .clk    (clk         ),
     .rst    (rst         ),
     .i_data (ntt_o_valid  ),
-    .o_data (ntt_o_valid_d4)
+    .o_data (ntt_o_valid_d)
 );
 
 
-
 shift_reg_arr #(
-    .LAT    (NTT_O__FN_I__DELAY),
-    .WIDTH  (LOGQ          ),
-    .LENGTH (TP            ),
-    .RST_EN (0             )
-) ntt_o_poly_shift_reg (
-    .clk    (clk         ),
-    .i_data (ntt_o_poly  ),
-    .o_data (ntt_o_poly_d)
-);
-
-shift_reg_arr #(
-    .LAT    (4),
+    .LAT    (NTT_O__FIFO_I__DELAY),
     .WIDTH  (LOGQ          ),
     .LENGTH (TP            ),
     .RST_EN (0             )
 ) ntt_o_poly_shift_reg_d4_1 (
     .clk    (clk         ),
     .i_data (ntt_o_poly  ),
-    .o_data (ntt_o_poly_d4_1)
+    .o_data (ntt_o_poly_d_0)
 );
 
 shift_reg_arr #(
-    .LAT    (4),
+    .LAT    (NTT_O__FIFO_I__DELAY),
     .WIDTH  (LOGQ          ),
     .LENGTH (TP            ),
     .RST_EN (0             )
 ) ntt_o_poly_shift_reg_d4_2 (
     .clk    (clk         ),
     .i_data (ntt_o_poly  ),
-    .o_data (ntt_o_poly_d4_2)
+    .o_data (ntt_o_poly_d_1)
 );
 
 shift_reg_arr #(
-    .LAT    (5),
+    .LAT    (NTT_O__FIFO_I__DELAY + 1),
     .WIDTH  (LOGQ          ),
     .LENGTH (TP            ),
     .RST_EN (0             )
 ) had_0_poly_data_b_delay (
     .clk    (clk         ),
-    .i_data (i_p1_data  ),
-    .o_data (i_p1_data_d5)
+    .i_data (i_p1_data   ),
+    .o_data (i_p1_data_d )
 );
 
 shift_reg_arr #(
-    .LAT    (5),
+    .LAT    (NTT_O__FIFO_I__DELAY + 1),
     .WIDTH  (LOGQ          ),
     .LENGTH (TP            ),
     .RST_EN (0             )
 ) had_1_poly_data_b_delay (
     .clk    (clk         ),
-    .i_data (i_p2_data  ),
-    .o_data (i_p2_data_d5)
+    .i_data (i_p2_data   ),
+    .o_data (i_p2_data_d )
 );
 
-shift_reg #(
-    .LAT   (3),
-    .WIDTH (1)
-)
-i_p1_valid_shift_reg
-(
-    .clk    (clk         ),
-    .rst    (rst         ),
-    .i_data (i_p1_valid  ),
-    .o_data (i_p1_valid_d3)
-);
+// shift_reg #(
+//     .LAT   (3),
+//     .WIDTH (1)
+// )
+// i_p1_valid_shift_reg
+// (
+//     .clk    (clk         ),
+//     .rst    (rst         ),
+//     .i_data (i_p1_valid  ),
+//     .o_data (i_p1_valid_d3)
+// );
+
+// shift_reg #(
+//     .LAT   (3),
+//     .WIDTH (1)
+// )
+// i_p2_valid_shift_reg
+// (
+//     .clk    (clk         ),
+//     .rst    (rst         ),
+//     .i_data (i_p2_valid  ),
+//     .o_data (i_p2_valid_d3)
+// );
 
 shift_reg #(
-    .LAT   (3),
-    .WIDTH (1)
-)
-i_p2_valid_shift_reg
-(
-    .clk    (clk         ),
-    .rst    (rst         ),
-    .i_data (i_p2_valid  ),
-    .o_data (i_p2_valid_d3)
-);
-
-shift_reg #(
-    .LAT   (4),
+    .LAT   (NTT_O__FIFO_I__DELAY),
     .WIDTH (1)
 )
 i_p2_valid_shift_regd4
@@ -606,7 +619,7 @@ i_p2_valid_shift_regd4
     .clk    (clk         ),
     .rst    (rst         ),
     .i_data (i_p2_valid  ),
-    .o_data (i_p2_valid_d4)
+    .o_data (i_p2_valid_d)
 );
 
 shift_reg #(
@@ -617,20 +630,20 @@ i_p2_valid_shift_regd5
 (
     .clk    (clk         ),
     .rst    (rst         ),
-    .i_data (i_p2_valid_d4  ),
-    .o_data (i_p2_valid_d5)
+    .i_data (i_p2_valid_d ),
+    .o_data (i_p2_valid_d1)
 );
 
 shift_reg #(
-    .LAT   (4),
+    .LAT   (NTT_O__FIFO_I__DELAY),
     .WIDTH (1)
 )
 i_p1_valid_shift_regd4
 (
-    .clk    (clk         ),
-    .rst    (rst         ),
-    .i_data (i_p1_valid  ),
-    .o_data (i_p1_valid_d4)
+    .clk    (clk        ),
+    .rst    (rst        ),
+    .i_data (i_p1_valid ),
+    .o_data (i_p1_valid_d)
 );
 
 shift_reg #(
@@ -641,8 +654,8 @@ i_p1_valid_shift_regd3
 (
     .clk    (clk         ),
     .rst    (rst         ),
-    .i_data (i_p1_valid_d4  ),
-    .o_data (i_p1_valid_d5)
+    .i_data (i_p1_valid_d ),
+    .o_data (i_p1_valid_d1)
 );
 
 reg ntt_o_valid_d5, ntt_o_valid_d6;
@@ -668,7 +681,7 @@ always @(posedge clk) begin
 
     end
     else begin
-        ntt_o_valid_d5 <= ntt_o_valid_d4;
+        ntt_o_valid_d5 <= ntt_o_valid_d;
         ntt_o_valid_d6 <= ntt_o_valid_d5;
         fifo_0_ren_reg <= fifo_0_ren;
         fifo_0_ren_reg_d2 <= fifo_0_ren_reg;
@@ -919,22 +932,22 @@ always @(posedge clk) begin
     end
     else begin
         if (ntt_o_valid_d6 && ntt_valid_out_dbg == 'b0) begin
-            ntt_valid_out_dbg <= ntt_o_poly_d4_1[0];
+            ntt_valid_out_dbg <= ntt_o_poly_d_0[0];
             count_ntt_o_data <= count_ntt_o_data == 2'b00 ? 2'b01: count_ntt_o_data;
         end
          if (count_ntt_o_data == 2'b01) begin
             ctr_to_last_ntt_o <= ctr_to_last_ntt_o + 1;
         end
         if (ctr_to_last_ntt_o == K - 4) begin
-            ntt_o_data_last_dbg <= ntt_o_poly_d4_1[0];
+            ntt_o_data_last_dbg <= ntt_o_poly_d_0[0];
             count_ntt_o_data <= 2'b10;
         end
         if (fifo_0_ren_reg_d2 && fifo_0_dbg_reg == 'b0) begin
-            i_p1_data_d5_reg <= i_p1_data_d5[0];
+            i_p1_data_d5_reg <= i_p1_data_d[0];
             fifo_0_dbg_reg <= fifo_0_o_data[0];
         end
         if (fifo_1_ren_reg_d2 && fifo_1_dbg_reg == 'b0) begin
-            i_p2_data_d5_reg <= i_p2_data_d5[0];
+            i_p2_data_d5_reg <= i_p2_data_d[0];
             fifo_1_dbg_reg <= fifo_1_o_data[0];
         end
         if (had_0_o_valid_regd2 && had_0_dbg_data == 'b0) begin
@@ -980,11 +993,11 @@ always @(posedge clk) begin
         end
         if (fifo_0_i_valid_d2 && ctr_fifo_0_i_valid == 'b0) begin
             ctr_fifo_0_i_valid <= 2'd2;
-            fifo_0_i_data_dbg <= ntt_o_poly_d4_1[0];
+            fifo_0_i_data_dbg <= ntt_o_poly_d_0[0];
         end
         if (fifo_1_i_valid_d2 && ctr_fifo_1_i_valid == 'b0) begin
             ctr_fifo_1_i_valid <= 2'd2;
-            fifo_1_i_data_dbg <= ntt_o_poly_d4_2[0];
+            fifo_1_i_data_dbg <= ntt_o_poly_d_1[0];
         end
         if (had_0_i_valid_d2 && ctr_had_0_i_valid == 'b0 && ctr_acc_in == 8'd15) begin
             ctr_had_0_i_valid <= 2'd2;
@@ -1157,38 +1170,37 @@ end
 
 // data path connections
 for (genvar i = 0; i < TP; i = i + 1) begin
-    assign ntt_i_psi      [i] = i_p0_data     [i];
-    assign ntt_i_poly     [i] = i_p0_data     [i]; 
-    assign intt_i_poly    [i] = acc_o_poly    [i];
-    assign fifo_0_i_data  [i] = ntt_o_poly_d4_1    [i];
-    assign fifo_1_i_data  [i] = ntt_o_poly_d4_2    [i];
-    assign had_0_i_poly_A [i] = fifo_0_o_data [i];
-    assign had_0_i_poly_B [i] = i_p1_data_d5  [i];
-    assign had_1_i_poly_A [i] = fifo_1_o_data [i];
-    assign had_1_i_poly_B [i] = i_p2_data_d5  [i];
-    assign acc_i_poly_0   [i] = had_0_o_poly  [i];
-    assign acc_i_poly_1   [i] = had_1_o_poly  [i];
-    assign fn_i_poly_A    [i] = ntt_o_poly_d  [i];
-    assign fn_i_poly_B    [i] = {LOGQ{1'b0}}; //i_p1_data     [i];
-    assign o_p3_data      [i] = fn_o_poly     [i];
+    assign ntt_i_psi      [i] = i_p0_data      [i];
+    assign ntt_i_poly     [i] = i_p0_data      [i]; 
+    assign intt_i_poly    [i] = acc_o_poly     [i];
+    assign fifo_0_i_data  [i] = ntt_o_poly_d_0 [i];
+    assign fifo_1_i_data  [i] = ntt_o_poly_d_1 [i];
+    assign had_0_i_poly_A [i] = fifo_0_o_data  [i];
+    assign had_0_i_poly_B [i] = i_p1_data_d    [i];
+    assign had_1_i_poly_A [i] = fifo_1_o_data  [i];
+    assign had_1_i_poly_B [i] = i_p2_data_d    [i];
+    assign acc_i_poly_0   [i] = had_0_o_poly   [i];
+    assign acc_i_poly_1   [i] = had_1_o_poly   [i];
+    assign fn_i_poly_A    [i] = (EN_ADD) ? fifo_0_o_data[i] : ntt_o_poly_d_0[i];
+    assign fn_i_poly_B    [i] = (EN_ADD) ? i_p1_data_d  [i] : {LOGQ{1'b0}};
+    assign o_p3_data      [i] = fn_o_poly      [i];
 end
 
 // control path connections
 assign intt_i_valid = acc_o_valid;
 
-assign fifo_0_wen = ntt_o_valid_d4;// | intt_o_valid;
-assign fifo_1_wen = ntt_o_valid_d4;
-assign fifo_0_ren = i_p1_valid_d4;// | intt_o_valid_d; // we assume that i_p2_valid is always valid when rlk0_i_valid is valid
-assign fifo_1_ren = i_p2_valid_d4;
+assign fifo_0_wen = ntt_o_valid_d || (EN_ADD && intt_o_valid_d);
+assign fifo_1_wen = ntt_o_valid_d;
+assign fifo_0_ren = i_p1_valid_d || (EN_ADD && intt_o_valid_d1 && ctr == 0);
+assign fifo_1_ren = i_p2_valid_d;
 
-//assign had_0_i_valid = i_p1_valid;
-assign had_0_i_valid = i_p1_valid_d5;
-assign had_1_i_valid = i_p2_valid_d5;
+assign had_0_i_valid = i_p1_valid_d1 & ~p1_sel;
+assign had_1_i_valid = i_p2_valid_d1;
 
 assign acc_i_valid_0 = had_0_o_valid;
 assign acc_i_valid_1 = had_1_o_valid;
 
-assign fn_i_valid = intt_o_valid_d;//poly01_i_valid_p;
+assign fn_i_valid = (EN_ADD) ? ((i_p1_valid_d1 & p1_sel)  || (intt_o_valid_d2 && ctr == 0)) : intt_o_valid_d;
 
 assign o_valid = fn_o_valid;
 
@@ -1306,6 +1318,7 @@ always @(*) begin
     ctr_inc = 0;
 
     done = 0;
+    p1_sel = 0;
 
     case (state)
         ST_IDLE: begin
@@ -1336,6 +1349,7 @@ always @(*) begin
             end
         end
         ST_LOAD_Q_G2: begin
+            p1_sel = 1;
             load_q_g2 = 1;
             if (ctr == 0) begin
                 next_state = ST_WAIT_FN_DONE;                
@@ -1345,12 +1359,14 @@ always @(*) begin
             end
         end
         ST_WAIT_FN_DONE: begin
+            p1_sel = 1;
             if (fn_i_done_d) begin
                 ctr_inc = 1;
                 next_state = ST_LOAD_Q_G1;
             end
         end
         ST_WAIT_W_DONE: begin
+            p1_sel = 1;
             if (done_write_d) begin
                 if (ctr == L) begin
                     next_state = ST_DONE;

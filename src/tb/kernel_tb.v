@@ -11,6 +11,7 @@ parameter LOGN  = 14;
 parameter LOGQ  = 60;
 parameter LOGQH = 17;
 parameter LOGTP = 5 ;
+parameter EN_ADD= 1 ;
 parameter L     = 7 ;
 
 // parameters for kernel
@@ -909,6 +910,7 @@ kernel #(
     .LOGQ                       (LOGQ),
     .LOGQH                      (LOGQH),
     .LOGTP                      (LOGTP),
+    .EN_ADD                     (EN_ADD),
     .L                          (L)
 ) uut (
     .ap_clk                (clk           ),

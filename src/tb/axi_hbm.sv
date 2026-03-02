@@ -2570,7 +2570,7 @@ initial begin
             end
         endcase
     
-        $display("Stride: %0d, Offset: %0d, MemFile: %s, MemNum: %0d", stride, offset, mem_file, mem_num);
+        $display("Stride: %0d, MemFile: %s, MemNum: %0d", stride, mem_file, mem_num);
 
         for (i = 0; i < mem_num; i = i + 1) begin
             file = $fopen({mem_file, $sformatf("%0d", i), ".txt"}, "r");

@@ -4,6 +4,7 @@ module relin_final_op_wrapper
         parameter LOGQ       = 64,
         parameter LOGQH      = 48,
         parameter LOGTP      = 5 ,
+        parameter EN_ADD     = 1 ,
         parameter FF_IN      = 1 ,
         parameter FF_MUL     = 1 ,
         parameter FF_SUM     = 0 ,
@@ -35,10 +36,6 @@ localparam LOGL = $rtoi($ceil($clog2(L + 1)));
 localparam TP = 1 << LOGTP;
 localparam LOGN = LOGK + LOGTP;
 
-typedef enum reg[1:0] {
-    ST_IDLE               = 2'b01,
-    ST_OP                 = 2'b10
-} t_state;
 
 wire [LOGL-1:0] ctr;
 reg ctr_inc;
@@ -48,10 +45,7 @@ wire [LOGL-1:0] ctr_L;
 reg ctr_L_inc;
 reg ctr_L_rst;
 
-(* fsm_encoding = "none" *) t_state state;
-t_state next_state;
 
-reg i_valid_int;
 reg last_q;
 reg last_set;
 reg last_rst;
@@ -98,6 +92,7 @@ relin_final_op #(
     .LOGQH(LOGQH     ),
     .LOGK (LOGK      ),
     .LOGTP(LOGTP     ),
+    .EN_ADD(EN_ADD   ),
     .FF_IN(FF_IN     ),
     .FF_MUL(FF_MUL   ),
     .FF_SUM(FF_SUM   ),
@@ -110,7 +105,7 @@ relin_final_op #(
 ) relin_final_op_inst (
     .clk    (clk          ),
     .rst    (rst          ),
-    .i_valid(i_valid_int  ),
+    .i_valid(i_valid      ),
     .last   (last_q       ),
     .load_q (load_q       ),
     .qH     (qH           ),
@@ -126,16 +121,6 @@ relin_final_op #(
 
 always @(posedge clk) begin
     if (rst) begin
-        state <= ST_OP;
-    end
-    else begin
-        state <= next_state;
-    end
-end
-
-
-always @(posedge clk) begin
-    if (rst) begin
         last_q <= 1;
     end else if (last_set) begin
         last_q <= 1;
@@ -146,42 +131,24 @@ end
 
 
 always @(*) begin
-    i_valid_int = 0;
     ctr_rst = 0;
     ctr_inc = 0;
-    next_state = state;
     last_set = 0;
     last_rst = 0;
     i_done_int = 0;
-    case (state)
-        // ST_IDLE: begin
-        //     if (i_valid) begin
-        //         if (ctr == (L - 1)) begin
-        //             ctr_rst = 1;
-        //             next_state = ST_OP;
-        //         end else begin
-        //             ctr_inc = 1;
-        //         end
-        //     end
-        // end
-        ST_OP: begin
-            i_valid_int = i_valid;
-            if (i_valid) begin
-                if (ctr == 1) begin
-                    ctr_rst = 1;
-                    next_state = ST_OP;
-                    if (ctr_L == L) begin
-                        last_set = 1;
-                    end else begin
-                        last_rst = 1;
-                    end
-                    i_done_int = 1;
-                end else begin
-                    ctr_inc = 1;
-                end
+    if (i_valid) begin
+        if (ctr == 1) begin
+            ctr_rst = 1;
+            if (ctr_L == L) begin
+                last_set = 1;
+            end else begin
+                last_rst = 1;
             end
+            i_done_int = 1;
+        end else begin
+            ctr_inc = 1;
         end
-    endcase
+    end
 end
 
 

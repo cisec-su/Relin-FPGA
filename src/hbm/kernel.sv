@@ -15,6 +15,7 @@ module kernel_sv #(
   parameter integer LOGQ                       = 60,
   parameter integer LOGQH                      = 17,
   parameter integer LOGTP                      = 5,
+  parameter integer EN_ADD                     = 1,
   parameter integer PSI_CC                     = 1 << (LOGN - LOGTP),
   parameter integer HBM_ADDR_WIDTH             = 64,
   parameter integer HBM_DATA_WIDTH             = 256,
@@ -1373,6 +1374,7 @@ relin #(
     .LOGQH    (LOGQH    ),
     .LOGN     (LOGN     ),
     .LOGTP    (LOGTP    ),
+    .EN_ADD   (EN_ADD   ),
     .PSI_CC   (PSI_CC   )
 ) inst_relin (
     .clk     (ap_clk    ),
