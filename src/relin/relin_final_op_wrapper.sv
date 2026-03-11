@@ -4,6 +4,7 @@ module relin_final_op_wrapper
         parameter LOGQ       = 64,
         parameter LOGQH      = 48,
         parameter LOGTP      = 5 ,
+        parameter FIFO_M     = 2 ,
         parameter EN_ADD     = 1 ,
         parameter FF_IN      = 1 ,
         parameter FF_MUL     = 1 ,

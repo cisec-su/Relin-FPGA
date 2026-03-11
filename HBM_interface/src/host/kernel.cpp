@@ -319,8 +319,8 @@ int main(int argc, char *argv[]) {
   std::cout << "[INFO] p0 files are read" << std::endl;
   //////////////////////////////////////////////////// p1 /////////////////////////////////////////////////////////////
   readManyMemFileFlat("../../../scripts/kernel/test_vectors/relinkey_0_" , rlk_0.data()  , L * (L + 1), POLY_N);
-  // readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct0_"     , ct_0.data()   , L          , POLY_N);
-  // readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct1_"     , ct_1.data()   , L          , POLY_N);
+  readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct0_"     , ct_0.data()   , L          , POLY_N);
+  readManyMemFileFlat("../../../scripts/kernel/test_vectors/ct1_"     , ct_1.data()   , L          , POLY_N);
   std::cout << "[INFO] p1 files are read" << std::endl;
   //////////////////////////////////////////////////// p2 /////////////////////////////////////////////////////////////
   readManyMemFileFlat("../../../scripts/kernel/test_vectors/relinkey_1_" , rlk_1.data()  , L * (L + 1), POLY_N);
@@ -371,9 +371,9 @@ int main(int argc, char *argv[]) {
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////// P1 //////////////////////////////////////////////////////////
   offset  = 0;
-  offset += writeManyToPC(rlk_0.data()  , L * (L + 1), &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
-  // offset += writeManyToPC(ct_0.data() , L          , &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
-  // offset += writeManyToPC(ct_1.data() , L          , &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
+  offset += writeManyToPC(rlk_0.data()  , L * (L + 1) , &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
+  offset += writeManyToPC(ct_0.data() , L             , &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
+  offset += writeManyToPC(ct_1.data() , L             , &(hbm_i[P1_OFFSET]), POLY_N, P1_COUNT, PC_DATA_WIDTH, offset);
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////// P2 //////////////////////////////////////////////////////////
   offset  = 0;
@@ -479,87 +479,87 @@ int test_kernel(xrt::kernel kernel, xrt::bo *hbm_i, xrt::bo *hbm_o) {
 
   run.wait(); // wait for kernel to finish before reading debug registers
 
-  for (int t = 0; t < 10; t++) {
+//   for (int t = 0; t < 10; t++) {
 
-    usleep(3000);
+//     //usleep(0.1);
 
-    // ---------- PSI ----------
-    uint32_t psi = kernel.read_register(AP_DEBUG);
+//     // ---------- PSI ----------
+//     uint32_t psi = kernel.read_register(AP_DEBUG);
 
-    // ---------- NTT ----------
-    uint32_t ntt_i     = kernel.read_register(AP_DEBUG2);
-    uint32_t ntt_valid = kernel.read_register(AP_DEBUG3);
+//     // ---------- NTT ----------
+//     uint32_t ntt_i     = kernel.read_register(AP_DEBUG2);
+//     uint32_t ntt_valid = kernel.read_register(AP_DEBUG3);
 
-    uint32_t had_0_i_poly_A_dbg      = kernel.read_register(AP_DEBUG22);
-    uint32_t had_0_i_poly_B_dbg  = kernel.read_register(AP_DEBUG23);
-    uint32_t had_0_i_poly_last      = kernel.read_register(AP_DEBUG24);
-    uint32_t had_0_i_poly_last_B  = kernel.read_register(AP_DEBUG25);
+//     uint32_t had_0_i_poly_A_dbg      = kernel.read_register(AP_DEBUG22);
+//     uint32_t had_0_i_poly_B_dbg  = kernel.read_register(AP_DEBUG23);
+//     uint32_t had_0_i_poly_last      = kernel.read_register(AP_DEBUG24);
+//     uint32_t had_0_i_poly_last_B  = kernel.read_register(AP_DEBUG25);
 
-    // ---------- Pipeline taps (former FIFO/Hadamard/ACC inputs) ----------
-    uint32_t dbg0_i  = kernel.read_register(AP_DEBUG4);
-    uint32_t dbg0_l  = kernel.read_register(AP_DEBUG5);
+//     // ---------- Pipeline taps (former FIFO/Hadamard/ACC inputs) ----------
+//     uint32_t dbg0_i  = kernel.read_register(AP_DEBUG4);
+//     uint32_t dbg0_l  = kernel.read_register(AP_DEBUG5);
 
-    uint32_t dbg4_i  = kernel.read_register(AP_DEBUG6);
-    uint32_t dbg4_l  = kernel.read_register(AP_DEBUG7);
+//     uint32_t dbg4_i  = kernel.read_register(AP_DEBUG6);
+//     uint32_t dbg4_l  = kernel.read_register(AP_DEBUG7);
 
-    uint32_t dbg8_i  = kernel.read_register(AP_DEBUG8);
-    uint32_t dbg8_l  = kernel.read_register(AP_DEBUG9);
+//     uint32_t dbg8_i  = kernel.read_register(AP_DEBUG8);
+//     uint32_t dbg8_l  = kernel.read_register(AP_DEBUG9);
 
-    uint32_t dbg16_i = kernel.read_register(AP_DEBUG10);
-    uint32_t dbg16_l = kernel.read_register(AP_DEBUG11);
+//     uint32_t dbg16_i = kernel.read_register(AP_DEBUG10);
+//     uint32_t dbg16_l = kernel.read_register(AP_DEBUG11);
 
-    uint32_t dbg20_i = kernel.read_register(AP_DEBUG12);
-    uint32_t dbg20_l = kernel.read_register(AP_DEBUG13);
+//     uint32_t dbg20_i = kernel.read_register(AP_DEBUG12);
+//     uint32_t dbg20_l = kernel.read_register(AP_DEBUG13);
 
-    uint32_t dbg27_i = kernel.read_register(AP_DEBUG14);
-    uint32_t dbg27_l = kernel.read_register(AP_DEBUG15);
+//     uint32_t dbg27_i = kernel.read_register(AP_DEBUG14);
+//     uint32_t dbg27_l = kernel.read_register(AP_DEBUG15);
 
-    // ---------- ACC output ----------
-    uint32_t acc_out   = kernel.read_register(AP_DEBUG16);
-    uint32_t acc_last  = kernel.read_register(AP_DEBUG21);
+//     // ---------- ACC output ----------
+//     uint32_t acc_out   = kernel.read_register(AP_DEBUG16);
+//     uint32_t acc_last  = kernel.read_register(AP_DEBUG21);
 
-    // ---------- INTT ----------
-    uint32_t intt_i     = kernel.read_register(AP_DEBUG17);
-    uint32_t intt_last  = kernel.read_register(AP_DEBUG30);
+//     // ---------- INTT ----------
+//     uint32_t intt_i     = kernel.read_register(AP_DEBUG17);
+//     uint32_t intt_last  = kernel.read_register(AP_DEBUG30);
 
-    // ---------- Final FN ----------
-    uint32_t fn_i      = kernel.read_register(AP_DEBUG18);
-    uint32_t fn_iLast  = kernel.read_register(AP_DEBUG31);
-    uint32_t fn_o      = kernel.read_register(AP_DEBUG19);
-    uint32_t fn_oLast  = kernel.read_register(AP_DEBUG20);
+//     // ---------- Final FN ----------
+//     uint32_t fn_i      = kernel.read_register(AP_DEBUG18);
+//     uint32_t fn_iLast  = kernel.read_register(AP_DEBUG31);
+//     uint32_t fn_o      = kernel.read_register(AP_DEBUG19);
+//     uint32_t fn_oLast  = kernel.read_register(AP_DEBUG20);
 
-    uint32_t stat = kernel.read_register(AP_STATUS);
+//     uint32_t stat = kernel.read_register(AP_STATUS);
 
-    printf("\n========== FPGA PIPELINE DEBUG ==========\n");
+//     printf("\n========== FPGA PIPELINE DEBUG ==========\n");
 
-    printf("PSI                 : 0x%08X\n", psi);
+//     printf("PSI                 : 0x%08X\n", psi);
 
-    printf("NTT in              : 0x%08X\n", ntt_i);
-    printf("NTT valid           : 0x%08X\n", ntt_valid);
+//     printf("NTT in              : 0x%08X\n", ntt_i);
+//     printf("NTT valid           : 0x%08X\n", ntt_valid);
 
-    printf("Had0 A/B/last/last_B: 0x%08X / 0x%08X / 0x%08X / 0x%08X\n", had_0_i_poly_A_dbg, had_0_i_poly_B_dbg, had_0_i_poly_last, had_0_i_poly_last_B);
+//     printf("Had0 A/B/last/last_B: 0x%08X / 0x%08X / 0x%08X / 0x%08X\n", had_0_i_poly_A_dbg, had_0_i_poly_B_dbg, had_0_i_poly_last, had_0_i_poly_last_B);
 
-    printf("DBG0 in/last        : 0x%08X / 0x%08X\n", dbg0_i, dbg0_l);
-    printf("DBG4 in/last        : 0x%08X / 0x%08X\n", dbg4_i, dbg4_l);
-    printf("DBG8 in/last        : 0x%08X / 0x%08X\n", dbg8_i, dbg8_l);
-    printf("DBG16 in/last       : 0x%08X / 0x%08X\n", dbg16_i, dbg16_l);
-    printf("DBG20 in/last       : 0x%08X / 0x%08X\n", dbg20_i, dbg20_l);
-    printf("DBG27 in/last       : 0x%08X / 0x%08X\n", dbg27_i, dbg27_l);
+//     printf("DBG0 in/last        : 0x%08X / 0x%08X\n", dbg0_i, dbg0_l);
+//     printf("DBG4 in/last        : 0x%08X / 0x%08X\n", dbg4_i, dbg4_l);
+//     printf("DBG8 in/last        : 0x%08X / 0x%08X\n", dbg8_i, dbg8_l);
+//     printf("DBG16 in/last       : 0x%08X / 0x%08X\n", dbg16_i, dbg16_l);
+//     printf("DBG20 in/last       : 0x%08X / 0x%08X\n", dbg20_i, dbg20_l);
+//     printf("DBG27 in/last       : 0x%08X / 0x%08X\n", dbg27_i, dbg27_l);
 
-    printf("ACC out/last        : 0x%08X / 0x%08X\n", acc_out, acc_last);
+//     printf("ACC out/last        : 0x%08X / 0x%08X\n", acc_out, acc_last);
 
-    printf("INTT in/last        : 0x%08X / 0x%08X\n", intt_i, intt_last);
+//     printf("INTT in/last        : 0x%08X / 0x%08X\n", intt_i, intt_last);
 
-    printf("FN in/last          : 0x%08X / 0x%08X\n", fn_i, fn_iLast);
-    printf("FN out/last         : 0x%08X / 0x%08X\n", fn_o, fn_oLast);
+//     printf("FN in/last          : 0x%08X / 0x%08X\n", fn_i, fn_iLast);
+//     printf("FN out/last         : 0x%08X / 0x%08X\n", fn_o, fn_oLast);
 
-    printf("STATUS              : 0x%08X\n", stat);
-    printf("=========================================\n");
+//     printf("STATUS              : 0x%08X\n", stat);
+//     printf("=========================================\n");
 
-    if (stat & 0x1) break;
+//     if (stat & 0x1) break;
 
-    usleep(1000);
-}
+//     //usleep(0.1);
+// }
 
   // for (int t = 0; t < 100; t++) {
 
