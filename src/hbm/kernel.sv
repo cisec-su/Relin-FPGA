@@ -964,140 +964,6 @@ localparam TP = 1 << LOGTP;
   wire [32-1:0] ap_control;
   wire [32-1:0] ap_status;
   wire [32-1:0] ap_debug;
-  wire [32-1:0] ap_debug2;
-  wire [32-1:0] ap_debug3;
-  wire [32-1:0] ap_debug4;
-  wire [32-1:0] ap_debug5;
-  wire [32-1:0] ap_debug6;
-  wire [32-1:0] ap_debug7;
-  wire [32-1:0] ap_debug8;
-  wire [32-1:0] ap_debug9;
-  wire [32-1:0] ap_debug10;
-  wire [32-1:0] ap_debug11;
-  wire [32-1:0] ap_debug12;
-  wire [32-1:0] ap_debug13;
-  wire [32-1:0] ap_debug14;
-  wire [32-1:0] ap_debug15;
-  wire [32-1:0] ap_debug16;
-  wire [32-1:0] ap_debug17;
-  wire [32-1:0] ap_debug18;
-  wire [32-1:0] ap_debug19;
-  wire [32-1:0] ap_debug20;
-  wire [32-1:0] ap_debug21;
-  wire [32-1:0] ap_debug22;
-  wire [32-1:0] ap_debug23;
-  wire [32-1:0] ap_debug24;
-  wire [32-1:0] ap_debug25;
-  wire [32-1:0] ap_debug26;
-  wire [32-1:0] ap_debug27;
-  wire [32-1:0] ap_debug28;
-  wire [32-1:0] ap_debug29;
-  wire [32-1:0] ap_debug30;
-  wire [32-1:0] ap_debug31;
-
-  // PSI stage
-  // assign ap_debug   = psi_i_data_dbg[31:0];
-
-  // // NTT stage
-  // assign ap_debug2  = ntt_i_data_dbg[31:0];
-  // assign ap_debug3  = ntt_valid_out_dbg[31:0];
-
-  // // FIFO stage
-  // assign ap_debug4  = fifo_0_i_data_dbg[31:0];
-  // assign ap_debug5  = fifo_1_i_data_dbg[31:0];
-  // assign ap_debug6  = fifo_0_dbg_reg[31:0];
-  // assign ap_debug7  = fifo_1_dbg_reg[31:0];
-
-  // // Hadamard stage
-  // assign ap_debug8  = had_0_i_poly_A_dbg[31:0];
-  // assign ap_debug9  = had_0_i_poly_B_dbg[31:0];
-  // assign ap_debug10 = had_1_i_poly_A_dbg[31:0];
-  // assign ap_debug11 = had_1_i_poly_B_dbg[31:0];
-  // assign ap_debug12 = had_0_dbg_data[31:0];
-  // assign ap_debug13 = had_1_dbg_data[31:0];
-
-  // // Accumulator stage
-  // assign ap_debug14 = acc_i_poly_0_dbg[31:0];
-  // assign ap_debug15 = acc_i_poly_1_dbg[31:0];
-  // assign ap_debug16 = acc_o_data_dbg[31:0];
-
-  // // INTT stage
-  // assign ap_debug17 = intt_i_poly_dbg[31:0];
-
-  // // Final FN stage
-  // assign ap_debug18 = fn_i_poly_dbg[31:0];
-  // assign ap_debug19 = fn_o_poly_dbg[31:0];
-
-  // // Remaining debug slots unused
-  // assign ap_debug20 = fn_o_poly_last[31:0];
-  // assign ap_debug21 = ntt_i_data_last_dbg[31:0];
-  // assign ap_debug22 = ntt_o_data_last_dbg[31:0];
-  // assign ap_debug23 = had_0_i_poly_last[31:0];
-  // assign ap_debug24 = had_1_i_poly_last[31:0];
-  // assign ap_debug25 = had_0_o_poly_last[31:0];
-  // assign ap_debug26 = had_1_o_poly_last[31:0];
-  // assign ap_debug27 = acc_i_0_poly_last[31:0];
-  // assign ap_debug28 = acc_i_1_poly_last[31:0];
-  // assign ap_debug29 = acc_o_poly_last[31:0];
-  // assign ap_debug30 = intt_i_poly_last[31:0];
-  // assign ap_debug31 = fn_i_poly_last[31:0];
-
-
-    assign ap_debug   = psi_i_data_dbg[31:0];
-
-  // NTT stage
-  assign ap_debug2  = ntt_i_data_dbg[31:0];
-  assign ap_debug3  = ntt_valid_out_dbg[31:0];
-
-  // FIFO stage
-  assign ap_debug4  = acc_i_poly_0_dbg[31:0];
-  assign ap_debug5  = acc_i_0_poly_last[31:0];
-  assign ap_debug6  = acc_i_poly_0_dbg_4[31:0];
-  assign ap_debug7  = acc_i_0_poly_last_4[31:0];
-
-  // Hadamard stage
-  assign ap_debug8  = acc_i_poly_0_dbg_8[31:0];
-  assign ap_debug9  = acc_i_0_poly_last_8[31:0];
-  assign ap_debug10 = acc_i_poly_0_dbg_16[31:0];
-  assign ap_debug11 = acc_i_0_poly_last_16[31:0];
-  assign ap_debug12 = acc_i_poly_0_dbg_20[31:0];
-  assign ap_debug13 = acc_i_0_poly_last_20[31:0];
-
-  // Accumulator stage
-  assign ap_debug14 = acc_i_poly_0_dbg_27[31:0];
-  assign ap_debug15 = acc_i_0_poly_last_27[31:0];
-  assign ap_debug16 = acc_o_data_dbg[31:0];
-  assign ap_debug21 = acc_o_poly_last[31:0];
-
-  // INTT stage
-  assign ap_debug17 = intt_i_poly_dbg[31:0];
-  assign ap_debug30 = intt_i_poly_last[31:0];
-
-  // Final FN stage
-  assign ap_debug18 = fn_i_poly_dbg[31:0];
-  assign ap_debug31 = fn_i_poly_last[31:0];
-  assign ap_debug19 = fn_o_poly_dbg[31:0];
-  assign ap_debug20 = fn_o_poly_last[31:0];
-
-  // Remaining debug slots unused
-  assign ap_debug22 = had_0_i_poly_A_dbg[31:0];
-  assign ap_debug23 = had_0_i_poly_B_dbg[31:0];
-  assign ap_debug24 = had_0_i_poly_last[31:0];
-  assign ap_debug25 = had_0_i_poly_last_B[31:0];
-
-  
-  
-  // assign ap_debug22 = ntt_o_data_last_dbg[31:0];
-  // assign ap_debug23 = had_0_i_poly_last[31:0];
-  // assign ap_debug24 = had_1_i_poly_last[31:0];
-  // assign ap_debug25 = had_0_o_poly_last[31:0];
-  // assign ap_debug26 = had_1_o_poly_last[31:0];
-  // assign ap_debug27 = acc_i_0_poly_last[31:0];
-  // assign ap_debug28 = acc_i_1_poly_last[31:0];
-  // assign ap_debug29 = acc_o_poly_last[31:0];
-
-  
-
 
 
   wire [32-1:0] ap_timing;
@@ -1129,14 +995,22 @@ localparam TP = 1 << LOGTP;
   assign cmd_exit = (ap_control == 32'hFFFFFFFF);
 
   // cmd_idle:
+  reg started;
+  always_ff @(posedge(ap_clk))
+  if (~ap_rst_n || ap_done) begin
+    started <= 0;
+  end else begin
+    started <= (ap_start_pulse) ? 1'b1 : started;
+  end
+    
 
   // cmd_done:
 
   // cmd_timing:
   always_ff @(posedge ap_clk)
-    if (cmd_start_pulse)
+    if (ap_start_pulse)
       cmd_timing <= 'b0;
-    else if (~cmd_idle)
+    else if (started)
       cmd_timing <= cmd_timing + 32'd1;
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1169,17 +1043,6 @@ localparam TP = 1 << LOGTP;
   // Kernel's Status Registers
 
   assign ap_status = {30'b0, ap_idle, cmd_idle};
-
-
-
-  // assign ap_debug   = ntt_valid_out_dbg[31:0];
-  // assign ap_debug2  = fifo_0_dbg_reg[31:0];
-  // assign ap_debug3  = fifo_1_dbg_reg[31:0];
-  // assign ap_debug4  = i_p1_data_d5_reg[31:0];
-  // assign ap_debug5  = i_p2_data_d5_reg[31:0];
-  // assign ap_debug6  = had_0_dbg_data[31:0];
-  // assign ap_debug7  = had_1_dbg_data[31:0];
-
 
   assign ap_timing = cmd_timing;
 
@@ -1257,37 +1120,7 @@ localparam TP = 1 << LOGTP;
     .hbm_address28     ( dma_address[28]       ),
     .hbm_address29     ( dma_address[29]       ),
     .hbm_address30     ( dma_address[30]       ),
-    .hbm_address31     ( dma_address[31]       ),
-    .ap_debug2          ( ap_debug2              ),
-    .ap_debug3          ( ap_debug3              ),
-    .ap_debug4          ( ap_debug4              ),
-    .ap_debug5          ( ap_debug5              ),
-    .ap_debug6          ( ap_debug6              ),
-    .ap_debug7          ( ap_debug7              ),
-    .ap_debug8          ( ap_debug8              ),
-    .ap_debug9          ( ap_debug9              ),
-    .ap_debug10         ( ap_debug10             ),
-    .ap_debug11         ( ap_debug11             ),
-    .ap_debug12         ( ap_debug12             ),
-    .ap_debug13         ( ap_debug13             ),
-    .ap_debug14         ( ap_debug14             ),
-    .ap_debug15         ( ap_debug15             ),
-    .ap_debug16         ( ap_debug16             ),
-    .ap_debug17         ( ap_debug17             ),
-    .ap_debug18         ( ap_debug18             ),
-    .ap_debug19         ( ap_debug19             ),
-    .ap_debug20         ( ap_debug20             ),
-    .ap_debug21         ( ap_debug21             ),
-    .ap_debug22         ( ap_debug22             ),
-    .ap_debug23         ( ap_debug23             ),
-    .ap_debug24         ( ap_debug24             ),
-    .ap_debug25         ( ap_debug25             ),
-    .ap_debug26         ( ap_debug26             ),
-    .ap_debug27         ( ap_debug27             ),
-    .ap_debug28         ( ap_debug28             ),
-    .ap_debug29         ( ap_debug29             ),
-    .ap_debug30         ( ap_debug30             ),
-    .ap_debug31         ( ap_debug31             )
+    .hbm_address31     ( dma_address[31]       )
   );
 
 
@@ -1381,70 +1214,6 @@ relin #(
     .rst     (~ap_rst_n ),
     .start   (ap_start_pulse),
     .done    (cmd_done      ),
-    .accum_dbg_state_main(accum_dbg_state_main),
-    .accum_dbg_state_st12 (accum_dbg_state_st12 ),
-    .accum_ctr0(accum_ctr0),
-    .accum_ctr1(accum_ctr1),
-    .cu_out_ctr(cu_out_ctr    ),
-    .cu_out_state(cu_out_state  ),
-    .cu_p0_state (cu_p0_state  ),
-    .ctr_L_out_cu_p0(ctr_L_out_cu_p0),
-    .ctr_L__out_cu_p0(ctr_L__out_cu_p0),
-    .ctr_poly_out_cu_p0(ctr_poly_out_cu_p0),
-    .state_p1_p2_out(state_p1_p2_out),
-    .ctr_L_out_p1_p2(ctr_L_out_p1_p2),
-    .ctr_L__out_p1_p2(ctr_L__out_p1_p2),
-    .ctr_out_p1_p2(ctr_out_p1_p2),
-    .ctr_relin(ctr_relin),
-    .ntt_valid_out_dbg(ntt_valid_out_dbg),
-    .fifo_0_dbg_reg(fifo_0_dbg_reg),
-    .fifo_1_dbg_reg(fifo_1_dbg_reg),
-    .i_p1_data_d5_reg(i_p1_data_d5_reg),
-    .i_p2_data_d5_reg(i_p2_data_d5_reg),
-    .had_0_dbg_data(had_0_dbg_data),
-    .had_1_dbg_data(had_1_dbg_data),
-    // NEW DEBUG CONNECTIONS
-    .ntt_i_data_dbg(ntt_i_data_dbg),
-    .ntt_o_data_last_dbg(ntt_o_data_last_dbg),
-    .psi_i_data_dbg(psi_i_data_dbg),
-    .fifo_0_i_data_dbg(fifo_0_i_data_dbg),
-    .fifo_1_i_data_dbg(fifo_1_i_data_dbg),
-    .had_0_i_poly_A_dbg(had_0_i_poly_A_dbg),
-    .had_0_i_poly_B_dbg(had_0_i_poly_B_dbg),
-    .had_1_i_poly_A_dbg(had_1_i_poly_A_dbg),
-    .had_1_i_poly_B_dbg(had_1_i_poly_B_dbg),
-    .acc_i_poly_0_dbg(acc_i_poly_0_dbg),
-    .acc_i_poly_1_dbg(acc_i_poly_1_dbg),
-    .acc_o_data_dbg(acc_o_data_dbg),
-    .intt_i_poly_dbg(intt_i_poly_dbg),
-    .fn_i_poly_dbg(fn_i_poly_dbg),
-    .fn_o_poly_dbg(fn_o_poly_dbg),
-    .ntt_i_data_last_dbg(ntt_i_data_last_dbg),
-    .had_0_i_poly_last(had_0_i_poly_last),
-    .had_1_i_poly_last(had_1_i_poly_last),
-    .had_0_o_poly_last(had_0_o_poly_last),
-    .had_1_o_poly_last(had_1_o_poly_last),
-    .acc_i_0_poly_last(acc_i_0_poly_last),
-    .acc_i_1_poly_last(acc_i_1_poly_last),
-    .acc_o_poly_last(acc_o_poly_last),
-    .intt_i_poly_last(intt_i_poly_last),
-    .fn_i_poly_last(fn_i_poly_last),
-    .fn_o_poly_last(fn_o_poly_last),
-    .acc_i_poly_0_dbg_4(acc_i_poly_0_dbg_4),
-    .acc_i_0_poly_last_4(acc_i_0_poly_last_4),
-    .acc_i_poly_0_dbg_8(acc_i_poly_0_dbg_8),
-    .acc_i_0_poly_last_8(acc_i_0_poly_last_8),
-    .acc_i_poly_0_dbg_16(acc_i_poly_0_dbg_16),
-    .acc_i_0_poly_last_16(acc_i_0_poly_last_16),
-    .acc_i_poly_0_dbg_20(acc_i_poly_0_dbg_20),
-    .acc_i_0_poly_last_20(acc_i_0_poly_last_20),
-    .acc_i_poly_0_dbg_27(acc_i_poly_0_dbg_27),
-    .acc_i_0_poly_last_27(acc_i_0_poly_last_27),
-    .had_0_i_poly_last_B(had_0_i_poly_last_B),
-    .relin_dbg_state (relin_dbg_state ),
-    .read_addr0(read_addr0_accum),
-    .write_addr0(write_addr0_accum),
-    .ctr_start_sig(ctr_ntt_start_sig),
     .relin_t (relin_t_inst  )
 );
 
@@ -1461,63 +1230,9 @@ relin_hbm_adapter #(
     .rst     (~ap_rst_n ),
     .start   (ap_start_pulse ),
     .dma_address(dma_address ),
-    .hbm_p0_dbg (hbm_p0_dbg ),
-    .hbm_p1_dbg (hbm_p1_dbg ),
-    .hbm_p2_dbg (hbm_p2_dbg ),
-    .hbm_p3_dbg (hbm_p3_dbg ),
     .relin_t (relin_t_inst   ),
     .m_axi   (dma_axi        )
 );
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Protocol Checker
-////////////////////////////////////////////////////////////////////////////////
-
-  // wire [159:0] pc_status;
-  // wire         pc_asserted;
-
-  // axi_protocol_checker_0 inst_axi_protocol_checker (
-  //   .pc_status       (pc_status       ), // output wire [159 : 0] pc_status
-  //   .pc_asserted     (pc_asserted     ), // output wire pc_asserted
-  //   .aclk            (ap_clk          ),
-  //   .aresetn         (ap_rst_n        ),
-  //   .pc_axi_awaddr   (m00_axi_awaddr  ),
-  //   .pc_axi_awlen    (m00_axi_awlen   ),
-  //   .pc_axi_awsize   (m00_axi_awsize  ),
-  //   .pc_axi_awburst  (m00_axi_awburst ),
-  //   .pc_axi_awlock   (                ),
-  //   .pc_axi_awcache  (                ),
-  //   .pc_axi_awprot   (                ),
-  //   .pc_axi_awqos    (                ),
-  //   .pc_axi_awregion (                ),
-  //   .pc_axi_awvalid  (m00_axi_awvalid ),
-  //   .pc_axi_awready  (m00_axi_awready ),
-  //   .pc_axi_wlast    (m00_axi_wlast   ),
-  //   .pc_axi_wdata    (m00_axi_wdata   ),
-  //   .pc_axi_wstrb    (m00_axi_wstrb   ),
-  //   .pc_axi_wvalid   (m00_axi_wvalid  ),
-  //   .pc_axi_wready   (m00_axi_wready  ),
-  //   .pc_axi_bresp    (                ),
-  //   .pc_axi_bvalid   (m00_axi_bvalid  ),
-  //   .pc_axi_bready   (m00_axi_bready  ),
-  //   .pc_axi_araddr   (m00_axi_araddr  ),
-  //   .pc_axi_arlen    (m00_axi_arlen   ),
-  //   .pc_axi_arsize   (m00_axi_arsize  ),
-  //   .pc_axi_arburst  (m00_axi_arburst ),
-  //   .pc_axi_arlock   (                ),
-  //   .pc_axi_arcache  (                ),
-  //   .pc_axi_arprot   (                ),
-  //   .pc_axi_arqos    (                ),
-  //   .pc_axi_arregion (                ),
-  //   .pc_axi_arvalid  (m00_axi_arvalid ),
-  //   .pc_axi_arready  (m00_axi_arready ),
-  //   .pc_axi_rlast    (m00_axi_rlast   ),
-  //   .pc_axi_rdata    (m00_axi_rdata   ),
-  //   .pc_axi_rresp    (                ),
-  //   .pc_axi_rvalid   (m00_axi_rvalid  ),
-  //   .pc_axi_rready   (m00_axi_rready  )
-  // );
 
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -18,10 +18,6 @@ module relin_hbm_adapter
         input              rst     ,
         input              start   ,
         input [HBM_ADDR_WIDTH-1:0] dma_address [0:HBM_PC_COUNT-1],
-        output reg [5:0] hbm_p0_dbg,
-        output reg [5:0] hbm_p1_dbg,
-        output reg [5:0] hbm_p2_dbg,
-        output reg [5:0] hbm_p3_dbg,
         relin_t.slave      relin_t ,
         axi4_t.master      m_axi [0:HBM_PC_COUNT-1]
     );
@@ -30,7 +26,6 @@ module relin_hbm_adapter
 
 localparam PSI_NUM = PSI_CC << LOGTP;
 localparam TP = 1 << LOGTP;
-localparam TPPC = TP / 8;
 
 localparam HBM_PCI_COUNT  = 24;
 localparam HBM_PCO_COUNT  = 8;
@@ -44,6 +39,9 @@ localparam FIFO_WIDTH     = 256;
 
 localparam N = 1 << LOGN;
 localparam LOGQ_ = (LOGQ <= 32) ? 32 : 64;
+localparam QBYTES = (LOGQ == 32) ? 4 : 8;
+
+localparam TPPC = TP / 8;
 
 localparam POLY_SINGLE_PC_SIZE = ((N * LOGQ_) / 8) / 8; // in Bytes
 localparam POLY_CC             = (POLY_SINGLE_PC_SIZE * 8) / HBM_DATA_WIDTH;
@@ -1149,13 +1147,6 @@ o_p3_done_shift_regd10
 
 
 /////////////////////////////////////////////////////////////////////////
-
-always @(posedge clk) begin
-    hbm_p0_dbg <= p0_state;
-    hbm_p1_dbg <= p1_state;
-    hbm_p2_dbg <= p2_state;
-    hbm_p3_dbg <= p3_state;
-end
 
 
 ///////////////////////// misc. sequential logic ////////////////////////

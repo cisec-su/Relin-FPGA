@@ -23,12 +23,10 @@ module ntt_wrapper
 
 
 localparam TP  = 1 << LOGTP;
-localparam LOGN1 = LOGTP; // = LOGN3 for 3D, LOGN4 for 4D
-//localparam LOGN2 = (LOGN - 2*LOGN1 <= LOGTP) ? LOGN - 2*LOGN1 : (LOGN -  2*LOGN1) >> 1;
-//localparam LOGN3 = (LOGN - 2*LOGN1 <= LOGTP) ?          LOGN1 :  LOGN - (2*LOGN1) - LOGN2;
+localparam LOGN1 = LOGTP;
 
-localparam LOGN2 = (LOGN == 12 || LOGN == 13 || LOGN == 14 || LOGN == 15) ? LOGN - 2*LOGN1 : 1;
-localparam LOGN3 = LOGTP;
+localparam LOGN2 = LOGQ == 32 ? (LOGN == 12) ? LOGTP : (LOGN == 13 || LOGN == 14 || LOGN == 15 || LOGN == 16) ? LOGN - 2*LOGN1 : 0 : (LOGN == 12 || LOGN == 13 || LOGN == 14 || LOGN == 15) ? LOGN - 2*LOGN1 : 1;
+localparam LOGN3 = LOGQ == 32 ? (LOGN == 12) ? 0 : (LOGN == 13 || LOGN == 14 || LOGN == 15 || LOGN == 16) ? LOGTP : 0 : LOGTP;
 
 
 localparam tp_ntt_params_t tp_ntt_params = {LOGN, LOGN1, LOGN2, LOGN3, LOGTP, LOGQ, LOGQH, 1, 0}; 
@@ -128,30 +126,6 @@ shift_reg #(
     .i_data (qH),
     .o_data (qH_d)
 );
-
-
-// tp_ntt_top #(
-//     .LOGN     (tp_ntt_params.LOGN    ),
-//     .LOGN1    (tp_ntt_params.LOGN1   ),
-//     .LOGN2    (tp_ntt_params.LOGN2   ),
-//     .LOGN3    (tp_ntt_params.LOGN3   ),
-//     .LOGTP    (tp_ntt_params.LOGTP   ),
-//     .LOGQ     (tp_ntt_params.LOGQ    ),
-//     .LOGQH    (tp_ntt_params.LOGQH   ),
-//     .NON_STD  (tp_ntt_params.NON_STD ), 
-//     .MORE_DSP (tp_ntt_params.MORE_DSP)    
-// ) tp_ntt_top_inst (
-//     .clk     (clk),
-//     .rst     (rst),
-//     .start   (start),
-//     .op      (op),
-//     .intt    (intt),
-//     .shuffle_mod(0),
-//     .qH      (qH_d),
-//     .i_poly  (flat_i_poly),
-//     .psi     (flat_psi),
-//     .o_poly  (flat_o_poly)
-// );
 
 tp_ntt_top_w_shuffle #(
         .LOGN    (tp_ntt_params.LOGN    ),

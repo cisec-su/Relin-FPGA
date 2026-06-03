@@ -14,9 +14,6 @@ module relin_accum_wrapper
         input              clk              ,
         input              rst              ,
         input              start_read       ,
-        output reg     [4:0] accum_dbg_state_main ,
-        output reg     [1:0] accum_dbg_state_st12 ,
-        // output             write_done       ,
         input              load_q           ,
         input  [LOGQH-1:0] qH               ,
         input  [LOGQ -1:0] i_poly_0 [0:TP-1],
@@ -24,35 +21,13 @@ module relin_accum_wrapper
         input              i_valid_0        ,
         input              i_valid_1        ,
         output [LOGQ -1:0] o_poly   [0:TP-1],
-        output             o_valid,
-        output  [LOGK-1:0] write_addr0,
-        output  [LOGK-1:0] read_addr0,
-        output reg [LOGL-1:0] ctr_0_out,
-        output reg [LOGL-1:0] ctr_1_out
+        output             o_valid
     );
 
 
 
 localparam TP = (1 << LOGTP);
 localparam LOGL = $rtoi($ceil($clog2(L + 1)));
-
-
-
-always @(posedge clk) begin
-    if (rst)
-        accum_dbg_state_main <= 5'b0;
-    else
-        accum_dbg_state_main <= state_i;
-end
-
-
-always @(posedge clk) begin
-    if (rst)
-        accum_dbg_state_st12 <= 2'b0;
-    else
-        accum_dbg_state_st12 <= state_o;
-end
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -74,11 +49,6 @@ typedef enum reg[4:0] {
 
 (* fsm_encoding = "none" *) t_state_i state_i;
 t_state_i next_state_i;
-
-always @(posedge clk) begin
-    ctr_0_out <= ctr_0;
-    ctr_1_out <= ctr_1;
-end
 
 
 wire [LOGL-1:0] ctr_0;
@@ -115,18 +85,6 @@ start_read_shift_reg
     .i_data (start_read  ),
     .o_data (start_read_d)
 );
-
-// shift_reg #(
-//     .LAT   (START_DELAY),
-//     .WIDTH (1)
-// )
-// write_done_shift_reg
-// (
-//     .clk    (clk),
-//     .rst    (rst),
-//     .i_data (write_done_int),
-//     .o_data (write_done)
-// );
 
 
 shift_reg #(
@@ -275,9 +233,7 @@ relin_accum #(
     .A        (i_poly_0 ),
     .C        (o_poly_0 ),
     .wdone    (wdone0   ),
-    .rdone    (rdone0   ),
-    .write_addr_reg(write_addr0),
-    .read_addr_reg(read_addr0)
+    .rdone    (rdone0   )
 );
 
 
@@ -300,9 +256,7 @@ relin_accum #(
     .A        (i_poly_1 ),
     .C        (o_poly_1 ),
     .wdone    (wdone1   ),
-    .rdone    (rdone1   ),
-    .write_addr_reg(write_addr1),
-    .read_addr_reg(read_addr1)
+    .rdone    (rdone1   )
 );
 
 ///////////////////////////////////////////////////

@@ -14,6 +14,8 @@ parameter LOGTP = 5 ;
 parameter EN_ADD= 1 ;
 parameter L     = 2 ;
 
+parameter MEM_FILE_WIDTH_USR = (LOGTP == 5) ? 64 : LOGTP == 6 ? 32 : 0;
+
 // parameters for kernel
 parameter integer C_S_AXI_CONTROL_ADDR_WIDTH = 12;
 parameter integer C_S_AXI_CONTROL_DATA_WIDTH = 32;
@@ -1716,7 +1718,8 @@ kernel #(
 axi_hbm #(
     .HBM_ADDR_WIDTH             (HBM_ADDR_WIDTH),
     .HBM_DATA_WIDTH             (HBM_DATA_WIDTH),
-    .L                          (L)
+    .L                          (L),
+    .MEM_FILE_WIDTH_USR         (MEM_FILE_WIDTH_USR)
 ) hbm_inst (
     .clk                   (clk           ),
     .rst                   (~aresetn      ),

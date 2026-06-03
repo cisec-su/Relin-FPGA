@@ -16,24 +16,13 @@ module relin_cu_p0_ntt
         output reg                ntt_i_valid  ,
         output reg                psi_i_valid  ,
         output reg                psi_inv_i_valid  ,
-        output reg                intt_ready ,
-        output reg    [15:0]           relin_cu_p0_state,
-        output reg   [LOGL-1:0]           ctr_L_out,
-        output reg   [LOGL-1:0]           ctr_L__out,
-        output reg   [LOGL-1:0]           ctr_poly_out
+        output reg                intt_ready
 
     );
 
 `include "relin_mem.svh"
 
 localparam LOGL  = $rtoi($ceil($clog2(L + 1)));
-
-always @(posedge clk) begin
-    relin_cu_p0_state <= state;
-    ctr_L_out <= ctr_L;
-    ctr_L__out <= ctr_L_;
-    ctr_poly_out <= ctr_poly;
-end
 
 
 typedef enum reg[15:0] {
@@ -160,8 +149,6 @@ always @(*) begin
             if (start) begin
                 next_state = ST_WAIT_BEFORE_PSI;
             end
-            // ctr_L_rst = 1;
-            // ctr_poly_rst = 1;
         end
         ST_WAIT_BEFORE_PSI: begin
             if (wait_ctr2 == PSI_WAIT_CYCLES - 1) begin
@@ -201,10 +188,6 @@ always @(*) begin
                     next_state = ST_LOAD_POLY_START;
                     ctr_poly_inc = 1;
                 end
-                // else begin
-                //     next_state = ST_LOAD_IPSI_START;
-                //     ctr_poly_rst = 1;
-                // end
                 else begin
                     next_state   = ST_WAIT_BEFORE_IPSI;
                     ctr_poly_rst = 1;
@@ -230,7 +213,6 @@ always @(*) begin
         ST_LOAD_IPSI_WAIT_DONE: begin
             i_p0_id = `PSI_INV;
             i_p0_idx = ctr_L_;
-            //psi_i_valid = i_p0_valid;
             psi_inv_i_valid = i_p0_valid;
             if (i_p0_done) begin
                 next_state = ST_INTT_READY;

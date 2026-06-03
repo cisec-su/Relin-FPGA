@@ -1,5 +1,6 @@
 module axi_hbm
    #(
+        parameter MEM_FILE_WIDTH_USR = 64, // 64 for logq=60, 32 for logq=32
         parameter L = 4,
         parameter integer HBM_ADDR_WIDTH             = 64,
         parameter integer HBM_DATA_WIDTH             = 256,
@@ -848,6 +849,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M00_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/ct2_"),
     .MEM_FILE_0_NUM(L),
     .STRIDE_0(8),
@@ -906,6 +908,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M01_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/ct2_"),
     .MEM_FILE_0_NUM(L),
     .STRIDE_0(8),
@@ -964,6 +967,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M02_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/ct2_"),
     .MEM_FILE_0_NUM(L),
     .STRIDE_0(8),
@@ -1022,6 +1026,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M03_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/ct2_"),
     .MEM_FILE_0_NUM(L),
     .STRIDE_0(8),
@@ -1080,6 +1085,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M04_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/ct2_"),
     .MEM_FILE_0_NUM(L),
     .STRIDE_0(8),
@@ -1138,6 +1144,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M05_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/ct2_"),
     .MEM_FILE_0_NUM(L),
     .STRIDE_0(8),
@@ -1196,6 +1203,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M06_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/ct2_"),
     .MEM_FILE_0_NUM(L),
     .STRIDE_0(8),
@@ -1254,6 +1262,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M07_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/ct2_"),
     .MEM_FILE_0_NUM(L),
     .STRIDE_0(8),
@@ -1312,6 +1321,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M08_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_0_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1369,6 +1379,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M09_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_0_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1426,6 +1437,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M10_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_0_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1483,6 +1495,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M11_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_0_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1540,6 +1553,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M12_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_0_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1597,6 +1611,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M13_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_0_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1654,6 +1669,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M14_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_0_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1711,6 +1727,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M15_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_0_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1768,6 +1785,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M16_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_1_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1817,6 +1835,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M17_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_1_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1866,6 +1885,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M18_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_1_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1915,6 +1935,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M19_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_1_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -1964,6 +1985,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M20_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_1_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -2013,6 +2035,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M21_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_1_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -2062,6 +2085,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M22_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_1_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -2111,6 +2135,7 @@ axi_ram #(
     .ADDR_WIDTH(C_M23_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
     .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR),
     .MEM_FILE_0("../../../../../model/BFV/test_vectors/relinkey_1_"),
     .MEM_FILE_0_NUM(L*(L+1)),
     .STRIDE_0(8),
@@ -2159,7 +2184,8 @@ axi_ram #(
     .DATA_WIDTH(C_M24_AXI_DATA_WIDTH),
     .ADDR_WIDTH(C_M24_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
-    .PIPELINE_OUTPUT(0)
+    .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR)
 ) axi_ram_m24 (
     .clk          (clk),
     .rst          (rst),
@@ -2204,7 +2230,8 @@ axi_ram #(
     .DATA_WIDTH(C_M25_AXI_DATA_WIDTH),
     .ADDR_WIDTH(C_M25_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
-    .PIPELINE_OUTPUT(0)
+    .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR)
 ) axi_ram_m25 (
     .clk          (clk),
     .rst          (rst),
@@ -2249,7 +2276,8 @@ axi_ram #(
     .DATA_WIDTH(C_M26_AXI_DATA_WIDTH),
     .ADDR_WIDTH(C_M26_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
-    .PIPELINE_OUTPUT(0)
+    .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR)
 ) axi_ram_m26 (
     .clk          (clk),
     .rst          (rst),
@@ -2294,7 +2322,8 @@ axi_ram #(
     .DATA_WIDTH(C_M27_AXI_DATA_WIDTH),
     .ADDR_WIDTH(C_M27_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
-    .PIPELINE_OUTPUT(0)
+    .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR)
 ) axi_ram_m27 (
     .clk          (clk),
     .rst          (rst),
@@ -2339,7 +2368,8 @@ axi_ram #(
     .DATA_WIDTH(C_M28_AXI_DATA_WIDTH),
     .ADDR_WIDTH(C_M28_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
-    .PIPELINE_OUTPUT(0)
+    .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR)
 ) axi_ram_m28 (
     .clk          (clk),
     .rst          (rst),
@@ -2384,7 +2414,8 @@ axi_ram #(
     .DATA_WIDTH(C_M29_AXI_DATA_WIDTH),
     .ADDR_WIDTH(C_M29_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
-    .PIPELINE_OUTPUT(0)
+    .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR)
 ) axi_ram_m29 (
     .clk          (clk),
     .rst          (rst),
@@ -2429,7 +2460,8 @@ axi_ram #(
     .DATA_WIDTH(C_M30_AXI_DATA_WIDTH),
     .ADDR_WIDTH(C_M30_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
-    .PIPELINE_OUTPUT(0)
+    .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR)
 ) axi_ram_m30 (
     .clk          (clk),
     .rst          (rst),
@@ -2474,7 +2506,8 @@ axi_ram #(
     .DATA_WIDTH(C_M31_AXI_DATA_WIDTH),
     .ADDR_WIDTH(C_M31_AXI_ADDR_WIDTH),
     .ID_WIDTH(1),
-    .PIPELINE_OUTPUT(0)
+    .PIPELINE_OUTPUT(0),
+    .MEM_FILE_WIDTH(MEM_FILE_WIDTH_USR)
 ) axi_ram_m31 (
     .clk          (clk),
     .rst          (rst),
@@ -2523,7 +2556,7 @@ localparam MEM_OUT_FILE_0_NUM = L;
 localparam MEM_OUT_FILE_1     = "../../../../../model/BFV/test_vectors/relin_ct1_";
 localparam MEM_OUT_FILE_1_NUM = L;
 
-localparam MEM_FILE_WIDTH  = 64;
+localparam MEM_FILE_WIDTH  = MEM_FILE_WIDTH_USR;//64;
 
 
 initial begin

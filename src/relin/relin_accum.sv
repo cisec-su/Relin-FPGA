@@ -19,9 +19,7 @@ module relin_accum
         input  [LOGQ -1:0] A [TP-1:0],
         output [LOGQ -1:0] C [TP-1:0],
         output            wdone     ,
-        output            rdone     ,
-        output   reg   [LOGK-1:0] write_addr_reg,
-        output   reg   [LOGK-1:0] read_addr_reg
+        output            rdone     
     );
 
 ///////////////////////////// Parameters ////////////////////////////////
@@ -33,17 +31,6 @@ localparam FF_OUT   = 1;
 localparam ADD_LAT  = FF_ADD + FF_OUT;
 
 /////////////////////////////////////////////////////////////////////////
-
-always @(posedge clk) begin
-    if (rst) begin
-        write_addr_reg <= 0;
-        read_addr_reg  <= 0;
-    end else begin
-        write_addr_reg <= write_addr;
-        read_addr_reg  <= read_addr;
-    end
-end
-
 
 ///////////////////////// Signal Declarations ///////////////////////////
 
@@ -60,8 +47,6 @@ wire  [LOGK -1:0] read_addr;
 wire  [LOGK -1:0] write_addr;
 wire  bram_wen;
 wire start_read, start_write;
-
-//wire wdone, rdone;
 
 reg  first_q;
 
