@@ -1,7 +1,8 @@
 #!/bin/bash
 
 OUTFILE="out.txt"
-ITER=50
+ITER=1
+RNS_NUM=2   # allowed values: 2, 4, 7, 14, 29
 
 echo "===== START $(date) =====" > "$OUTFILE"
 
@@ -28,7 +29,7 @@ expect <<EOF
   send "v\r"
 
   # send Ctrl+C after 120 seconds
-  after 50000 {
+  after 250000 {
       send "\003"
   }
 
@@ -38,7 +39,7 @@ EOF
 echo "===== KERNEL OUTPUT =====" >> "$OUTFILE"
 
   cd scripts/kernel || exit
-  python3 compare_script.py >> "../../$OUTFILE" 2>&1
+  python3 compare_script.py "$RNS_NUM" >> "../../$OUTFILE" 2>&1
   cd ../.. || exit
 
 done

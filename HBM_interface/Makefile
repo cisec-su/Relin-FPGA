@@ -54,7 +54,7 @@ VITIS_INCLUDE     := $(XILINX_VITIS)/include
 VITIS_HLS_INCLUDE := $(XILINX_HLS)/include
 XRT_LIB           := $(XILINX_XRT)/lib
 
-CXXFLAGS += -I$(XRT_INCLUDE) -I$(VIVADO_INCLUDE) -I$(VITIS_INCLUDE) -I$(VITIS_HLS_INCLUDE) -Wall -O0 -g -std=c++1y
+CXXFLAGS += -I$(XRT_INCLUDE) -I$(VIVADO_INCLUDE) -I$(VITIS_INCLUDE) -I$(VITIS_HLS_INCLUDE) -Wall -O3 -g -std=c++1y
 LDFLAGS  += -L$(XRT_LIB) -lOpenCL -pthread
 
 CXXFLAGS += -fmessage-length=0
