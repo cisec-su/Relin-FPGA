@@ -45,10 +45,12 @@ Open `test.py` and update the following variables according to the desired param
 ```python
 ring_dimension
 LOGQ
-q_tilda_size
+L
 ```
 
 These parameters are used to generate the relinearization test vectors.
+
+Here, `ring_dimension` defines the polynomial ring size, `LOGQ` defines the bit-size of each RNS prime, and `L` defines the number of RNS primes in the BFV modulus `Q`.
 
 After running the script, the generated test vectors should appear in:
 
@@ -177,7 +179,7 @@ RNS_NUM
 
 `ITER` specifies how many times the hardware test will be repeated.
 
-`RNS_NUM` specifies the number of RNS primes in `Q`. This corresponds to the BFV modulus decomposition, where `RNS_NUM` is related to `\tilde{l} - 1` in the paper.
+`RNS_NUM` specifies the number of RNS primes in the BFV modulus `Q`. This value should match `L`.
 
 Then build and run the hardware design:
 
@@ -220,10 +222,25 @@ Make sure the following parameters are consistent between the software model, RT
 * `LOGQH`
 * `LOGTP`
 * `L`
-* `q_tilda_size`
 * `RNS_NUM`
 
 Mismatch between generated test vectors, RTL parameters, and host-side hardware configuration may cause simulation or hardware verification errors.
+
+---
+
+## Citation
+
+If you use this repository or the relinearization accelerator in your work, please cite:
+
+```bibtex
+@misc{kocer_relin,
+      author = {Emre Koçer and Tolun Tosun and Beren Aydoğan and Erkay Savaş and Furkan Turan and Ingrid Verbauwhede},
+      title = {{TP}-{NTT}: Batch {NTT} Hardware with Application to Relinearization},
+      howpublished = {Cryptology {ePrint} Archive, Paper 2026/556},
+      year = {2026},
+      url = {https://eprint.iacr.org/2026/556}
+}
+```
 
 ---
 
