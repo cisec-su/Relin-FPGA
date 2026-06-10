@@ -11,4 +11,4 @@
 [submodule "TP-NTT"]
 	path = TP-NTT
 	url = https://github.com/cisec-su/TP-NTT.git
-	branch = dev_shuffle_op
+	branch = main
