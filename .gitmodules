@@ -4,6 +4,8 @@
 [submodule "model"]
 	path = model
 	url = https://github.com/cisec-su/FHE-py.git
-[submodule "modmul-hdl"]
-	path = modmul-hdl
-	url = https://github.com/cisec-su/modmul-hdl.git
+	branch = relin_fpga_test
+[submodule "TP-NTT"]
+	path = TP-NTT
+	url = https://github.com/cisec-su/TP-NTT.git
+	branch = main
